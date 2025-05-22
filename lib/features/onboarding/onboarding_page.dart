@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:my_cooking_helper/core/constants.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -14,25 +15,31 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   final List<Map<String, String>> _pages = [
     {
-      "image": "assets/images/onboarding/onboarding1.png",
+      "image": "assets/images/onboarding/onb1.png",
       "title": "Welcome to My Cooking Helper",
-      "desc": "Your smart kitchen companion. Plan meals, manage your pantry, and discover recipes tailored to you."
+      "desc":
+          "Your smart kitchen companion. Plan meals, manage your pantry, and discover recipes tailored to you.",
     },
     {
-      "image": "assets/images/onboarding/onboarding2.png",
+      "image": "assets/images/onboarding/onb1.png",
       "title": "Track Your Pantry with Ease",
-      "desc": "Scan your groceries, manage what you have, and reduce food waste effortlessly."
+      "desc":
+          "Scan your groceries, manage what you have, and reduce food waste effortlessly.",
     },
     {
-      "image": "assets/images/onboarding/onboarding3.png",
+      "image": "assets/images/onboarding/onb1.png",
       "title": "Get Personalised Recipe Ideas",
-      "desc": "Discover delicious recipes based on your preferences and what's in your kitchen."
+      "desc":
+          "Discover delicious recipes based on your preferences and what's in your kitchen.",
     },
   ];
 
   void _nextPage() {
     if (_currentIndex < _pages.length - 1) {
-      _controller.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      _controller.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     } else {
       // Go to sign in page with go_router
       context.go('/signin');
@@ -47,7 +54,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420), // 420 is typical mobile width
+            constraints: const BoxConstraints(
+              maxWidth: kMaxContentWidth,
+            ), // 420 is typical mobile width
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -55,11 +64,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   child: PageView.builder(
                     controller: _controller,
                     itemCount: _pages.length,
-                    onPageChanged: (index) => setState(() => _currentIndex = index),
+                    onPageChanged:
+                        (index) => setState(() => _currentIndex = index),
                     itemBuilder: (context, index) {
                       final page = _pages[index];
                       return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32.0,
+                          vertical: 24.0,
+                        ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -74,7 +87,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                               child: Center(
                                 child: Image.asset(
                                   page["image"]!,
-                                  height: MediaQuery.of(context).size.height * 0.25,
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.25,
                                   fit: BoxFit.contain,
                                 ),
                               ),
@@ -82,18 +96,19 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             const SizedBox(height: 48),
                             Text(
                               page["title"]!,
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    color: Colors.blue.shade900,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: Theme.of(
+                                context,
+                              ).textTheme.headlineSmall?.copyWith(
+                                color: Colors.blue.shade900,
+                                fontWeight: FontWeight.bold,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               page["desc"]!,
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: Colors.blueGrey.shade700,
-                                  ),
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(color: Colors.blueGrey.shade700),
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -113,7 +128,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       width: _currentIndex == i ? 24 : 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: _currentIndex == i ? Colors.blueAccent : Colors.blueGrey.shade200,
+                        color:
+                            _currentIndex == i
+                                ? Colors.blueAccent
+                                : Colors.blueGrey.shade200,
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
@@ -128,12 +146,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       onPressed: _nextPage,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         minimumSize: const Size(double.infinity, 54),
                       ),
                       child: Text(
-                        _currentIndex == _pages.length - 1 ? "Get Started" : "Next",
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+                        _currentIndex == _pages.length - 1
+                            ? "Get Started"
+                            : "Next",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),

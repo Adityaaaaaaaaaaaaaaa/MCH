@@ -31,7 +31,7 @@ dev_dependencies:
 flutter_icons:
   android: true
   ios: true
-  web: 
+  web:
     generate: true
   image_path: "assets/app_icon.png"
 
@@ -41,6 +41,7 @@ flutter:
   assets:
     - assets/
     - assets/images/
+    - assets/images/onboarding/
 
   # example:
   # fonts:

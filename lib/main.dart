@@ -1,9 +1,11 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:my_cooking_helper/firebase_options.dart';
 import 'package:go_router/go_router.dart';
+
 import 'features/onboarding/onboarding_page.dart';
 import 'features/auth/sign_in_page.dart';
+import 'core/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,10 +36,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'My Cooking Helper',
-      theme: ThemeData(
+      /*theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
         useMaterial3: true,
-      ),
+      ),*/
+      theme: AppThemes.lightTheme,
+      // Optional for later: 
+      // darkTheme: AppThemes.darkTheme,
+      // themeMode: ThemeMode.system, // Will follow device theme by default
       routerConfig: _router,
     );
   }
