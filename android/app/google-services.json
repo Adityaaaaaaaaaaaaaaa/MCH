@@ -12,7 +12,20 @@
           "package_name": "com.example.my_cooking_helper"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "834260398745-ma0eiro8d3ffrhv80qe9ndud7695dca5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.my_cooking_helper",
+            "certificate_hash": "7d3ddab1f57d12910f3479e91c1afc3c4fa70f6e"
+          }
+        },
+        {
+          "client_id": "834260398745-vmq0nskabfclt2pn7jib8mdaorlitnhp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCvulDuJSpkZxFIQafN4Zzjou1VrpUaE8U"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "834260398745-vmq0nskabfclt2pn7jib8mdaorlitnhp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "834260398745-hlhiub2qk02kl9oddmvnh5a85ihanjco.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.myCookingHelper"
+              }
+            }
+          ]
         }
       }
     }
