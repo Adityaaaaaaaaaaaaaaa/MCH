@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:my_cooking_helper/firebase_options.dart';
+import 'package:my_cooking_helper/core/firebase_options.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; 
 
@@ -22,7 +22,7 @@ final GoRouter _router = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const OnboardingPage(),
+      builder: (context, state) => const /*OnboardingPage(),*/ PreferencesFlow(),
     ),
     GoRoute(
       path: '/signin',
