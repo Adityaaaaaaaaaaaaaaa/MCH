@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:my_cooking_helper/core/constants.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -34,8 +33,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void _nextPage() {
     if (_currentIndex < _pages.length - 1) {
       _controller.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 300), // Smoother transition
+        curve: Curves.easeInOutCubic,
       );
     } else {
       context.go('/signin');
@@ -44,128 +43,140 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double imgWidth = screenWidth * 0.75; // 75% of screen width
+    final double imgHeight = imgWidth * 1.5;    // 2:3 aspect ratio
+
     return Scaffold(
       backgroundColor: const Color(0xFFE5F1FA),
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: kMaxContentWidth,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: PageView.builder(
-                    controller: _controller,
-                    itemCount: _pages.length,
-                    onPageChanged: (index) => setState(() => _currentIndex = index),
-                    itemBuilder: (context, index) {
-                      final page = _pages[index];
-                      return LayoutBuilder(
-                        builder: (context, constraints) {
-                          // Reserve vertical space for title, desc, button, dots, and paddings.
-                          // Adjust this value as needed if you change the design.
-                          final double reservedHeight = 320.0; // ~320px for all non-image stuff
-                          final double availableHeight = (constraints.maxHeight - reservedHeight).clamp(80.0, 420.0);
-
-                          // Set image width as 80% of container width (max), and calculate height for 2:3 ratio
-                          final double imgWidth = (constraints.maxWidth * 0.8).clamp(120.0, 400.0);
-                          final double imgHeight = (imgWidth * 1.5).clamp(80.0, availableHeight);
-
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Center(
-                                  child: Container(
-                                    width: imgWidth,
-                                    height: imgHeight,
-                                    decoration: BoxDecoration(
-                                      //color: Colors.white.withOpacity(0.5),
-                                      borderRadius: BorderRadius.circular(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: 150), // Extra top space
+            Expanded(
+              child: PageView.builder(
+                controller: _controller,
+                physics: const BouncingScrollPhysics(), // Smooth, native feel
+                itemCount: _pages.length,
+                onPageChanged: (index) => setState(() => _currentIndex = index),
+                itemBuilder: (context, index) {
+                  final page = _pages[index];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        // Lower the image from the top
+                        const SizedBox(height: 10),
+                        Center(
+                          child: Container(
+                            width: imgWidth,
+                            height: imgHeight > 340 ? 340 : imgHeight, // Cap for mobile
+                            decoration: BoxDecoration(
+                              //color: Colors.white.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(32),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(32),
+                              child: Image.asset(
+                                page["image"]!,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 48), // More space below image
+                        // AnimatedSwitcher for smooth transition of title and description
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 400),
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(opacity: animation, child: child),
+                          child: Column(
+                            key: ValueKey(_currentIndex),
+                            children: [
+                              Text(
+                                page["title"]!,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
+                                      color: Colors.blue.shade900,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(32),
-                                      child: Image.asset(
-                                        page["image"]!,
-                                        fit: BoxFit.contain,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 32),
-                                Text(
-                                  page["title"]!,
-                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                        color: Colors.blue.shade900,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 24),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 50.0),
+                                child: Text(
                                   page["desc"]!,
-                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.copyWith(
                                         color: Colors.blueGrey.shade700,
                                       ),
                                   textAlign: TextAlign.center,
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-                // Progress dots
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _pages.length,
-                    (i) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      width: _currentIndex == i ? 24 : 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: _currentIndex == i ? Colors.blueAccent : Colors.blueGrey.shade200,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _nextPage,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                              ),
+                            ],
+                          ),
                         ),
-                        minimumSize: const Size(double.infinity, 54),
-                      ),
-                      child: Text(
-                        _currentIndex == _pages.length - 1 ? "Get Started" : "Next",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
+                      ],
                     ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-              ],
+                  );
+                },
+              ),
             ),
-          ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                _pages.length,
+                (i) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  width: _currentIndex == i ? 24 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: _currentIndex == i
+                        ? Colors.blueAccent
+                        : Colors.blueGrey.shade200,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _nextPage,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    minimumSize: const Size(double.infinity, 54),
+                  ),
+                  child: Text(
+                    _currentIndex == _pages.length - 1
+                        ? "Get Started"
+                        : "Next",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+          ],
         ),
       ),
     );
