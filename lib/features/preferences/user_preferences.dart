@@ -6,5 +6,18 @@ class UserPreferences {
   List<String> cuisines = [];
   String? spiceLevel;
   List<String> barriers = [];
-  String? nutritionTracking;
+
+  UserPreferences();
+  
+  Map<String, dynamic> toMap() {
+    return {
+      'gender': gender,
+      'cookingTime': cookingTime,
+      'allergies': allergies,
+      'diets': diets,
+      'cuisines': cuisines,
+      'spiceLevel': spiceLevel,
+      'barriers': barriers,
+    };
+  }
 }

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'user_preferences.dart';
@@ -148,7 +150,17 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
                       highlightColor: Colors.blueGrey,
                     ),
                     _ThankYouPage(
-                      onNext: () => context.go('/home', extra: preferences),
+                      onNext: () async {
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user == null) return;
+                        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+                          'displayName': user.displayName,
+                          'email': user.email,
+                          'onboardingCompleted': true,
+                          'preferences': preferences.toMap(), // or whatever map you collect
+                        }, SetOptions(merge: true));
+                        context.go('/home');
+                      },
                     ),
                   ],
                 ),

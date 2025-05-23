@@ -9,6 +9,7 @@ import 'features/onboarding/onboarding_page.dart';
 import 'features/auth/sign_in_page.dart';
 import 'core/app_theme.dart';
 import 'features/preferences/preferences_flow.dart';
+import 'features/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,11 +19,11 @@ Future<void> main() async {
 }
 
 final GoRouter _router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash',
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const /*OnboardingPage(),*/ PreferencesFlow(),
+      builder: (context, state) => const OnboardingPage(),
     ),
     GoRoute(
       path: '/signin',
@@ -30,11 +31,15 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/home',
-      builder: (context, state) => const HomePage(),
+      builder: (context, state) => const HomeScreen(),
     ),
     GoRoute(
       path: '/preferences',
       builder: (context, state) => const PreferencesFlow(),
+    ),
+    GoRoute(
+      path: '/splash',
+      builder: (context, state) => const SplashScreen(),
     ),
   ],
 );
