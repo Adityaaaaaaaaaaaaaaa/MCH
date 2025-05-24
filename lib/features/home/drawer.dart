@@ -32,6 +32,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: unused_local_variable
     final GoRouter router = GoRouter.of(context);
 
     // List of routes for navigation (modular, could come from a config)
