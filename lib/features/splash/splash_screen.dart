@@ -18,14 +18,12 @@ class _SplashScreenState extends State<SplashScreen> {
 
 Future<void> _checkSession() async {
   final user = FirebaseAuth.instance.currentUser;
-  print("Current UID: ${user?.uid}");
   if (user == null) {
     context.go('/signin');
     return;
   }
   final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
   final data = doc.data();
-  print("Firestore data: $data");
   if (data == null || !(data['onboardingCompleted'] ?? false)) {
     context.go('/preferences');
   } else {

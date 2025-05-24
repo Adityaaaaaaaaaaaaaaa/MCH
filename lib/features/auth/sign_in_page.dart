@@ -56,7 +56,7 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
         idToken: googleAuth.idToken,
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
-      context.go('/preferences');
+      context.go('/splash');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Sign in failed: $e')),
