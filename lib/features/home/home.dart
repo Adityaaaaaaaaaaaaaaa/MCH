@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme_toggle_button.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -28,6 +30,7 @@ class HomeScreen extends StatelessWidget {
                   // TODO: Go to settings page if implemented
                 },
               ),
+              ThemeToggleButton(),
               IconButton(
                 icon: const Icon(Icons.logout),
                 onPressed: () async {

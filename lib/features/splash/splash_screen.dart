@@ -16,20 +16,20 @@ class _SplashScreenState extends State<SplashScreen> {
     _checkSession();
   }
 
-Future<void> _checkSession() async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) {
-    context.go('/signin');
-    return;
+  Future<void> _checkSession() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      Future.microtask(() => context.go('/signin'));
+      return;
+    }
+    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final data = doc.data();
+    if (data == null || !(data['onboardingCompleted'] ?? false)) {
+      Future.microtask(() => context.go('/preferences'));
+    } else {
+      Future.microtask(() => context.go('/home'));
+    }
   }
-  final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-  final data = doc.data();
-  if (data == null || !(data['onboardingCompleted'] ?? false)) {
-    context.go('/preferences');
-  } else {
-    context.go('/home');
-  }
-}
 
 
   @override

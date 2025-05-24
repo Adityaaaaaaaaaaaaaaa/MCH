@@ -92,89 +92,94 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
           );
         },
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-            child: Column(
-              children: [
-                const SizedBox(height: 64), // More top space!
-                Text(
-                  'My Cooking Helper',
-                  style: TextStyle(
-                    fontFamily: 'DancingScript', // Or use your font, else default
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                  textAlign: TextAlign.center,
+          child: Column(
+            children: [
+              const SizedBox(height: 56),
+              Text(
+                'My Cooking Helper',
+                style: TextStyle(
+                  fontFamily: 'DancingScript',
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
                 ),
-                const SizedBox(height: 42), // Moved image down
-                Image.asset(
-                  "assets/images/loginSignup/signup.png",
-                  height: 200,
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(height: 48), // Extra space before login text
-                const Text(
-                  'Login or Sign up to continue\nto My Cooking Helper',
-                  style: TextStyle(fontSize: 18),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 56), // Buttons moved further down
-                // Google Sign In Button
-                ElevatedButton.icon(
-                  icon: Image.asset(
-                    "assets/images/loginSignup/google_logo.png",
-                    width: 24,
-                    height: 24,
-                  ),
-                  label: const Text(
-                    'Continue with Google',
-                    style: TextStyle(fontSize: 16, color: Colors.black),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    minimumSize: const Size(double.infinity, 54),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 1,
-                    side: const BorderSide(color: Color(0xFFE0E0E0)),
-                  ),
-                  onPressed: () => _signInWithGoogle(context),
-                ),
-                const SizedBox(height: 16),
-                // Apple Sign In (UI only)
-                ElevatedButton.icon(
-                  icon: Image.asset(
-                    "assets/images/loginSignup/apple_logo.png",
-                    width: 24,
-                    height: 24,
-                  ),
-                  label: const Text(
-                    'Continue with Apple',
-                    style: TextStyle(fontSize: 16, color: Colors.black),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    minimumSize: const Size(double.infinity, 54),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 1,
-                    side: const BorderSide(color: Color(0xFFE0E0E0)),
-                  ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Apple Sign-In not yet implemented.'),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 26),
+              Image.asset(
+                "assets/images/loginSignup/signup.png",
+                height: 190,
+                fit: BoxFit.contain,
+              ),
+              const Spacer(),
+              const Text(
+                'Login or Sign up to continue\nto My Cooking Helper',
+                style: TextStyle(fontSize: 18),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 36),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  children: [
+                    ElevatedButton.icon(
+                      icon: Image.asset(
+                        "assets/images/loginSignup/google_logo.png",
+                        width: 24,
+                        height: 24,
                       ),
-                    );
-                  },
+                      label: const Text(
+                        'Continue with Google',
+                        style: TextStyle(fontSize: 16, color: Colors.black),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        minimumSize: const Size(double.infinity, 54),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 1,
+                        side: const BorderSide(color: Color(0xFFE0E0E0)),
+                      ),
+                      onPressed: () => _signInWithGoogle(context),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      icon: Image.asset(
+                        "assets/images/loginSignup/apple_logo.png",
+                        width: 24,
+                        height: 24,
+                      ),
+                      label: const Text(
+                        'Continue with Apple',
+                        style: TextStyle(fontSize: 16, color: Colors.black),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        minimumSize: const Size(double.infinity, 54),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 1,
+                        side: const BorderSide(color: Color(0xFFE0E0E0)),
+                      ),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Apple Sign-In not yet implemented.'),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 42),
-                Text.rich(
+              ),
+              const SizedBox(height: 22),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22.0),
+                child: Text.rich(
                   TextSpan(
                     text: 'By clicking continue, you agree to our ',
                     children: [
@@ -192,8 +197,9 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
                   style: TextStyle(color: Colors.grey[700], fontSize: 14),
                   textAlign: TextAlign.center,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 18),
+            ],
           ),
         ),
       ),

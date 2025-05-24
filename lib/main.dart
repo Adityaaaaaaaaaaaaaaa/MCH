@@ -10,6 +10,7 @@ import 'features/auth/sign_in_page.dart';
 import 'core/app_theme.dart';
 import 'features/preferences/preferences_flow.dart';
 import 'features/splash/splash_screen.dart';
+import 'core/theme_provider.dart';   // <-- Add this line
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,17 +45,19 @@ final GoRouter _router = GoRouter(
   ],
 );
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'My Cooking Helper',
       theme: AppThemes.lightTheme,
-      // darkTheme: AppThemes.darkTheme,
-      // themeMode: ThemeMode.system,
+      darkTheme: AppThemes.darkTheme,
+      themeMode: themeMode,
       routerConfig: _router,
     );
   }
