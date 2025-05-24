@@ -13,7 +13,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
   final List<String> headerImages = [
     'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=facearea&w=400&q=80',
     // Add more image URLs or asset paths
-    'assets/images/chef_avatar.png', // Local asset as fallback
+    'assets/app_icon.png', // Local asset as fallback
   ];
 
   late String selectedImage;
@@ -90,7 +90,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   backgroundImage: selectedImage.startsWith('http')
                       ? NetworkImage(selectedImage)
                       : AssetImage(selectedImage) as ImageProvider,
-                  backgroundColor: Colors.grey[100],
+                  backgroundColor: Colors.transparent,
                 ),
               ),
             ),
