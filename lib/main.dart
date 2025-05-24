@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:my_cooking_helper/core/firebase_options.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'features/home/home.dart';
 import 'features/onboarding/onboarding_page.dart';
@@ -10,7 +10,8 @@ import 'features/auth/sign_in_page.dart';
 import 'core/app_theme.dart';
 import 'features/preferences/preferences_flow.dart';
 import 'features/splash/splash_screen.dart';
-import 'core/theme_provider.dart';   // <-- Add this line
+import 'core/theme_provider.dart';  
+import 'features/home/settings.dart'; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +42,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/splash',
       builder: (context, state) => const SplashScreen(),
+    ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const Settings(),
     ),
   ],
 );
