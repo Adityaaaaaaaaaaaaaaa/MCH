@@ -96,36 +96,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             opacity: 0.14,
             padding: const EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "My Cooking Helper",
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                Row(
-                  children: [
-                    // Animated theme toggle button (from your implementation)
-                    const ThemeToggleButton(),
-                    const SizedBox(width: 10),
-                    // Profile icon button
-                    GestureDetector(
-                      onTap: () => _openSettings(context),
-                      child: Hero(
-                        tag: "profile-icon",
-                        child: CircleAvatar(
-                          radius: 22,
-                          backgroundImage: AssetImage("assets/images/chef_avatar.png"),
-                          backgroundColor: theme.colorScheme.primary.withOpacity(0.12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    // Hamburger menu
+    Builder(
+      builder: (context) => IconButton(
+        icon: const Icon(Icons.menu_rounded, size: 30),
+        color: theme.colorScheme.primary,
+        tooltip: "Open menu",
+        onPressed: () => Scaffold.of(context).openDrawer(),
+      ),
+    ),
+    Expanded(
+      child: Center(
+        child: Text(
+          "My Cooking Helper",
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
+    ),
+    Row(
+      children: [
+        const ThemeToggleButton(),
+        const SizedBox(width: 10),
+        GestureDetector(
+          onTap: () => _openSettings(context),
+          child: Hero(
+            tag: "profile-icon",
+            child: CircleAvatar(
+              radius: 22,
+              backgroundImage: AssetImage("assets/images/chef_avatar.png"),
+              backgroundColor: theme.colorScheme.primary.withOpacity(0.12),
             ),
+          ),
+        ),
+      ],
+    ),
+  ],
+),
+
           ),
         ),
       ),
