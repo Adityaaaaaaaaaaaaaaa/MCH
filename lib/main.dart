@@ -11,7 +11,7 @@ import 'core/app_theme.dart';
 import 'features/preferences/preferences_flow.dart';
 import 'features/splash/splash_screen.dart';
 import 'core/theme_provider.dart';  
-import 'features/home/settings.dart'; 
+import 'features/settings/settings.dart'; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
