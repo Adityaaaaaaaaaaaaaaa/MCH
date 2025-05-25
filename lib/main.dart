@@ -25,7 +25,7 @@ final GoRouter _router = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const OnboardingPage(),
+      builder: (context, state) => const OnboardingPage(), //3 page onboarding
     ),
     GoRoute(
       path: '/signin',

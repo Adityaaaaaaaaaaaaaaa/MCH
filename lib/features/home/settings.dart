@@ -113,7 +113,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
   Future<void> _signOut() async {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
-    context.go('/');
+    context.go('/splash');
   }
 
   Future<void> _deleteAccount() async {
@@ -129,6 +129,8 @@ class _SettingsScreenState extends ConsumerState<Settings>
       await FirebaseAuth.instance.signOut();
       if (!mounted) return;
       Navigator.of(context).pop(); // Close loader
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Signing out...")));
       context.go('/');
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("Account deleted.")));
@@ -138,7 +140,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Error deleting account: $e")));
-      context.go('/'); // Redirect after showing the snackbar
+      context.go('/'); // Redirect to 3 page onboarding
     }
   }
 
