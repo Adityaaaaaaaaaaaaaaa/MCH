@@ -122,3 +122,13 @@ class PreferenceUtils {
     PreferenceOption("Other", "❓"),
   ];
 }
+
+class PreferenceKeys {
+  static const gender = 'gender';
+  static const cookingTime = 'cookingTime';
+  static const allergies = 'allergies';
+  static const diets = 'diets';
+  static const cuisines = 'cuisines';
+  static const spiceLevel = 'spiceLevel';
+  static const barriers = 'barriers';
+}
