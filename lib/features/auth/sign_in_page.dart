@@ -112,11 +112,14 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
                 fit: BoxFit.contain,
               ),
               const Spacer(),
-              const Text(
+                const Text(
                 'Login or Sign up to continue\nto My Cooking Helper',
-                style: TextStyle(fontSize: 18),
+                style: TextStyle(
+                  fontSize: 20,
+                  color: Colors.black,
+                ),
                 textAlign: TextAlign.center,
-              ),
+                ),
               const SizedBox(height: 36),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),

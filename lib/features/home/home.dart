@@ -7,7 +7,7 @@ import 'drawer.dart';
 import 'nav.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -203,8 +203,8 @@ class FeatureCard extends StatelessWidget {
     return Material(
       color: isLight ? Colors.white : Colors.grey[900],
       elevation: 8,
-      borderRadius: BorderRadius.circular(28),
-      shadowColor: color.withOpacity(0.10),
+      borderRadius: BorderRadius.circular(25),
+      shadowColor: color.withOpacity(0.5), //glow edge
       child: InkWell(
         borderRadius: BorderRadius.circular(28),
         splashColor: color.withOpacity(0.18),
