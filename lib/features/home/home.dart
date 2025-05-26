@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../theme/glassmorphic_card.dart';
 import '../../theme/app_theme.dart';
-import '../../theme/loader.dart';
+import '../../utils/loader.dart';
 import 'drawer.dart';
 import 'nav.dart';
 

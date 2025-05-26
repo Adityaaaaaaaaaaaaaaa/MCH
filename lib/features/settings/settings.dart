@@ -107,10 +107,10 @@ class _SettingsScreenState extends ConsumerState<Settings>
     });
     ScaffoldMessenger.of(context)
       .showSnackBar(SnackBar(
-          content: Text("Preference updated!"),
-          duration: const Duration(milliseconds: 500),
-        )
-      );
+        content: Text("Preference updated!"),
+        duration: const Duration(milliseconds: 500),
+      )
+    );
   }
 
   Future<void> _signOut() async {
