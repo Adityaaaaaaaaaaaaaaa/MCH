@@ -19,7 +19,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkSession() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      Future.microtask(() => context.go('/signin'));
+      Future.microtask(() => context.go('/'));
       return;
     }
     final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();

@@ -112,7 +112,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
   Future<void> _signOut() async {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
-    context.go('/splash');
+    context.go('/signin');
   }
 
   Future<void> _deleteAccount() async {

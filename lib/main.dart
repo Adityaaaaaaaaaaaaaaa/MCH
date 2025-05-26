@@ -21,7 +21,7 @@ Future<void> main() async {
 }
 
 final GoRouter _router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash',
   routes: [
     GoRoute(
       path: '/',
