@@ -4,8 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../../theme/glassmorphic_card.dart';
-import '../../theme/app_theme.dart';
+import '/utils/snackbar.dart';
+import '/theme/glassmorphic_card.dart';
+import '/theme/app_theme.dart';
 import '../preferences/preference_utils.dart';
 import 'profile_account.dart';
 import 'preference_section.dart';
@@ -105,18 +106,31 @@ class _SettingsScreenState extends ConsumerState<Settings>
         }
       }
     });
-    ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(
-        content: Text("Preference updated!"),
-        duration: const Duration(milliseconds: 500),
-      )
+    SnackbarUtils.show(
+      context, 
+      "Preference updated!",
+      duration: 500, 
+      behavior: SnackBarBehavior.floating,
+      icon: Icons.check_circle_sharp,
+      iconColor: Colors.lightGreenAccent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
     );
   }
 
   Future<void> _signOut() async {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
+    SnackbarUtils.alert(
+      context, 
+      "Signed out!",
+      typeInfo: TypeInfo.info,
+      position: MessagePosition.top,
+      duration: 3,
+      iconColor: Colors.blue,
+    );
     context.go('/signin');
+    
   }
 
   Future<void> _deleteAccount() async {
@@ -132,30 +146,36 @@ class _SettingsScreenState extends ConsumerState<Settings>
       await FirebaseAuth.instance.signOut();
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(
-            content: Text("Signing out..."), 
-            duration: Duration(milliseconds: 1000),
-          )
-        );
+      SnackbarUtils.show(
+        context, 
+        "Signing out...!",
+        duration: 1000, 
+        behavior: SnackBarBehavior.floating,
+        icon: Icons.logout_outlined,
+        iconColor: Colors.amber[200],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      );
       await Future.delayed(const Duration(milliseconds: 1000));
       context.go('/');
-      ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(
-            content: Text("Account deleted."), 
-            duration: Duration(milliseconds: 500),
-          )
-        );  
+      SnackbarUtils.alert(
+        context, 
+        "Account deleted!",
+        typeInfo: TypeInfo.success,
+        position: MessagePosition.top,
+        duration: 4,
+      );
     } catch (e) {
       Navigator.of(context).pop();
       await Future.delayed(const Duration(milliseconds: 1500));
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(
-            content: Text("Error deleting account: $e"),
-            duration: Duration(milliseconds: 2000),
-          )
-        );
+      SnackbarUtils.alert(
+        context, 
+        "Error deleting account!",
+        typeInfo: TypeInfo.error,
+        position: MessagePosition.top,
+        duration: 2,
+      );
       context.go('/');
     }
   }
@@ -180,29 +200,36 @@ class _SettingsScreenState extends ConsumerState<Settings>
         final userDoc = await usersRef.doc(switchedUser?.uid).get();
         if (userDoc.exists) {
           await _loadPrefs();
-          ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(
-                content: Text("Account switched!"),
-                duration: Duration(milliseconds: 500),
-              )
-            );
+          SnackbarUtils.show(
+            context, 
+            "Account switched!",
+            duration: 30000, 
+            behavior: SnackBarBehavior.floating,
+            icon: Icons.check_circle_sharp,
+            iconColor: Colors.lightGreen,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          );
         } else {
           // Not registered, send to signin/onboarding
-          ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(
-                content: Text("Account not registered. Please sign in."),
-                duration: Duration(milliseconds: 1000),
-              )
-            );
+          SnackbarUtils.alert(
+            context, 
+            "Account not registered! Please sign in.",
+            typeInfo: TypeInfo.warning,
+            position: MessagePosition.top,
+            duration: 5,
+          );
           if (mounted) context.go('/signin');
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(
-          content: Text("Could not switch account: $e"),
-          duration: const Duration(milliseconds: 1500),
-        )
+      SnackbarUtils.alert(
+        context, 
+        "Could not switch account!",
+        typeInfo: TypeInfo.warning,
+        position: MessagePosition.top,
+        duration: 2,
+        iconColor: Colors.yellow,
       );
     }
   }

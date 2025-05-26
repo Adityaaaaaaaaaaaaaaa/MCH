@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/glassmorphic_card.dart';
+import '/theme/glassmorphic_card.dart';
 
 class AccountActionsSection extends StatelessWidget {
   final VoidCallback onSignOut;

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
-import '../../utils/loader.dart';
+import '/utils/loader.dart';
+import '/utils/snackbar.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -34,6 +35,15 @@ class _SplashScreenState extends State<SplashScreen> {
     if (data == null || !(data['onboardingCompleted'] ?? false)) {
       Future.microtask(() => context.go('/preferences'));
     } else {
+      SnackbarUtils.alert(
+        context, 
+        "Welcome ${data['displayName'] ?? 'user'} !",
+        typeInfo: TypeInfo.success,
+        position: MessagePosition.top,
+        duration: 5,
+        icon: Icons.star_rate_rounded,
+        iconColor: Colors.greenAccent
+      );
       Future.microtask(() => context.go('/home'));
     }
   }
