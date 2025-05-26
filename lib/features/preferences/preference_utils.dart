@@ -15,13 +15,13 @@ class PreferenceUtils {
   ];
 
   static const cookingTimes = [
-    PreferenceOption("Quick (< 20 min)", "⚡"),
-    PreferenceOption("Moderate (20 - 45 min)", "⏰"),
-    PreferenceOption("Extended (> 45 min)", "🕰️"),
-    PreferenceOption("Varies day to day", "🔄"),
-    PreferenceOption("Meal Prep for the Week", "📅"),
-    PreferenceOption("Batch Cooking", "📦"),
-    PreferenceOption("No preference", "❔"),
+    PreferenceOption("Super Fast (<20 min)", "⚡🍜"),
+    PreferenceOption("Chill Cook (20-45 min)", "⏰😎"),
+    PreferenceOption("Epic Feast (>45 min)", "🕰️🍽️"),
+    PreferenceOption("Surprise Me!", "🎲"),
+    PreferenceOption("Meal Prep Pro", "📅💪"),
+    PreferenceOption("Batch Boss", "📦👑"),
+    PreferenceOption("Whatever works!", "🤷‍♂️"),
 
   ];
 
@@ -37,14 +37,14 @@ class PreferenceUtils {
     PreferenceOption("Corn", "🌽"),
     PreferenceOption("Sulphites", "💨"),
     PreferenceOption("Lactose intolerance", "🚫🥛"),
-    PreferenceOption("None", "👍"),
-    PreferenceOption("Other", "❓"),
-    PreferenceOption("Tree Nuts", "🌰"),
     PreferenceOption("Crustaceans", "🦀"),
     PreferenceOption("Molluscs", "🦪"),
     PreferenceOption("Mustard", "🌿"),
     PreferenceOption("Celery", "🥬"),
     PreferenceOption("MSG", "🍜"),
+    PreferenceOption("Red Meat", "🥩"),
+    PreferenceOption("Other", "❓"),
+    PreferenceOption("None", "👍"),
   ];
 
   static const diets = [
@@ -82,44 +82,57 @@ class PreferenceUtils {
     PreferenceOption("Korean", "🍲"),
     PreferenceOption("Vietnamese", "🥢"),
     PreferenceOption("Spanish", "🥘"),
-    PreferenceOption("Mauritian/Creole", "🍲"),
-    PreferenceOption("Caribbean", "🏝️"),
     PreferenceOption("Brazilian", "🥥"),
     PreferenceOption("French", "🥖"),
     PreferenceOption("Middle Eastern", "🥙"),
-    PreferenceOption("African", "🍲"),
     PreferenceOption("Scandinavian", "🥔"),
     PreferenceOption("Russian", "🍲"),
     PreferenceOption("Mediterranean", "🥗"),
+    PreferenceOption("South African", "🍖"),
     PreferenceOption("American", "🍔"),
     PreferenceOption("British", "🥧"),
-    PreferenceOption("Other", "❓"),
+    PreferenceOption("Greek", "🥙"),
+    PreferenceOption("Turkish", "🍢"),
+    PreferenceOption("Moroccan", "🍛"),
+    PreferenceOption("German", "🥨"),
+    PreferenceOption("Polish", "🥟"),
+    PreferenceOption("Hungarian", "🍲"),
+    PreferenceOption("Filipino", "🍗"),
+    PreferenceOption("Indonesian", "🍜"),
+    PreferenceOption("Malaysian", "🍛"),
+    PreferenceOption("Australian", "🥧"),
+    PreferenceOption("Peruvian", "🍠"),
+    PreferenceOption("Argentinian", "🥩"),
+    PreferenceOption("Mauritian/Creole", "🍲"),
+    PreferenceOption("Other", "🌍"),
   ];
 
   static const spiceLevels = [
-    PreferenceOption("No Spice", "😐"),
-    PreferenceOption("Mild", "🌶️"),
-    PreferenceOption("Medium", "🌶️🌶️"),
-    PreferenceOption("Spicy", "🌶️🌶️🌶️"),
-    PreferenceOption("Super Spicy!", "🔥"),
-    PreferenceOption("Surprise me!", "🎲"),
-    PreferenceOption("No preference", "❔"),
+    PreferenceOption("No Spice (Plain Jane)", "😐🥛"),
+    PreferenceOption("Gentle Warmth (Mild)", "🙂🌶️"),
+    PreferenceOption("Balanced Kick (Medium)", "😋🌶️🌶️"),
+    PreferenceOption("Bring the Heat (Spicy)", "🔥🌶️🌶️🌶️"),
+    PreferenceOption("Daredevil (Super Spicy!)", "🥵🔥🔥"),
+    PreferenceOption("Mystery Heat (Surprise me!)", "🎲🌶️"),
+    PreferenceOption("Spice? I'm Open!", "❔"),
   ];
 
   static const barriers = [
-    PreferenceOption("Cooking takes too much time", "⏳"),
-    PreferenceOption("Don't know what to cook", "🤔"),
-    PreferenceOption("Lack of ingredients", "🛒"),
-    PreferenceOption("Work/Busy schedule", "💼"),
-    PreferenceOption("Lack of confidence/skills", "🙈"),
-    PreferenceOption("Cleaning up is difficult", "🧹"),
-    PreferenceOption("Cooking for one is not fun", "👤"),
-    PreferenceOption("Kids are picky", "🧒"),
-    PreferenceOption("Limited kitchen tools", "🔪"),
-    PreferenceOption("Too expensive", "💸"),
-    PreferenceOption("Health issues", "💊"),
-    PreferenceOption("Eating out is easier", "🍽️"),
-    PreferenceOption("Other", "❓"),
+    PreferenceOption("No time!", "⏳"),
+    PreferenceOption("What's for dinner?", "🎲🍳"),
+    PreferenceOption("Always missing stuff", "🛒❌"),
+    PreferenceOption("Busy AF", "🤹‍♂️💼"),
+    PreferenceOption("Chef? Not me", "😬👩‍🍳"),
+    PreferenceOption("Hate cleaning", "🧽😩"),
+    PreferenceOption("Solo & sad", "🧑‍🦽🍽️"),
+    PreferenceOption("Kids = picky", "🧒😝"),
+    PreferenceOption("No gadgets", "🔌🍴"),
+    PreferenceOption("Groceries = \$\$\$", "💸🥦"),
+    PreferenceOption("Health probs", "🩺🥗"),
+    PreferenceOption("Takeout wins", "📱🍔"),
+    PreferenceOption("Recipes = scary", "📖😵"),
+    PreferenceOption("Zero motivation", "😴🥄"),
+    PreferenceOption("No clue!", "🦄❓"),
   ];
 }
 
@@ -131,4 +144,28 @@ class PreferenceKeys {
   static const cuisines = 'cuisines';
   static const spiceLevel = 'spiceLevel';
   static const barriers = 'barriers';
+}
+
+class UserPreferences {
+  String? gender;
+  String? cookingTime;
+  List<String> allergies = [];
+  List<String> diets = [];
+  List<String> cuisines = [];
+  String? spiceLevel;
+  List<String> barriers = [];
+
+  UserPreferences();
+  
+  Map<String, dynamic> toMap() {
+    return {
+      'gender': gender,
+      'cookingTime': cookingTime,
+      'allergies': allergies,
+      'diets': diets,
+      'cuisines': cuisines,
+      'spiceLevel': spiceLevel,
+      'barriers': barriers,
+    };
+  }
 }
