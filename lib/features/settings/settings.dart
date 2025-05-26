@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../core/glassmorphic_card.dart';
-import '../../core/theme_toggle_button.dart';
+import '../../core/app_theme.dart';
 import '../preferences/preference_utils.dart';
 import 'profile_account.dart';
 import 'preference_section.dart';
@@ -105,8 +105,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
         }
       }
     });
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text("Preference updated!")));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Preference updated!")));
   }
 
   Future<void> _signOut() async {
@@ -128,17 +127,15 @@ class _SettingsScreenState extends ConsumerState<Settings>
       await FirebaseAuth.instance.signOut();
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Signing out...")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Signing out...")));
+      await Future.delayed(const Duration(milliseconds: 1500));
       context.go('/');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Account deleted.")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Account deleted.")));  
     } catch (e) {
       Navigator.of(context).pop();
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(const Duration(milliseconds: 2500));
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error deleting account: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error deleting account: $e")));
       context.go('/');
     }
   }
@@ -163,18 +160,15 @@ class _SettingsScreenState extends ConsumerState<Settings>
         final userDoc = await usersRef.doc(switchedUser?.uid).get();
         if (userDoc.exists) {
           await _loadPrefs();
-          ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text("Account switched!")));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Account switched!")));
         } else {
           // Not registered, send to signin/onboarding
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Account not registered. Please sign in.")));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Account not registered. Please sign in.")));
           if (mounted) context.go('/signin');
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text("Could not switch account: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Could not switch account: $e")));
     }
   }
 
@@ -210,9 +204,20 @@ class _SettingsScreenState extends ConsumerState<Settings>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    /* leave commented, will see later 
     if (loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+      return Scaffold(
+        body: Center(
+          child: loader(
+            Colors.deepOrange, // color
+            70,                // size
+            5,                 // lineWidth
+            8,                 // itemCount
+            300               // duration (ms)
+          ),
+        ),
+      );
+    }*/
     final avatar = user?.photoURL != null
         ? NetworkImage(user!.photoURL!)
         : const AssetImage("assets/app_icon.png");

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/glassmorphic_card.dart';
-import '../../core/theme_toggle_button.dart';
+import '../../core/app_theme.dart';
+import '../../core/loader.dart';
 import 'drawer.dart';
 import 'nav.dart';
 
@@ -44,9 +45,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     super.dispose();
   }
 
-  void _openSettings(BuildContext context) {
+  /*void _openSettings(BuildContext context) {
     context.go('/settings');
+  }*/
+
+  void _openSettings(BuildContext context) async {
+    // Show your custom loader modal
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: loader(
+          Colors.deepPurpleAccent, // color
+          70,                // size
+          5,                 // lineWidth
+          8,                 // itemCount
+          500               // duration (ms)
+        ),
+      ),
+    );
+
+    // Wait for 1.2 seconds for the loader animation
+    await Future.delayed(const Duration(milliseconds: 700));
+
+    // Dismiss the loader
+    if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+
+    // Now navigate to settings
+    if (context.mounted) context.go('/settings');
   }
+
+
 
   @override
   Widget build(BuildContext context) {

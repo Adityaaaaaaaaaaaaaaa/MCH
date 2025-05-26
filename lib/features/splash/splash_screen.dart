@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/loader.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,12 +18,18 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkSession() async {
+    await Future.delayed(const Duration(milliseconds: 2500));
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       Future.microtask(() => context.go('/'));
       return;
     }
-    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
     final data = doc.data();
     if (data == null || !(data['onboardingCompleted'] ?? false)) {
       Future.microtask(() => context.go('/preferences'));
@@ -31,11 +38,19 @@ class _SplashScreenState extends State<SplashScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      backgroundColor: Colors.white, // Set your splash background color
+      body: Center(
+        child: loader(
+          Colors.orangeAccent, // color
+          100, // size
+          5, // lineWidth
+          7, // itemCount
+          1000, // duration (ms)
+        ),
+      ),
     );
   }
 }

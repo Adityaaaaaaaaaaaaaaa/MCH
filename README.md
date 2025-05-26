@@ -29,4 +29,4 @@ To run this project locally:
 This project is under development. Contributions and feedback are welcome!
 
 ---
-*Developed by a Year 3 BSc (Hons.) Applied Computing student, 2025.*
+*Started coding this project on 21 May 2025*
