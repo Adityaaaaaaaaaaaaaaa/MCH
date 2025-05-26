@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:my_cooking_helper/core/firebase_options.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'core/firebase_options.dart';
+
+import 'theme/theme_provider.dart';  
+import 'theme/app_theme.dart';
 
 import 'features/home/home.dart';
 import 'features/onboarding/onboarding_page.dart';
 import 'features/auth/sign_in_page.dart';
-import 'core/app_theme.dart';
 import 'features/preferences/preferences_flow.dart';
 import 'features/splash/splash_screen.dart';
-import 'core/theme_provider.dart';  
 import 'features/settings/settings.dart'; 
 
 Future<void> main() async {

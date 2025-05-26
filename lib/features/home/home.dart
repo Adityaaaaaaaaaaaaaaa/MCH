@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/glassmorphic_card.dart';
-import '../../core/app_theme.dart';
-import '../../core/loader.dart';
+import '../../theme/glassmorphic_card.dart';
+import '../../theme/app_theme.dart';
+import '../../theme/loader.dart';
 import 'drawer.dart';
 import 'nav.dart';
 
@@ -56,7 +56,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       barrierDismissible: false,
       builder: (_) => Center(
         child: loader(
-          Colors.deepPurpleAccent, // color
+          Colors.deepOrangeAccent, // color
           70,                // size
           5,                 // lineWidth
           8,                 // itemCount

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/glassmorphic_card.dart';
+import '../../theme/glassmorphic_card.dart';
 
 class ProfileAccountSection extends StatelessWidget {
   final dynamic user;

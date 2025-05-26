@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/app_theme.dart';
+import '../../theme/app_theme.dart';
 import 'preference_utils.dart';
 import 'preference_question_widgets.dart';
 
@@ -94,7 +94,7 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
             children: [
               Column(
                 children: [
-                  const SizedBox(height: 18), // Lower progress bar a bit
+                  const SizedBox(height: 60), // Lower progress bar a bit
                   _buildProgressBar(),
                   Expanded(
                     child: PageView(
@@ -191,7 +191,7 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
               ),
               // THEME TOGGLE BUTTON
               Positioned(
-                top: 12,
+                top: 10,
                 right: 18,
                 child: ThemeToggleButton(), // Add your own ThemeToggleButton widget!
               ),
@@ -240,7 +240,7 @@ class _QuestionPage extends StatelessWidget {
             child: Text("Next", style: TextStyle(fontSize: 18, color: Colors.white)),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 100),
       ],
     );
   }
@@ -262,7 +262,7 @@ class _ThankYouPage extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
         ),
         Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(50.0),
           child: Text(
             "We're committed to protecting your information with the highest standards of privacy and security.\n\n"
             "Ready to discover your new cooking partner? Complete this step and click Ready below!",
@@ -285,7 +285,7 @@ class _ThankYouPage extends StatelessWidget {
             child: Text("Ready!", style: TextStyle(fontSize: 18, color: Colors.white)),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 40),
       ],
     );
   }

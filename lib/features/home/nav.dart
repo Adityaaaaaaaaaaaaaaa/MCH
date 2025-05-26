@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
-import '../../core/glassmorphic_card.dart';
+import '../../theme/glassmorphic_card.dart';
 
 class CustomNavBar extends StatelessWidget {
   final int currentIndex;

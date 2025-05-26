@@ -88,7 +88,7 @@ class AnimatedSingleSelectBig extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 30),
           ],
         ),
       ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/loader.dart';
+import '../../theme/loader.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -40,11 +40,16 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isLight = theme.brightness == Brightness.light;
+
     return Scaffold(
-      backgroundColor: Colors.white, // Set your splash background color
+      backgroundColor: isLight
+          ? const Color(0xfff8fafc)
+          : const Color(0xff232526),
       body: Center(
         child: loader(
-          Colors.orangeAccent, // color
+          Colors.deepOrangeAccent, // color
           100, // size
           5, // lineWidth
           7, // itemCount
