@@ -63,7 +63,7 @@ class _SplashScreenState extends State<SplashScreen> {
           100, // size
           5, // lineWidth
           10, // itemCount
-          750, // duration (ms)
+          1500, // duration (ms)
         ),
       ),
     );

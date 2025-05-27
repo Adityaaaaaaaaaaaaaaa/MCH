@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '/utils/loader.dart';
 import '/utils/snackbar.dart';
 import '/theme/glassmorphic_card.dart';
 import '/theme/app_theme.dart';
@@ -118,7 +119,45 @@ class _SettingsScreenState extends ConsumerState<Settings>
     );
   }
 
-  Future<void> _signOut() async {
+  /*Future<void> _signOut() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Center(
+        child: loader(
+          Theme.of(context).colorScheme.primary,
+          70,    
+          4,     
+          10,     
+          1000,  
+        ),
+      ),
+    );
+    try {
+      await FirebaseAuth.instance.signOut();
+      if (!mounted) return;
+      Navigator.of(context).pop(); 
+      SnackbarUtils.alert(
+        context,
+        "Signed out!",
+        typeInfo: TypeInfo.info,
+        position: MessagePosition.top,
+        duration: 2,
+        iconColor: Colors.blue,
+      );
+      context.go('/signin');
+    } catch (e) {
+      Navigator.of(context).pop(); 
+      SnackbarUtils.alert(
+        context,
+        "Error signing out!",
+        typeInfo: TypeInfo.error,
+        position: MessagePosition.top,
+        duration: 3,
+      );
+    }
+  }*/
+    Future<void> _signOut() async {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
     SnackbarUtils.alert(
@@ -130,26 +169,35 @@ class _SettingsScreenState extends ConsumerState<Settings>
       iconColor: Colors.blue,
     );
     context.go('/signin');
-    
   }
 
   Future<void> _deleteAccount() async {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const Center(child: CircularProgressIndicator()),
+      builder: (ctx) => Center(
+        child: loader(
+          Colors.red, 
+          70,                                   
+          2,                                     
+          10,                                      
+          1500,                                 
+        ),
+      ),
     );
+
     try {
       final uid = user?.uid;
       await usersRef.doc(uid).delete();
       await user?.delete();
       await FirebaseAuth.instance.signOut();
+
       if (!mounted) return;
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(); 
       SnackbarUtils.show(
-        context, 
+        context,
         "Signing out...!",
-        duration: 1000, 
+        duration: 1000,
         behavior: SnackBarBehavior.floating,
         icon: Icons.logout_outlined,
         iconColor: Colors.amber[200],
@@ -159,18 +207,18 @@ class _SettingsScreenState extends ConsumerState<Settings>
       await Future.delayed(const Duration(milliseconds: 1000));
       context.go('/');
       SnackbarUtils.alert(
-        context, 
+        context,
         "Account deleted!",
         typeInfo: TypeInfo.success,
         position: MessagePosition.top,
         duration: 4,
       );
     } catch (e) {
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(); 
       await Future.delayed(const Duration(milliseconds: 1500));
       if (!mounted) return;
       SnackbarUtils.alert(
-        context, 
+        context,
         "Error deleting account!",
         typeInfo: TypeInfo.error,
         position: MessagePosition.top,
@@ -179,7 +227,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
       context.go('/');
     }
   }
-
+  
   Future<void> _switchAccount() async {
     try {
       await GoogleSignIn().signOut();
