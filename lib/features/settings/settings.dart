@@ -203,7 +203,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
           SnackbarUtils.show(
             context, 
             "Account switched!",
-            duration: 30000, 
+            duration: 1000, 
             behavior: SnackBarBehavior.floating,
             icon: Icons.check_circle_sharp,
             iconColor: Colors.lightGreen,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:go_router/go_router.dart';
+import '/utils/snackbar.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -58,8 +59,12 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
       await FirebaseAuth.instance.signInWithCredential(credential);
       context.go('/splash');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sign in failed: $e')),
+      SnackbarUtils.alert(
+        context, 
+        "Sign in failed!",
+        typeInfo: TypeInfo.error,
+        position: MessagePosition.top,
+        duration: 3,
       );
     }
   }
