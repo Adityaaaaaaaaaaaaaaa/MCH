@@ -45,12 +45,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     super.dispose();
   }
 
-  /*void _openSettings(BuildContext context) {
-    context.go('/settings');
-  }*/
-
   void _openSettings(BuildContext context) async {
-    // Show your custom loader modal
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -82,9 +77,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final theme = Theme.of(context);
     final isLight = theme.brightness == Brightness.light;
 
-    // CARD SIZE CONTROL: Adjust these values for width/height of all feature cards!
-    const double cardWidth = 170;  // Change this for card width
-    const double cardHeight = 155; // Change this for card height
+    // CARD SIZE CONTROL: width/height of all feature cards!
+    const double cardWidth = 170;  //  width
+    const double cardHeight = 155; //  height
 
     return Scaffold(
       backgroundColor: isLight
