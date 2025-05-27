@@ -157,7 +157,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
       );
     }
   }*/
-    Future<void> _signOut() async {
+  Future<void> _signOut() async {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
     SnackbarUtils.alert(
