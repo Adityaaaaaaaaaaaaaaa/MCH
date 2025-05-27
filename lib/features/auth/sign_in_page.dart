@@ -77,7 +77,6 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
       body: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
-          // Interpolate between two gradients
           return Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(

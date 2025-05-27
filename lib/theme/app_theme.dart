@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme_provider.dart';
 
 class AppThemes {
-  // Light theme (already beautiful!)
+  // Light theme 
   static ThemeData lightTheme = ThemeData(
     colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF0B8FAC)),
     scaffoldBackgroundColor: Color(0xFFE5F1FA),
@@ -14,13 +14,13 @@ class AppThemes {
     useMaterial3: true,
   );
 
-  // Smooth, modern dark theme (not harsh black)
+  // dark theme
   static ThemeData darkTheme = ThemeData(
     colorScheme: ColorScheme.dark(
-      primary: Color(0xFF189AB4),      // Bright blue for highlights
-      secondary: Color(0xFF05445E),    // Navy blue
-      background: Color(0xFF102B3F),   // Deep blue-gray for backgrounds
-      surface: Color(0xFF243B53),      // Slightly lighter for cards
+      primary: Color(0xFF189AB4),      
+      secondary: Color(0xFF05445E),    
+      background: Color(0xFF102B3F),   
+      surface: Color(0xFF243B53),      
       onPrimary: Colors.white,
       onSurface: Colors.white,
     ),

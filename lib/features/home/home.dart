@@ -77,7 +77,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final theme = Theme.of(context);
     final isLight = theme.brightness == Brightness.light;
 
-    // CARD SIZE CONTROL: width/height of all feature cards!
+    //width/height of all feature cards!
     const double cardWidth = 170;  //  width
     const double cardHeight = 155; //  height
 
@@ -162,7 +162,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           child: Center(
             // Center the grid
             child: SizedBox(
-              // This width ensures the grid stays centered, even on big screens
               width: (cardWidth + 24) * 2,
               // 2 columns: card + spacing
               child: GridView.builder(

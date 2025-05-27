@@ -25,7 +25,7 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
       setState(() => _currentPage++);
       _controller.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
     } else {
-      // Go to home with preferences (for now, just show as arguments)
+      // Go to home with preferences
       context.go('/home', extra: preferences);
     }
   }
@@ -179,7 +179,7 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
                               'displayName': user.displayName,
                               'email': user.email,
                               'onboardingCompleted': true,
-                              'preferences': preferences.toMap(), // Ensure your UserPreferences has toMap()
+                              'preferences': preferences.toMap(), 
                             }, SetOptions(merge: true));
                             context.go('/home');
                           },
@@ -189,11 +189,11 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
                   ),
                 ],
               ),
-              // THEME TOGGLE BUTTON
+              // theme button
               Positioned(
                 top: 10,
                 right: 18,
-                child: ThemeToggleButton(), // Add your own ThemeToggleButton widget!
+                child: ThemeToggleButton(),
               ),
             ],
           ),
@@ -203,7 +203,7 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
   }
 }
 
-// Simple intro/thank you page
+// intro page
 class _QuestionPage extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -246,7 +246,7 @@ class _QuestionPage extends StatelessWidget {
   }
 }
 
-// Thank You / Confirmation
+// Thank You page
 class _ThankYouPage extends StatelessWidget {
   final VoidCallback onNext;
   const _ThankYouPage({required this.onNext});

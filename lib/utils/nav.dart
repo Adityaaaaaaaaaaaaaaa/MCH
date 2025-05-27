@@ -5,7 +5,7 @@ import '/theme/glassmorphic_card.dart';
 
 class CustomNavBar extends StatelessWidget {
   final int currentIndex;
-  const CustomNavBar({Key? key, required this.currentIndex}) : super(key: key);
+  const CustomNavBar({super.key, required this.currentIndex});
 
   static final _navItems = [
     _NavItem(Icons.kitchen_rounded, "Inventory", "/inventory"),

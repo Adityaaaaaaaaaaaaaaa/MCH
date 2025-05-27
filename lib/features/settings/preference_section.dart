@@ -107,9 +107,6 @@ class PreferenceSection extends StatelessWidget {
   }
 }
 
-
-// ---------- Below: Improved AnimatedPreferenceTile & Modal ---------
-
 class AnimatedPreferenceTile<T extends PreferenceOption> extends StatelessWidget {
   final String title;
   final dynamic value; // T or List<T>
@@ -130,7 +127,6 @@ class AnimatedPreferenceTile<T extends PreferenceOption> extends StatelessWidget
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Display for multi: up to 3 chips, then "+n more"
     Widget multiDisplay() {
       final vals = value as List<T>;
       if (vals.isEmpty) {

@@ -339,7 +339,6 @@ class _SettingsScreenState extends ConsumerState<Settings>
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
           children: [
-            // Glassmorphic App Bar with Back Button
             Padding(
               padding: const EdgeInsets.only(top: 36, left: 16, right: 16, bottom: 10),
               child: GlassmorphicCard(
@@ -388,7 +387,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
               onUpdatePref: _updatePref,
             ),
             const SizedBox(height: 30),
-            // Theme toggle
+            // Theme 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
               child: GlassmorphicCard(

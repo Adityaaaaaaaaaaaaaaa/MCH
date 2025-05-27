@@ -85,7 +85,6 @@ class GlassmorphicCard extends StatelessWidget {
             ),
           ),
         ),
-        // Specular highlight arc for “real glass” effect
         Positioned(
           left: 0,
           right: 0,

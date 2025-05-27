@@ -12,8 +12,8 @@ class CustomDrawer extends StatefulWidget {
 class _CustomDrawerState extends State<CustomDrawer> {
   final List<String> headerImages = [
     'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=facearea&w=400&q=80',
-    // Add more image URLs or asset paths
-    'assets/app_icon.png', // Local asset as fallback
+    // Add more, bizin roD
+    'assets/app_icon.png', // fallback
   ];
 
   late String selectedImage;
@@ -35,7 +35,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
     // ignore: unused_local_variable
     final GoRouter router = GoRouter.of(context);
 
-    // List of routes for navigation (modular, could come from a config)
     final List<_DrawerRoute> routes = [
       _DrawerRoute(
           icon: Icons.camera_alt,

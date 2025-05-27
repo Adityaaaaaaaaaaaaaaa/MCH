@@ -54,10 +54,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final double imgHeight = imgWidth * 1.5;
 
     return Scaffold(
-      // Use AnimatedCrossFade for the background!
       body: Stack(
         children: [
-          // Gradient backgrounds crossfaded for smooth, efficient transition
           ...List.generate(_gradients.length, (i) {
             return AnimatedOpacity(
               opacity: i == _currentIndex ? 1.0 : 0.0,
