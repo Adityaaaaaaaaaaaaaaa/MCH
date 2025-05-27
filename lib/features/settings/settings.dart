@@ -7,7 +7,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '/utils/snackbar.dart';
 import '/theme/glassmorphic_card.dart';
 import '/theme/app_theme.dart';
-import '../preferences/preference_utils.dart';
+import '/utils/preference_utils.dart';
 import 'profile_account.dart';
 import 'preference_section.dart';
 import 'account_actions.dart';

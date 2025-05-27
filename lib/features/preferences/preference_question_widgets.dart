@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'preference_utils.dart';
+import '/utils/preference_utils.dart';
 
-// Large single select (centered, no tick, fixed height)
 class AnimatedSingleSelectBig extends StatelessWidget {
   final String title;
   final List<PreferenceOption> options;
@@ -96,7 +95,6 @@ class AnimatedSingleSelectBig extends StatelessWidget {
   }
 }
 
-// Small multi-select, centered, no tick, no size jump
 class AnimatedMultiSelectSmall extends StatelessWidget {
   final String title;
   final List<PreferenceOption> options;

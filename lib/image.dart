@@ -3,8 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '/theme/app_theme.dart';
-import '/utils/preference_utils.dart';
-import 'preference_question_widgets.dart';
+import 'utils/preference_utils.dart';
+import 'features/preferences/preference_question_widgets.dart';
 
 class PreferencesFlow extends StatefulWidget {
   const PreferencesFlow({super.key});
@@ -94,7 +94,7 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
             children: [
               Column(
                 children: [
-                  const SizedBox(height: 60), // Lower progress bar a bit
+                  const SizedBox(height: 60), 
                   _buildProgressBar(),
                   Expanded(
                     child: PageView(
@@ -179,7 +179,7 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
                               'displayName': user.displayName,
                               'email': user.email,
                               'onboardingCompleted': true,
-                              'preferences': preferences.toMap(), // Ensure your UserPreferences has toMap()
+                              'preferences': preferences.toMap(),
                             }, SetOptions(merge: true));
                             context.go('/home');
                           },
@@ -189,11 +189,10 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
                   ),
                 ],
               ),
-              // THEME TOGGLE BUTTON
               Positioned(
                 top: 10,
                 right: 18,
-                child: ThemeToggleButton(), // Add your own ThemeToggleButton widget!
+                child: ThemeToggleButton(),
               ),
             ],
           ),

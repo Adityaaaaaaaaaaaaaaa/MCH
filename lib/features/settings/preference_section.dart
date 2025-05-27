@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '/theme/glassmorphic_card.dart';
-import '../preferences/preference_utils.dart';
+import '/utils/preference_utils.dart';
 
 class PreferenceSection extends StatelessWidget {
   final String? gender, cookingTime, spiceLevel;

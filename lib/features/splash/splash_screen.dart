@@ -62,8 +62,8 @@ class _SplashScreenState extends State<SplashScreen> {
           Colors.deepOrangeAccent, // color
           100, // size
           5, // lineWidth
-          7, // itemCount
-          1000, // duration (ms)
+          10, // itemCount
+          750, // duration (ms)
         ),
       ),
     );
