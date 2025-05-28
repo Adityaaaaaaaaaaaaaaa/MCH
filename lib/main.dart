@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/connectivity_provider.dart';
 import 'core/firebase_options.dart';
 import 'theme/theme_provider.dart';  
 import 'theme/app_theme.dart';
@@ -12,11 +13,36 @@ import 'features/preferences/preferences_flow.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/settings/settings.dart'; 
 
+class AppInitializer extends ConsumerStatefulWidget {
+  final Widget child;
+  const AppInitializer({super.key, required this.child});
+
+  @override
+  ConsumerState<AppInitializer> createState() => _AppInitializerState();
+}
+
+class _AppInitializerState extends ConsumerState<AppInitializer> {
+  @override
+  void initState() {
+    super.initState();
+    listenToConnectivity(ref); // Called once globally
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint = (String? message, {int? wrapWidth}) {};
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(
+    const ProviderScope(
+      child: AppInitializer(
+        child: MyApp(),
+      ),
+    )
+  );
 }
 
 final GoRouter _router = GoRouter(

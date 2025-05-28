@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:go_router/go_router.dart';
+import '/core/connectivity_provider.dart';
 import '/utils/snackbar.dart';
 
-class SignInPage extends StatefulWidget {
+class SignInPage extends ConsumerStatefulWidget {
   const SignInPage({super.key});
-
   @override
-  State<SignInPage> createState() => _SignInPageState();
+  ConsumerState<SignInPage> createState() => _SignInPageState();
 }
 
-class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateMixin {
+class _SignInPageState extends ConsumerState<SignInPage> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
   int _gradientIndex = 0;
@@ -46,7 +47,22 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  Future<void> _signInWithGoogle(BuildContext context) async {
+  Future<void> _signInWithGoogle(BuildContext context, WidgetRef ref) async {
+
+    if (!ref.read(connectivityProvider)) {
+      SnackbarUtils.show(
+        context,
+        "You are offline! Please check your internet connection.",
+        duration: 3000,
+        behavior: SnackBarBehavior.floating,
+        icon: Icons.wifi_off_sharp,
+        iconColor: Colors.red,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      );
+      return;
+    }
+
     try {
       await GoogleSignIn().signOut();
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
@@ -72,6 +88,9 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final nextGradient = _gradients[(_gradientIndex + 1) % _gradients.length];
+    final isOnline = ref.watch(connectivityProvider);
+    print('\x1B[31misOnline: $isOnline\x1B[0m'); // Add this line
+    
 
     return Scaffold(
       body: AnimatedBuilder(
@@ -149,7 +168,8 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
                         elevation: 1,
                         side: const BorderSide(color: Color(0xFFE0E0E0)),
                       ),
-                      onPressed: () => _signInWithGoogle(context),
+                      //onPressed: () => _signInWithGoogle(context, ref),
+                      onPressed: isOnline ? () => _signInWithGoogle(context, ref) : null, 
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(

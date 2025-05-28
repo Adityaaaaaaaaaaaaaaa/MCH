@@ -4,14 +4,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import '/utils/loader.dart';
 import '/utils/snackbar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
+
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
@@ -26,23 +28,22 @@ class _SplashScreenState extends State<SplashScreen> {
       Future.microtask(() => context.go('/'));
       return;
     }
-    final doc =
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
     final data = doc.data();
     if (data == null || !(data['onboardingCompleted'] ?? false)) {
       Future.microtask(() => context.go('/preferences'));
     } else {
       SnackbarUtils.alert(
-        context, 
+        context,
         "Welcome ${data['displayName'] ?? 'user'} !",
         typeInfo: TypeInfo.success,
         position: MessagePosition.top,
         duration: 5,
         icon: Icons.star_rate_rounded,
-        iconColor: Colors.greenAccent
+        iconColor: Colors.greenAccent,
       );
       Future.microtask(() => context.go('/home'));
     }

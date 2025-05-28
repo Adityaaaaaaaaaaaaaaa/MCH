@@ -29,6 +29,7 @@ dependencies:
   salomon_bottom_bar: ^3.3.2
   flutter_spinkit: ^5.2.1
   alert_info: ^0.0.3
+  connectivity_plus: ^6.1.4
 
 dev_dependencies:
   flutter_test:
