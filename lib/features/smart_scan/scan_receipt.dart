@@ -7,7 +7,6 @@ import 'smart_scan_controller.dart';
 import '/widgets/scan_action_button.dart';
 import '/utils/drawer.dart';
 import '/utils/nav.dart';
-import '/theme/glassmorphic_card.dart';
 
 class ScanReceipt extends ConsumerWidget {
   const ScanReceipt({super.key});

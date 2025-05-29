@@ -4,8 +4,6 @@ import '../../utils/appbar.dart';
 import '/widgets/scan_action_button.dart';
 import '/utils/drawer.dart';
 import '/utils/nav.dart';
-import '/theme/glassmorphic_card.dart';
-// import your manual_input.dart when created
 
 class SmartScan extends StatelessWidget {
   const SmartScan({super.key});
