@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '/theme/app_theme.dart';
 import '/utils/preference_utils.dart';
-import 'preference_question_widgets.dart';
+import '../../widgets/preference_question_widgets.dart';
 
 class PreferencesFlow extends StatefulWidget {
   const PreferencesFlow({super.key});

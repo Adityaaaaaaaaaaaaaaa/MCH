@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../utils/appbar.dart';
 import '/theme/glassmorphic_card.dart';
 import '/theme/app_theme.dart';
 import '/utils/loader.dart';
@@ -88,7 +89,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       extendBodyBehindAppBar: true,
       drawer: CustomDrawer(),
       bottomNavigationBar: CustomNavBar(currentIndex: 2),
-      appBar: PreferredSize(
+      /*appBar: PreferredSize(
         preferredSize: const Size.fromHeight(100),
         child: Padding(
           padding: const EdgeInsets.only(top: 60, left: 10, right: 10),
@@ -140,6 +141,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           ),
         ),
+      ),*/
+      appBar: CustomAppBar(
+        title: "My Cooking Helper",
+        themeToggleWidget: const ThemeToggleButton(),
+        trailingIcon: Icons.settings_rounded,
+        onTrailingIconTap: () => _openSettings(context),
+        height: 100,
+        borderRadius: 26,
+        topPadding: 60,
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -188,7 +198,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         color: feature.color,
                         width: cardWidth,
                         height: cardHeight,
-                        onTap: () => context.go(feature.route),
+                        onTap: () => context.push(feature.route),
                       ),
                     ),
                   );

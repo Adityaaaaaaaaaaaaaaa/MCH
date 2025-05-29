@@ -3,8 +3,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/firebase_options.dart';
+import 'features/smart_scan/review_screen.dart';
 import 'theme/theme_provider.dart';  
 import 'theme/app_theme.dart';
+import 'features/smart_scan/scan_food.dart';
+import 'features/smart_scan/scan_receipt.dart';
+import 'features/smart_scan/smart_scan.dart';
 import 'features/home/home.dart';
 import 'features/onboarding/onboarding_page.dart';
 import 'features/auth/sign_in_page.dart';
@@ -45,6 +49,22 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (context, state) => const Settings(),
+    ),
+    GoRoute(
+      path: '/scan',
+      builder: (context, state) => const SmartScan(),
+    ),
+    GoRoute(
+      path: '/scanFood',
+      builder: (context, state) => const ScanFood(),
+    ),
+    GoRoute(
+      path: '/scanReceipt',
+      builder: (context, state) => const ScanReceipt(),
+    ),
+    GoRoute(
+      path: '/reviewScreen',
+      builder: (context, state) => const ReviewScreen(),
     ),
   ],
 );
