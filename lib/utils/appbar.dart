@@ -3,9 +3,11 @@ import '/theme/glassmorphic_card.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
-  final Widget? themeToggleWidget; 
+  final Widget? themeToggleWidget;
   final IconData? trailingIcon;
   final VoidCallback? onTrailingIconTap;
+  final bool showMenu;
+  final VoidCallback? onMenuTap;
   final double height;
   final double borderRadius;
   final double topPadding;
@@ -16,6 +18,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.themeToggleWidget,
     this.trailingIcon,
     this.onTrailingIconTap,
+    this.showMenu = true,
+    this.onMenuTap,
     this.height = 85,
     this.borderRadius = 26,
     this.topPadding = 35,
@@ -40,16 +44,21 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Hamburger menu
               Builder(
-                builder: (context) => IconButton(
-                  icon: const Icon(Icons.menu_rounded, size: 30),
-                  color: theme.colorScheme.primary,
-                  tooltip: "Open menu",
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                ),
+                builder: (context) => showMenu
+                  ? IconButton(
+                      icon: const Icon(Icons.menu_rounded, size: 30),
+                      color: theme.colorScheme.primary,
+                      tooltip: "Open menu",
+                      onPressed: onMenuTap ?? () => Scaffold.of(context).openDrawer(),
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                      color: theme.colorScheme.primary,
+                      tooltip: "Back",
+                      onPressed: () => Navigator.of(context).canPop() ? Navigator.of(context).pop() : Navigator.of(context).maybePop(),
+                    ),
               ),
-              // Title
               Expanded(
                 child: Center(
                   child: Text(
@@ -61,7 +70,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               ),
-              // Actions: Theme toggle widget and trailing icon
               Row(
                 children: [
                   if (themeToggleWidget != null) themeToggleWidget!,

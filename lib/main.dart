@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/firebase_options.dart';
+import 'features/smart_scan/manual_input.dart';
 import 'features/smart_scan/review_screen.dart';
 import 'theme/theme_provider.dart';  
 import 'theme/app_theme.dart';
@@ -65,6 +66,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/reviewScreen',
       builder: (context, state) => const ReviewScreen(),
+    ),
+    GoRoute(
+      path: '/manualInput',
+      builder: (context, state) => const ManualInputScreen(),
     ),
   ],
 );

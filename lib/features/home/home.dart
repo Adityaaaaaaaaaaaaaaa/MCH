@@ -86,6 +86,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ? const Color(0xfff8fafc)
           : const Color(0xff232526),
       extendBodyBehindAppBar: true,
+      extendBody: true,
       drawer: CustomDrawer(),
       bottomNavigationBar: CustomNavBar(currentIndex: 2),
       appBar: CustomAppBar(
