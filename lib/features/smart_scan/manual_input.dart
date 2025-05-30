@@ -7,21 +7,62 @@ import 'smart_scan_controller.dart';
 import '/utils/appbar.dart';
 import '/theme/glassmorphic_card.dart';
 
-class ReviewScreen extends ConsumerWidget {
-  const ReviewScreen({Key? key}) : super(key: key);
+class ManualInputScreen extends ConsumerStatefulWidget {
+  const ManualInputScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ManualInputScreen> createState() => _ManualInputScreenState();
+}
+
+class _ManualInputScreenState extends ConsumerState<ManualInputScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _quantityController = TextEditingController();
+  final TextEditingController _unitController = TextEditingController();
+
+  void _addItem() {
+    if (_formKey.currentState?.validate() ?? false) {
+      final name = _nameController.text.trim();
+      final quantity = double.tryParse(_quantityController.text.trim()) ?? 1.0;
+      final unit = _unitController.text.trim().isEmpty ? null : _unitController.text.trim();
+      final scannedItem = ScannedItem(
+        itemName: name,
+        quantity: quantity,
+        unit: unit,
+        source: "manual_input",
+        isReviewed: true,
+      );
+      ref.read(smartScanControllerProvider.notifier).addItem(scannedItem);
+      _nameController.clear();
+      _quantityController.clear();
+      _unitController.clear();
+      FocusScope.of(context).unfocus();
+    }
+  }
+
+  void _editItem(int index, ScannedItem item) async {
+    final edited = await showDialog<ScannedItem>(
+      context: context,
+      builder: (_) => EditItemDialog(item: item),
+    );
+    if (edited != null) {
+      ref.read(smartScanControllerProvider.notifier).editItem(index, edited);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isLight = theme.brightness == Brightness.light;
-    final scannedItems = ref.watch(smartScanControllerProvider);
-    final scanController = ref.read(smartScanControllerProvider.notifier);
+    final scannedItems = ref.watch(smartScanControllerProvider)
+        .where((item) => item.source == "manual_input")
+        .toList();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       extendBody: true,
       appBar: CustomAppBar(
-        title: "Review Items",
+        title: "Manual Input",
         showMenu: false,
         height: 90,
         borderRadius: 22,
@@ -49,51 +90,105 @@ class ReviewScreen extends ConsumerWidget {
         ),
         child: Column(
           children: [
-            const SizedBox(height: 130),
+            const SizedBox(height: 120),
             FadeInDown(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
                 child: GlassmorphicCard(
-                  borderRadius: 22,
-                  blur: 12,
+                  borderRadius: 28,
+                  blur: 16,
                   opacity: 0.21,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
-                  child: Text(
-                    "Please review and verify each detected item before confirming.",
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: theme.primaryColor.withOpacity(0.85),
+                  padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 18),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        Text(
+                          "Add item manually",
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.primaryColor,
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        TextFormField(
+                          controller: _nameController,
+                          textInputAction: TextInputAction.next,
+                          decoration: InputDecoration(
+                            labelText: "Item Name",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          validator: (v) => v == null || v.trim().isEmpty ? 'Enter name' : null,
+                        ),
+                        const SizedBox(height: 13),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _quantityController,
+                                keyboardType: TextInputType.number,
+                                textInputAction: TextInputAction.next,
+                                decoration: InputDecoration(
+                                  labelText: "Quantity",
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                validator: (v) => v == null || v.trim().isEmpty ? 'Enter quantity' : null,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _unitController,
+                                decoration: InputDecoration(
+                                  labelText: "Unit",
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        FadeInUp(
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.add_circle_rounded, size: 22),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: theme.primaryColor,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 8,
+                              ),
+                              label: const Text(
+                                'Add Item',
+                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                              ),
+                              onPressed: _addItem,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
-            // Swipe hint
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 2),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.swipe_left_rounded, color: theme.primaryColor.withOpacity(0.6)),
-                  const SizedBox(width: 7),
-                  Text(
-                    "Swipe left on an item to delete",
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.primaryColor.withOpacity(0.7),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 15),
             Expanded(
               child: scannedItems.isEmpty
                   ? FadeIn(
                       child: Center(
                         child: Text(
-                          'No items detected yet.',
+                          'No items added yet.',
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.w500,
@@ -102,14 +197,14 @@ class ReviewScreen extends ConsumerWidget {
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                       itemCount: scannedItems.length,
                       itemBuilder: (context, index) {
                         final item = scannedItems[index];
                         return SlideInUp(
-                          duration: Duration(milliseconds: 320 + index * 100),
+                          duration: Duration(milliseconds: 300 + index * 80),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                            padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 6),
                             child: Slidable(
                               key: ValueKey(item.itemName + index.toString()),
                               endActionPane: ActionPane(
@@ -117,7 +212,7 @@ class ReviewScreen extends ConsumerWidget {
                                 extentRatio: 0.28,
                                 children: [
                                   SlidableAction(
-                                    onPressed: (context) => scanController.removeItem(index),
+                                    onPressed: (context) => ref.read(smartScanControllerProvider.notifier).removeItem(index),
                                     backgroundColor: Colors.redAccent,
                                     foregroundColor: Colors.white,
                                     icon: Icons.delete_forever_rounded,
@@ -132,7 +227,7 @@ class ReviewScreen extends ConsumerWidget {
                                 opacity: 0.18,
                                 padding: const EdgeInsets.all(18),
                                 child: ListTile(
-                                  leading: Icon(Icons.fastfood_rounded, color: theme.primaryColor, size: 30),
+                                  leading: Icon(Icons.edit_note_rounded, color: theme.primaryColor, size: 30),
                                   title: Text(
                                     item.itemName,
                                     style: theme.textTheme.titleMedium?.copyWith(
@@ -150,15 +245,7 @@ class ReviewScreen extends ConsumerWidget {
                                   trailing: IconButton(
                                     icon: const Icon(Icons.edit_rounded, color: Colors.blueAccent),
                                     tooltip: "Edit",
-                                    onPressed: () async {
-                                      final edited = await showDialog<ScannedItem>(
-                                        context: context,
-                                        builder: (_) => EditItemDialog(item: item),
-                                      );
-                                      if (edited != null) {
-                                        scanController.editItem(index, edited);
-                                      }
-                                    },
+                                    onPressed: () => _editItem(index, item),
                                   ),
                                 ),
                               ),
@@ -168,7 +255,8 @@ class ReviewScreen extends ConsumerWidget {
                       },
                     ),
             ),
-            // Centered Confirm Button
+            // Confirm Button
+            if (scannedItems.isNotEmpty)
             if (scannedItems.isNotEmpty)
               FadeInUp(
                 duration: const Duration(milliseconds: 700),
@@ -181,7 +269,7 @@ class ReviewScreen extends ConsumerWidget {
                       opacity: 0.18,
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                       child: ElevatedButton.icon(
-                        icon: const Icon(Icons.done_rounded, size: 26),
+                        icon: const Icon(Icons.done_rounded, size: 26, color: Colors.white,),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.primaryColor,
                           padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 22),
@@ -192,7 +280,7 @@ class ReviewScreen extends ConsumerWidget {
                         ),
                         label: const Text(
                           'Confirm All',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
                         ),
                         onPressed: () {
                           showDialog(

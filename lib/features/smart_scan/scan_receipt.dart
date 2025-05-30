@@ -18,12 +18,12 @@ class ScanReceipt extends ConsumerWidget {
     final scanController = ref.read(smartScanControllerProvider.notifier);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       drawer: CustomDrawer(),
       bottomNavigationBar: CustomNavBar(currentIndex: 1),
       appBar: CustomAppBar(
         title: "Scan Receipt",
-        trailingIcon: Icons.arrow_back_ios_new_rounded,
-        onTrailingIconTap: () => context.pop(),
+        showMenu: false,
         height: 100,
         borderRadius: 26,
         topPadding: 60,
