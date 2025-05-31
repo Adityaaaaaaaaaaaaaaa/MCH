@@ -1,7 +1,7 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
@@ -13,7 +13,6 @@ import 'smart_scan_controller.dart';
 
 class ScanFood extends ConsumerStatefulWidget {
   const ScanFood({super.key});
-
   @override
   ConsumerState<ScanFood> createState() => _ScanFoodState();
 }
@@ -26,6 +25,9 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   bool _hasPermission = false;
   File? _pickedImage;
   List<DetectedObject>? _detectedObjects;
+  Size? _imageSizeForDrawing;
+
+  final double _confidenceThreshold = 0.40;
 
   @override
   void initState() {
@@ -38,14 +40,33 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
     final status = await Permission.camera.request();
     if (status.isGranted) {
       _hasPermission = true;
-      final cameras = await availableCameras();
-      final camera = cameras.firstWhere(
+      try {
+        final cameras = await availableCameras();
+        if (cameras.isEmpty) {
+          print('\x1B[31m[ERROR] No cameras available\x1B[0m');
+          _hasPermission = false;
+          setState(() => _isLoading = false);
+          return;
+        }
+        final camera = cameras.firstWhere(
           (cam) => cam.lensDirection == CameraLensDirection.back,
-          orElse: () => cameras.first);
-      _cameraController = CameraController(camera, ResolutionPreset.high, enableAudio: false);
-      await _cameraController!.initialize();
-      setState(() => _isCameraReady = true);
-      print('\x1B[34m[DEBUG] Camera initialized and ready\x1B[0m');
+          orElse: () => cameras.first,
+        );
+        _cameraController = CameraController(
+          camera,
+          ResolutionPreset.high,
+          enableAudio: false,
+          imageFormatGroup: Platform.isAndroid
+              ? ImageFormatGroup.nv21
+              : ImageFormatGroup.bgra8888,
+        );
+        await _cameraController!.initialize();
+        setState(() => _isCameraReady = true);
+        print('\x1B[34m[DEBUG] Camera initialized and ready\x1B[0m');
+      } catch (e) {
+        print('\x1B[31m[ERROR] Failed to initialize camera: $e\x1B[0m');
+        _hasPermission = false;
+      }
     } else {
       _hasPermission = false;
       print('\x1B[34m[DEBUG] Camera permission denied\x1B[0m');
@@ -59,45 +80,67 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
     super.dispose();
   }
 
-  Future<void> _takePicture() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+  Future<void> _retakeOrNewScan() async {
     setState(() {
       _pickedImage = null;
       _detectedObjects = null;
+      _imageSizeForDrawing = null;
     });
+    print('\x1B[34m[DEBUG] Resetting to live camera preview\x1B[0m');
+  }
+
+  Future<void> _resetStateForNewImage() async {
+    setState(() {
+      _pickedImage = null;
+      _detectedObjects = null;
+      _imageSizeForDrawing = null;
+    });
+  }
+
+  Future<void> _takePicture() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      print('\x1B[31m[ERROR] Camera not ready to take picture\x1B[0m');
+      return;
+    }
+    await _resetStateForNewImage();
+    setState(() => _isLoading = true);
     try {
       final XFile image = await _cameraController!.takePicture();
       _pickedImage = File(image.path);
       print('\x1B[34m[DEBUG] Photo captured: ${image.path}\x1B[0m');
       await _detectObjects(_pickedImage!);
     } catch (e) {
-      print('\x1B[34m[DEBUG] Error taking photo: $e\x1B[0m');
+      print('\x1B[31m[ERROR] Error taking photo: $e\x1B[0m');
+      setState(() => _isLoading = false);
     }
   }
 
   Future<void> _pickFromGallery() async {
-    setState(() {
-      _pickedImage = null;
-      _detectedObjects = null;
-    });
+    await _resetStateForNewImage();
+    setState(() => _isLoading = true);
     try {
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 92);
       if (pickedFile == null) {
         print('\x1B[34m[DEBUG] No gallery image picked\x1B[0m');
+        setState(() => _isLoading = false);
         return;
       }
       _pickedImage = File(pickedFile.path);
       print('\x1B[34m[DEBUG] Image picked from gallery: ${pickedFile.path}\x1B[0m');
       await _detectObjects(_pickedImage!);
     } catch (e) {
-      print('\x1B[34m[DEBUG] Error picking gallery image: $e\x1B[0m');
+      print('\x1B[31m[ERROR] Error picking gallery image: $e\x1B[0m');
+      setState(() => _isLoading = false);
     }
   }
 
   Future<void> _detectObjects(File imageFile) async {
-    setState(() => _isLoading = true);
     try {
+      final bytes = await imageFile.readAsBytes();
+      final decodedImage = await decodeImageFromList(bytes);
+      _imageSizeForDrawing = Size(decodedImage.width.toDouble(), decodedImage.height.toDouble());
+
       final inputImage = InputImage.fromFile(imageFile);
       final options = ObjectDetectorOptions(
         classifyObjects: true,
@@ -106,56 +149,105 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
       );
       final detector = ObjectDetector(options: options);
       final objects = await detector.processImage(inputImage);
-      print('\x1B[34m[DEBUG] Detected ${objects.length} objects with bounding boxes\x1B[0m');
-      for (final object in objects) {
+      print('\x1B[34m[DEBUG] Detected ${objects.length} objects\x1B[0m');
+      setState(() => _detectedObjects = objects);
+
+      for (final object in _detectedObjects!) {
         final label = object.labels.isNotEmpty ? object.labels.first.text : 'Unknown';
         final conf = object.labels.isNotEmpty ? object.labels.first.confidence : 0.0;
         print('\x1B[34m[DEBUG] Object: $label (${(conf * 100).toStringAsFixed(1)}%), Box: ${object.boundingBox}\x1B[0m');
       }
-      setState(() => _detectedObjects = objects);
       await detector.close();
     } catch (e) {
-      print('\x1B[34m[DEBUG] Object Detection ERROR: $e\x1B[0m');
+      print('\x1B[31m[ERROR] Object Detection ERROR: $e\x1B[0m');
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  Widget _buildImageWithBoxes() {
-    if (_pickedImage == null) return const SizedBox();
-    return Stack(
-      children: [
-        Image.file(_pickedImage!, width: 320, height: 240, fit: BoxFit.cover),
-        if (_detectedObjects != null)
-          ..._detectedObjects!.map((object) {
-            final label = object.labels.isNotEmpty ? object.labels.first.text : 'Unknown';
-            final confidence = object.labels.isNotEmpty ? object.labels.first.confidence : 0.0;
-            final box = object.boundingBox;
-            return Positioned(
-              left: box.left * 320 / box.width,
-              top: box.top * 240 / box.height,
-              child: Container(
-                width: box.width * 320 / box.width,
-                height: box.height * 240 / box.height,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.red, width: 2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: Container(
-                    color: Colors.red,
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    child: Text(
-                      "$label (${(confidence * 100).toStringAsFixed(1)}%)",
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
+  Widget _buildImageWithBoxes(BuildContext context) {
+    if (_pickedImage == null || _imageSizeForDrawing == null) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double maxWidth = screenWidth * 0.92;
+    final double imageW = _imageSizeForDrawing!.width;
+    final double imageH = _imageSizeForDrawing!.height;
+    final double imageAspect = imageW / imageH;
+
+    double displayW = maxWidth;
+    double displayH = displayW / imageAspect;
+    final double maxDisplayH = MediaQuery.of(context).size.height * 0.45;
+    if (displayH > maxDisplayH) {
+      displayH = maxDisplayH;
+      displayW = displayH * imageAspect;
+    }
+
+    return Container(
+      width: displayW,
+      height: displayH,
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.primaryColor.withOpacity(0.4), width: 1.5),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.file(
+            _pickedImage!,
+            width: displayW,
+            height: displayH,
+            fit: BoxFit.contain,
+          ),
+          if (_detectedObjects != null)
+            ..._detectedObjects!.map((object) {
+              final Rect boundingBox = object.boundingBox;
+              final double scaleToFitW = displayW / imageW;
+              final double scaleToFitH = displayH / imageH;
+              final double scale = math.min(scaleToFitW, scaleToFitH);
+
+              final double hOffset = (displayW - (imageW * scale)) / 2.0;
+              final double vOffset = (displayH - (imageH * scale)) / 2.0;
+
+              final left = boundingBox.left * scale + hOffset;
+              final top = boundingBox.top * scale + vOffset;
+              final width = boundingBox.width * scale;
+              final height = boundingBox.height * scale;
+
+              final String label = object.labels.isNotEmpty ? object.labels.first.text : 'Unknown';
+              final double confidence = object.labels.isNotEmpty ? object.labels.first.confidence : 0.0;
+
+              return Positioned(
+                left: left,
+                top: top,
+                width: width,
+                height: height,
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.redAccent, width: 2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: Container(
+                      color: Colors.redAccent.withOpacity(0.7),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      child: Text(
+                        "$label (${(confidence * 100).toStringAsFixed(0)}%)",
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          }),
-      ],
+              );
+            }).toList(),
+        ],
+      ),
     );
   }
 
@@ -193,145 +285,221 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
     );
   }
 
+  Widget _styledButton(BuildContext context, {
+    required VoidCallback? onPressed,
+    required IconData icon,
+    required String label,
+    bool isFilled = false,
+  }) {
+    final theme = Theme.of(context);
+    final style = ButtonStyle(
+      padding: MaterialStateProperty.all(const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+      textStyle: MaterialStateProperty.all(
+          TextStyle(fontSize: 14, fontWeight: isFilled ? FontWeight.bold : FontWeight.w500)),
+      shape: MaterialStateProperty.all(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+    );
+    if (isFilled) {
+      return FilledButton.icon(
+        icon: Icon(icon, size: 18),
+        label: Text(label),
+        onPressed: onPressed,
+        style: style,
+      );
+    }
+    return ElevatedButton.icon(
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+      onPressed: onPressed,
+      style: style.copyWith(
+        backgroundColor: MaterialStateProperty.resolveWith<Color?>(
+          (Set<MaterialState> states) {
+            if (states.contains(MaterialState.disabled)) {
+              return theme.colorScheme.onSurface.withOpacity(0.12);
+            }
+            return theme.colorScheme.secondaryContainer;
+          },
+        ),
+        foregroundColor: MaterialStateProperty.resolveWith<Color?>(
+          (Set<MaterialState> states) {
+            if (states.contains(MaterialState.disabled)) {
+              return theme.colorScheme.onSurface.withOpacity(0.38);
+            }
+            return theme.colorScheme.onSecondaryContainer;
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scanController = ref.read(smartScanControllerProvider.notifier);
 
+    final PreferredSizeWidget appBarWidget = CustomAppBar(
+      title: "Scan Food",
+      showMenu: false,
+      height: 90,
+      borderRadius: 26,
+      topPadding: 48,
+    );
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       extendBody: true,
-      appBar: CustomAppBar(
-        title: "Scan Food",
-        showMenu: false,
-        height: 90,
-        borderRadius: 26,
-        topPadding: 48,
-      ),
+      appBar: appBarWidget,
       backgroundColor: theme.brightness == Brightness.light
           ? const Color(0xfff8fafc)
           : const Color(0xff232526),
-      body: FutureBuilder(
+      body: FutureBuilder<void>(
         future: _initFuture,
         builder: (context, snapshot) {
-          if (_isLoading) return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState == ConnectionState.waiting || (_isLoading && _pickedImage == null)) {
+            return const Center(child: CircularProgressIndicator());
+          }
           if (!_hasPermission) return _buildNoPermissionUI(context);
 
+          // === UI when an image has been picked/captured and is ready for review ===
           if (_pickedImage != null) {
-            return SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 100.0),
-                child: Column(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: SizedBox(
-                        width: 320,
-                        height: 240,
-                        child: _buildImageWithBoxes(),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    if (_detectedObjects != null)
-                      ..._detectedObjects!.map((obj) {
-                        final label = obj.labels.isNotEmpty ? obj.labels.first.text : 'Unknown';
-                        final conf = obj.labels.isNotEmpty ? obj.labels.first.confidence : 0.0;
-                        return Text('Detected: $label (${(conf * 100).toStringAsFixed(1)}%)',
-                            style: theme.textTheme.bodyMedium);
-                      }),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.check_circle_rounded),
-                      label: const Text("Add to Review"),
-                      onPressed: () {
-                        for (var obj in _detectedObjects ?? []) {
-                          final label = obj.labels.isNotEmpty ? obj.labels.first.text : 'Unknown';
-                          scanController.addItem(
-                            ScannedItem(
-                              itemName: label,
-                              quantity: 1,
-                              unit: null,
-                              source: "food_scan",
-                              isReviewed: false,
-                              isEdited: false,
+            return SafeArea(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  top: appBarWidget.preferredSize.height + MediaQuery.of(context).padding.top + 18,
+                  bottom: 20, left: 14, right: 14,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_isLoading)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 16.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      _buildImageWithBoxes(context),
+                      const SizedBox(height: 18),
+                      if (!_isLoading && _detectedObjects != null && _detectedObjects!.isNotEmpty)
+                        Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          margin: const EdgeInsets.symmetric(vertical: 10),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Detected Items:", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 8),
+                                ..._detectedObjects!.map((obj) {
+                                  final label = obj.labels.isNotEmpty ? obj.labels.first.text : 'Unknown';
+                                  final conf = obj.labels.isNotEmpty ? obj.labels.first.confidence : 0.0;
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                    child: Text(
+                                      '• $label (${(conf * 100).toStringAsFixed(0)}%)'
+                                      '${conf < _confidenceThreshold && obj.labels.isNotEmpty ? " - Low Confidence" : ""}',
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: (conf < _confidenceThreshold && obj.labels.isNotEmpty)
+                                            ? theme.colorScheme.onSurfaceVariant.withOpacity(0.7)
+                                            : theme.colorScheme.onSurface,
+                                        fontWeight: FontWeight.w500
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
                             ),
-                          );
-                        }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Detected items added!')),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.arrow_forward),
-                      label: const Text("Go to Review Screen"),
-                      onPressed: () {
-                        print('\x1B[34m[DEBUG] Navigating to /reviewScreen\x1B[0m');
-                        context.push('/reviewScreen');
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.camera),
-                          label: const Text("Take Another Photo"),
-                          onPressed: _takePicture,
-                        ),
-                        const SizedBox(width: 16),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.photo_library),
-                          label: const Text("Pick from Gallery"),
-                          onPressed: _pickFromGallery,
-                        ),
-                      ],
-                    ),
-                  ],
+                          ),
+                        )
+                      else if (!_isLoading && _detectedObjects != null && _detectedObjects!.isEmpty)
+                         Padding(
+                           padding: const EdgeInsets.symmetric(vertical: 16.0),
+                           child: Text("No objects detected in the image.", style: theme.textTheme.labelLarge),
+                         ),
+                      const SizedBox(height: 22),
+                      _styledButton(
+                        context,
+                        isFilled: true,
+                        icon: Icons.check_circle_outline_rounded,
+                        label: "Add High Confidence Items",
+                        onPressed: (_detectedObjects == null || _detectedObjects!.where((obj) => obj.labels.isNotEmpty && obj.labels.first.confidence >= _confidenceThreshold).isEmpty)
+                          ? null
+                          : () {
+                          int count = 0;
+                          for (var obj in _detectedObjects!) {
+                            if (obj.labels.isNotEmpty && obj.labels.first.confidence >= _confidenceThreshold) {
+                              final label = obj.labels.first.text;
+                              scanController.addItem(
+                                ScannedItem(itemName: label, quantity: 1, unit: null, source: "food_scan_object", isReviewed: false, isEdited: false),
+                              );
+                              count++;
+                            }
+                          }
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('$count item(s) added to review!')),
+                            );
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _styledButton(
+                        context,
+                        icon: Icons.reviews_outlined,
+                        label: "Go to Review Screen",
+                        onPressed: () {
+                          print('\x1B[34m[DEBUG] Navigating to /reviewScreen\x1B[0m');
+                          context.push('/reviewScreen');
+                        },
+                      ),
+                      const SizedBox(height: 22),
+                      Text("Scan another item:", style: theme.textTheme.titleSmall),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _styledButton(
+                            context,
+                            onPressed: _retakeOrNewScan,
+                            icon: Icons.camera_enhance_outlined,
+                            label: "New Scan",
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
           }
 
+          // === UI for Live Camera Preview ===
           if (!_isCameraReady || _cameraController == null || !_cameraController!.value.isInitialized) {
-            print('\x1B[34m[DEBUG] Waiting for camera initialization...\x1B[0m');
-            return const Center(child: CircularProgressIndicator());
+            print('\x1B[34m[DEBUG] Camera not ready, showing loader or error if any.\x1B[0m');
+            return const Center(child: Text("Camera not available."));
           }
 
           return Column(
             children: [
-              const SizedBox(height: 120),
-              Center(
-                child: Container(
-                  width: 320,
-                  height: 260,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(26),
-                    border: Border.all(color: theme.primaryColor.withOpacity(0.3), width: 3),
-                  ),
+              SizedBox(height: appBarWidget.preferredSize.height + MediaQuery.of(context).padding.top + 8),
+              Expanded(
+                child: Center(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(26),
+                    borderRadius: BorderRadius.circular(18),
                     child: CameraPreview(_cameraController!),
                   ),
                 ),
               ),
-              const SizedBox(height: 18),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.camera_alt_rounded),
-                    label: const Text("Snap Photo"),
-                    onPressed: _takePicture,
-                  ),
-                  const SizedBox(width: 18),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text("Pick from Gallery"),
-                    onPressed: _pickFromGallery,
-                  ),
-                ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _styledButton(context, onPressed: _takePicture, icon: Icons.camera_alt_rounded, label: "Snap Photo", isFilled: true),
+                    _styledButton(context, onPressed: _pickFromGallery, icon: Icons.photo_library_rounded, label: "From Gallery"),
+                  ],
+                ),
               ),
             ],
           );
