@@ -48,7 +48,7 @@ app.*.map.json
 python/oidv6-train-annotations-bbox.csv
 python/oidv7-class-descriptions-boxable.csv
 python/downloaded_images/
-python/annotations/
+python/voc_annotations/
 python/model/
 python/*.tfrecord
 python/*.tflite
