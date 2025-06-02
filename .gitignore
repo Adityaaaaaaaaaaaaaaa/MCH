@@ -43,3 +43,17 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# python dataset processing
+python/oidv6-train-annotations-bbox.csv
+python/oidv7-class-descriptions-boxable.csv
+python/downloaded_images/
+python/voc_annotations/
+python/model/
+python/*.tfrecord
+python/*.tflite
+
+*.zip
+*.tar.gz
+*.h5
+*.ckpt
