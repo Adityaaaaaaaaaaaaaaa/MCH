@@ -49,9 +49,12 @@ python/oidv6-train-annotations-bbox.csv
 python/oidv7-class-descriptions-boxable.csv
 python/downloaded_images/
 python/voc_annotations/
-python/model/
+python/yolo_labels/
+python/dataset/
 python/*.tfrecord
 python/*.tflite
+python/
+python/*
 
 *.zip
 *.tar.gz
