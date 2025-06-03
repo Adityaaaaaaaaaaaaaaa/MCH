@@ -45,13 +45,18 @@ app.*.map.json
 /android/app/release
 
 # python dataset processing
-python/oidv6-train-annotations-bbox.csv
-python/oidv7-class-descriptions-boxable.csv
+python/dataset/oidv6-train-annotations-bbox.csv
+python/dataset/oidv7-class-descriptions-boxable.csv
 python/downloaded_images/
+python/downloaded_images/*.jpg
+python/downloaded_images/*.png
+python/downloaded_images/*.jpeg
 python/voc_annotations/
-python/model/
+python/voc_annotations/*
+python/voc_annotations/*.xml
+python/dataset/
 python/yolo_labels/
-python/yolo_dataset/*
+python/yolo_labels/*.txt
 python/*.tfrecord
 python/*.tflite
 
