@@ -12,6 +12,7 @@
 
 **My Cooking Helper** is your personal cooking companion. This Flutter-based app streamlines meal prep, recipe management, and shopping lists. Developed for my BSc (Hons.) Applied Computing final year project, it leverages Firebase and Google's Gemini AI for a smooth experience.
 
+
 ---
 
 ## Table of Contents
@@ -45,5 +46,4 @@ Pull requests are welcome! Feel free to open issues or propose new features.
 My Cooking Helper is currently under active development.
 
 ---
-
 Started coding **21 May 2025**
