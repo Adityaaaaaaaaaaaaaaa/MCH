@@ -1,17 +1,17 @@
 # My Cooking Helper
 
-![Flutter](https://img.shields.io/badge/Flutter-%5E3.7-blue?logo=flutter)
-![Dart](https://img.shields.io/badge/Dart-%5E3.2-blue?logo=dart&logoColor=white)
-![Firebase](https://img.shields.io/badge/Firebase-integrated-yellow?logo=firebase)
-![Gemini](https://img.shields.io/badge/Gemini-AI-blueviolet?logo=google)
-![Platforms](https://img.shields.io/badge/platforms-iOS%20%7C%20Android-green)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen)
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-%5E3.7-blue?logo=flutter" />
+  <img src="https://img.shields.io/badge/Dart-%5E3.2-blue?logo=dart&logoColor=white" />
+  <img src="https://img.shields.io/badge/Firebase-integrated-yellow?logo=firebase" />
+  <img src="https://img.shields.io/badge/Gemini-AI-blueviolet?logo=google" />
+  <img src="https://img.shields.io/badge/platforms-iOS%20%7C%20Android-green" />
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" />
+  <img src="https://img.shields.io/badge/contributions-welcome-brightgreen" />
+</p>
 
-**My Cooking Helper** is a mobile Flutter application designed for my final year
-project in the BSc (Hons.) Applied Computing course. This project empowers users
-to manage recipes, plan meals and streamline their cooking experience in a
-beautiful, user-friendly interface.
+**My Cooking Helper** is your personal cooking companion. This Flutter-based app streamlines meal prep, recipe management, and shopping lists. Developed for my BSc (Hons.) Applied Computing final year project, it leverages Firebase and Google's Gemini AI for a smooth experience.
+
 
 ---
 
@@ -27,7 +27,7 @@ beautiful, user-friendly interface.
 - 🔍 Scan ingredients and receipts
 - 🍴 Meal planning
 - 🛒 Shopping list generation
-- 🗂️ Save your cravings and search by them
+- 🗂️ Save cravings and search by them
 - 👤 User authentication and profile management
 
 ## Getting Started
