@@ -59,6 +59,8 @@ python/yolo_labels/
 python/yolo_labels/*.txt
 python/*.tfrecord
 python/*.tflite
+python/
+python/*
 
 *.zip
 *.tar.gz
