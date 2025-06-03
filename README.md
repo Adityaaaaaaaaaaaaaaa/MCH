@@ -1,7 +1,12 @@
 # My Cooking Helper
 
 ![Flutter](https://img.shields.io/badge/Flutter-%5E3.7-blue?logo=flutter)
+![Dart](https://img.shields.io/badge/Dart-%5E3.2-blue?logo=dart&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-integrated-yellow?logo=firebase)
+![Gemini](https://img.shields.io/badge/Gemini-AI-blueviolet?logo=google)
+![Platforms](https://img.shields.io/badge/platforms-iOS%20%7C%20Android-green)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen)
 
 **My Cooking Helper** is a mobile Flutter application designed for my final year
 project in the BSc (Hons.) Applied Computing course. This project empowers users
