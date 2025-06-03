@@ -50,6 +50,8 @@ python/oidv7-class-descriptions-boxable.csv
 python/downloaded_images/
 python/voc_annotations/
 python/model/
+python/yolo_labels/
+python/yolo_dataset/*
 python/*.tfrecord
 python/*.tflite
 
