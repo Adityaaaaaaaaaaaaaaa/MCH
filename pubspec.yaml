@@ -20,7 +20,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   firebase_core: ^3.13.1
   flutter_riverpod: ^2.6.1
-  flutter_launcher_icons: ^0.14.3
+  #flutter_launcher_icons: ^0.14.3
   go_router: ^15.1.2
   google_sign_in: ^6.3.0
   firebase_auth: ^5.5.4
@@ -37,6 +37,8 @@ dependencies:
   google_mlkit_commons: ^0.11.0
   image_picker: ^1.1.2
   google_mlkit_object_detection: ^0.15.0
+  tflite_flutter: ^0.11.0
+  image: ^4.5.4
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +60,9 @@ flutter:
     - assets/images/
     - assets/images/onboarding/
     - assets/images/loginSignup/
+    - assets/models/best_float16.tflite
+    - assets/models/best_float32.tflite
+    - assets/models/labels.txt
 
   # example:
   # fonts:

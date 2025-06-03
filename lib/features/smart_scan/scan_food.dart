@@ -4,12 +4,13 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:go_router/go_router.dart';
-import '../../utils/appbar.dart';
+import '/utils/appbar.dart';
 import '/models/scanned_item.dart';
 import 'smart_scan_controller.dart';
+// === Added for FoodObjectDetector ===
+import '../services/food_object_detector.dart';
 
 class ScanFood extends ConsumerStatefulWidget {
   const ScanFood({super.key});
@@ -24,8 +25,12 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   bool _isLoading = false;
   bool _hasPermission = false;
   File? _pickedImage;
-  List<DetectedObject>? _detectedObjects;
   Size? _imageSizeForDrawing;
+
+  // === YOLO/Food Detector Additions ===
+  FoodObjectDetector? _foodDetector;
+  bool _isFoodDetectorReady = false;
+  List<FoodDetectionBox>? _foodDetections;
 
   final double _confidenceThreshold = 0.40;
 
@@ -33,6 +38,14 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   void initState() {
     super.initState();
     _initFuture = _requestPermissionAndInitCamera();
+    _loadFoodObjectDetector(); // NEW: Load YOLO model
+  }
+
+  Future<void> _loadFoodObjectDetector() async {
+    _foodDetector = FoodObjectDetector();
+    await _foodDetector!.loadModel();
+    setState(() => _isFoodDetectorReady = true);
+    print('\x1B[34m[DEBUG] FoodObjectDetector (YOLOv11s) loaded\x1B[0m');
   }
 
   Future<void> _requestPermissionAndInitCamera() async {
@@ -43,7 +56,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
       try {
         final cameras = await availableCameras();
         if (cameras.isEmpty) {
-          print('\x1B[31m[ERROR] No cameras available\x1B[0m');
+          print('\x1B[34m[DEBUG] No cameras available\x1B[0m');
           _hasPermission = false;
           setState(() => _isLoading = false);
           return;
@@ -64,7 +77,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
         setState(() => _isCameraReady = true);
         print('\x1B[34m[DEBUG] Camera initialized and ready\x1B[0m');
       } catch (e) {
-        print('\x1B[31m[ERROR] Failed to initialize camera: $e\x1B[0m');
+        print('\x1B[34m[DEBUG] Failed to initialize camera: $e\x1B[0m');
         _hasPermission = false;
       }
     } else {
@@ -83,7 +96,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   Future<void> _retakeOrNewScan() async {
     setState(() {
       _pickedImage = null;
-      _detectedObjects = null;
+      _foodDetections = null;
       _imageSizeForDrawing = null;
     });
     print('\x1B[34m[DEBUG] Resetting to live camera preview\x1B[0m');
@@ -92,14 +105,14 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   Future<void> _resetStateForNewImage() async {
     setState(() {
       _pickedImage = null;
-      _detectedObjects = null;
+      _foodDetections = null;
       _imageSizeForDrawing = null;
     });
   }
 
   Future<void> _takePicture() async {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      print('\x1B[31m[ERROR] Camera not ready to take picture\x1B[0m');
+      print('\x1B[34m[DEBUG] Camera not ready to take picture\x1B[0m');
       return;
     }
     await _resetStateForNewImage();
@@ -108,9 +121,9 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
       final XFile image = await _cameraController!.takePicture();
       _pickedImage = File(image.path);
       print('\x1B[34m[DEBUG] Photo captured: ${image.path}\x1B[0m');
-      await _detectObjects(_pickedImage!);
+      await _detectFoodObjects(_pickedImage!);
     } catch (e) {
-      print('\x1B[31m[ERROR] Error taking photo: $e\x1B[0m');
+      print('\x1B[34m[DEBUG] Error taking photo: $e\x1B[0m');
       setState(() => _isLoading = false);
     }
   }
@@ -128,38 +141,34 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
       }
       _pickedImage = File(pickedFile.path);
       print('\x1B[34m[DEBUG] Image picked from gallery: ${pickedFile.path}\x1B[0m');
-      await _detectObjects(_pickedImage!);
+      await _detectFoodObjects(_pickedImage!);
     } catch (e) {
-      print('\x1B[31m[ERROR] Error picking gallery image: $e\x1B[0m');
+      print('\x1B[34m[DEBUG] Error picking gallery image: $e\x1B[0m');
       setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _detectObjects(File imageFile) async {
+  // === MAIN YOLO DETECTION FUNCTION ===
+  Future<void> _detectFoodObjects(File imageFile) async {
+    if (!_isFoodDetectorReady) {
+      print('\x1B[34m[DEBUG] FoodObjectDetector not ready\x1B[0m');
+      setState(() => _isLoading = false);
+      return;
+    }
     try {
       final bytes = await imageFile.readAsBytes();
       final decodedImage = await decodeImageFromList(bytes);
       _imageSizeForDrawing = Size(decodedImage.width.toDouble(), decodedImage.height.toDouble());
 
-      final inputImage = InputImage.fromFile(imageFile);
-      final options = ObjectDetectorOptions(
-        classifyObjects: true,
-        multipleObjects: true,
-        mode: DetectionMode.single,
-      );
-      final detector = ObjectDetector(options: options);
-      final objects = await detector.processImage(inputImage);
-      print('\x1B[34m[DEBUG] Detected ${objects.length} objects\x1B[0m');
-      setState(() => _detectedObjects = objects);
-
-      for (final object in _detectedObjects!) {
-        final label = object.labels.isNotEmpty ? object.labels.first.text : 'Unknown';
-        final conf = object.labels.isNotEmpty ? object.labels.first.confidence : 0.0;
-        print('\x1B[34m[DEBUG] Object: $label (${(conf * 100).toStringAsFixed(1)}%), Box: ${object.boundingBox}\x1B[0m');
+      final results = await _foodDetector!.detectObjects(imageFile, confidenceThreshold: _confidenceThreshold);
+      print('\x1B[34m[DEBUG] Detected ${results.length} food objects\x1B[0m');
+      for (final obj in results) {
+        print('\x1B[34m[DEBUG] ${obj.label}: ${(obj.confidence * 100).toStringAsFixed(1)}% '
+            'Box: (${obj.boundingBox.left}, ${obj.boundingBox.top}, ${obj.boundingBox.right}, ${obj.boundingBox.bottom})\x1B[0m');
       }
-      await detector.close();
+      setState(() => _foodDetections = results);
     } catch (e) {
-      print('\x1B[31m[ERROR] Object Detection ERROR: $e\x1B[0m');
+      print('\x1B[34m[DEBUG] FoodObjectDetector error: $e\x1B[0m');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -200,23 +209,16 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
             height: displayH,
             fit: BoxFit.contain,
           ),
-          if (_detectedObjects != null)
-            ..._detectedObjects!.map((object) {
-              final Rect boundingBox = object.boundingBox;
-              final double scaleToFitW = displayW / imageW;
-              final double scaleToFitH = displayH / imageH;
-              final double scale = math.min(scaleToFitW, scaleToFitH);
+          if (_foodDetections != null)
+            ..._foodDetections!.map((object) {
+              // Convert normalized box to display coords
+              final left = object.boundingBox.left * displayW;
+              final top = object.boundingBox.top * displayH;
+              final width = (object.boundingBox.right - object.boundingBox.left) * displayW;
+              final height = (object.boundingBox.bottom - object.boundingBox.top) * displayH;
 
-              final double hOffset = (displayW - (imageW * scale)) / 2.0;
-              final double vOffset = (displayH - (imageH * scale)) / 2.0;
-
-              final left = boundingBox.left * scale + hOffset;
-              final top = boundingBox.top * scale + vOffset;
-              final width = boundingBox.width * scale;
-              final height = boundingBox.height * scale;
-
-              final String label = object.labels.isNotEmpty ? object.labels.first.text : 'Unknown';
-              final double confidence = object.labels.isNotEmpty ? object.labels.first.confidence : 0.0;
+              final String label = object.label;
+              final double confidence = object.confidence;
 
               return Positioned(
                 left: left,
@@ -379,7 +381,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                         ),
                       _buildImageWithBoxes(context),
                       const SizedBox(height: 18),
-                      if (!_isLoading && _detectedObjects != null && _detectedObjects!.isNotEmpty)
+                      if (!_isLoading && _foodDetections != null && _foodDetections!.isNotEmpty)
                         Card(
                           elevation: 2,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -391,16 +393,16 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                               children: [
                                 Text("Detected Items:", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 8),
-                                ..._detectedObjects!.map((obj) {
-                                  final label = obj.labels.isNotEmpty ? obj.labels.first.text : 'Unknown';
-                                  final conf = obj.labels.isNotEmpty ? obj.labels.first.confidence : 0.0;
+                                ..._foodDetections!.map((obj) {
+                                  final label = obj.label;
+                                  final conf = obj.confidence;
                                   return Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 2.0),
                                     child: Text(
                                       '• $label (${(conf * 100).toStringAsFixed(0)}%)'
-                                      '${conf < _confidenceThreshold && obj.labels.isNotEmpty ? " - Low Confidence" : ""}',
+                                      '${conf < _confidenceThreshold ? " - Low Confidence" : ""}',
                                       style: theme.textTheme.bodyMedium?.copyWith(
-                                        color: (conf < _confidenceThreshold && obj.labels.isNotEmpty)
+                                        color: (conf < _confidenceThreshold)
                                             ? theme.colorScheme.onSurfaceVariant.withOpacity(0.7)
                                             : theme.colorScheme.onSurface,
                                         fontWeight: FontWeight.w500
@@ -412,7 +414,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                             ),
                           ),
                         )
-                      else if (!_isLoading && _detectedObjects != null && _detectedObjects!.isEmpty)
+                      else if (!_isLoading && _foodDetections != null && _foodDetections!.isEmpty)
                          Padding(
                            padding: const EdgeInsets.symmetric(vertical: 16.0),
                            child: Text("No objects detected in the image.", style: theme.textTheme.labelLarge),
@@ -423,13 +425,13 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                         isFilled: true,
                         icon: Icons.check_circle_outline_rounded,
                         label: "Add High Confidence Items",
-                        onPressed: (_detectedObjects == null || _detectedObjects!.where((obj) => obj.labels.isNotEmpty && obj.labels.first.confidence >= _confidenceThreshold).isEmpty)
+                        onPressed: (_foodDetections == null || _foodDetections!.where((obj) => obj.confidence >= _confidenceThreshold).isEmpty)
                           ? null
                           : () {
                           int count = 0;
-                          for (var obj in _detectedObjects!) {
-                            if (obj.labels.isNotEmpty && obj.labels.first.confidence >= _confidenceThreshold) {
-                              final label = obj.labels.first.text;
+                          for (var obj in _foodDetections!) {
+                            if (obj.confidence >= _confidenceThreshold) {
+                              final label = obj.label;
                               scanController.addItem(
                                 ScannedItem(itemName: label, quantity: 1, unit: null, source: "food_scan_object", isReviewed: false, isEdited: false),
                               );
