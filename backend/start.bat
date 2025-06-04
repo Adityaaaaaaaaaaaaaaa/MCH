@@ -12,12 +12,13 @@ call .venv\Scripts\activate
 
 echo.
 echo   Backend is launching! Open your browser to:
-echo     http://127.0.0.1:8000/docs
+echo     http://<your-PC-IP>:8000/docs
+echo   (From another device, replace <your-PC-IP> with your actual PC IP.)
 echo   (Press Ctrl+C in this window to stop the backend)
 echo.
 
-REM Start FastAPI server
-uvicorn app.main:app --reload
+REM Start FastAPI server on all network interfaces
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 echo.
 echo ==================================================
