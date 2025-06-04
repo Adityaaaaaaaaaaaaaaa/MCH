@@ -1,12 +1,12 @@
 @echo off
-REM ===============================
+REM ===================================================
 REM   FastAPI Backend Start Script
-REM ===============================
+REM ===================================================
 
 echo.
-echo ===============================
+echo ==================================================
 echo   🚀  Starting FastAPI Backend
-echo ===============================
+echo ==================================================
 echo   Activating Python virtual environment...
 call .venv\Scripts\activate
 
@@ -20,7 +20,7 @@ REM Start FastAPI server
 uvicorn app.main:app --reload
 
 echo.
-echo ===============================
+echo ==================================================
 echo   FastAPI backend has stopped!
-echo ===============================
+echo ==================================================
 pause
