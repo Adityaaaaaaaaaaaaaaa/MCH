@@ -6,10 +6,10 @@ import requests
 
 router = APIRouter()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-@router.post("/analyze")
+@router.post("/scanFood")
 async def analyze_food_image(file: UploadFile = File(...)):
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     if not GEMINI_API_KEY:
         return JSONResponse(status_code=500, content={"error": "Gemini API key not set"})
     img_bytes = await file.read()

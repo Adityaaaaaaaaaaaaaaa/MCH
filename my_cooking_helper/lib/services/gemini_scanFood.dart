@@ -2,8 +2,11 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
-// Use your Render backend URL here:
-const String BACKEND_API_URL = "https://mch-rtlu.onrender.com/food/analyze"; // <-- update this
+// ignore: constant_identifier_names
+//const String BACKEND_API_URL = "https://mch-rtlu.onrender.com/food/analyze"; // <-- Render backend URL
+// ignore: constant_identifier_names
+const String BACKEND_API_URL = "http://192.168.223.52:8000/food/scanFood"; // <-- PC IP, update 
+
 
 final geminiProvider = Provider((ref) => GeminiService());
 
