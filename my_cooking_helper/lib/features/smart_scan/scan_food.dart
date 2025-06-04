@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:go_router/go_router.dart';
-import '../../utils/appbar.dart';
+import '/utils/appbar.dart';
 import '/models/scanned_item.dart';
 import 'smart_scan_controller.dart';
-import '../../services/gemini_scanFood.dart'; // <--- Make sure this path matches your project
+import '/services/gemini_scanFood.dart';
 
 class ScanFood extends ConsumerStatefulWidget {
   const ScanFood({super.key});
@@ -25,9 +25,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   File? _pickedImage;
   // ignore: unused_field
   Size? _imageSizeForDrawing;
-  String? _geminiResult; // New: For Gemini's response
-
-  //final double _confidenceThreshold = 0.40;
+  List<Map<String, dynamic>>? _geminiResult; 
 
   @override
   void initState() {
@@ -215,9 +213,16 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
     final style = ButtonStyle(
       padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
       textStyle: WidgetStateProperty.all(
-          TextStyle(fontSize: 14, fontWeight: isFilled ? FontWeight.bold : FontWeight.w500)),
+        TextStyle(
+          fontSize: 14, 
+          fontWeight: isFilled ? FontWeight.bold : FontWeight.w500
+        )
+      ),
       shape: WidgetStateProperty.all(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12)
+        )
+      ),
     );
     if (isFilled) {
       return FilledButton.icon(
@@ -299,7 +304,8 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                         ),
                       _buildImageWithPreview(context),
                       const SizedBox(height: 18),
-                      if (!_isLoading && _geminiResult != null)
+                      // --- Display Gemini Results
+                      if (!_isLoading && _geminiResult != null && _geminiResult!.isNotEmpty)
                         Card(
                           elevation: 2,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -309,19 +315,26 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Gemini Identified Items:", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                Text(
+                                  "Identified Food Items:",
+                                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                ),
                                 const SizedBox(height: 8),
-                                Text(_geminiResult!, style: theme.textTheme.bodyMedium),
+                                ..._geminiResult!.map((item) => Text(
+                                  "${item['item']} x${item['count']}",
+                                  style: theme.textTheme.bodyMedium,
+                                )),
                               ],
                             ),
                           ),
                         )
-                      else if (!_isLoading && _geminiResult == null)
+                      else if (!_isLoading && (_geminiResult == null || _geminiResult!.isEmpty))
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
                           child: Text("No result yet.", style: theme.textTheme.labelLarge),
                         ),
                       const SizedBox(height: 22),
+                      // --- Add Items to Review Button
                       _styledButton(
                         context,
                         isFilled: true,
@@ -330,24 +343,26 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                         onPressed: (_geminiResult == null || _geminiResult!.isEmpty)
                           ? null
                           : () {
-                            final items = _geminiResult!
-                                .split(',')
-                                .map((item) => item.trim())
-                                .where((item) => item.isNotEmpty)
-                                .toList();
-                            int count = 0;
-                            for (var label in items) {
-                              scanController.addItem(
-                                ScannedItem(itemName: label, quantity: 1, unit: null, source: "gemini_vision", isReviewed: false, isEdited: false),
-                              );
-                              count++;
-                            }
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('$count item(s) added to review!')),
-                              );
-                            }
-                          },
+                              int count = 0;
+                              for (var item in _geminiResult!) {
+                                scanController.addItem(
+                                  ScannedItem(
+                                    itemName: item['item'],
+                                    quantity: (item['count'] as num).toDouble(),
+                                    unit: null,
+                                    source: "gemini_vision",
+                                    isReviewed: false,
+                                    isEdited: false,
+                                  ),
+                                );
+                                count++;
+                              }
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('$count item(s) added to review!')),
+                                );
+                              }
+                            },
                       ),
                       const SizedBox(height: 10),
                       _styledButton(
