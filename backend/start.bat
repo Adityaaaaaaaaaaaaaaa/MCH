@@ -3,9 +3,6 @@ REM ===============================
 REM   FastAPI Backend Start Script
 REM ===============================
 
-REM Set color to cyan
-color 0B
-
 echo.
 echo ===============================
 echo   🚀  Starting FastAPI Backend
