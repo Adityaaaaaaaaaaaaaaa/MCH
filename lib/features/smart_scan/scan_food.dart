@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +23,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   bool _isLoading = false;
   bool _hasPermission = false;
   File? _pickedImage;
+  // ignore: unused_field
   Size? _imageSizeForDrawing;
   String? _geminiResult; // New: For Gemini's response
 
