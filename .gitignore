@@ -60,3 +60,8 @@ python/*
 *.tar.gz
 *.h5
 *.ckpt
+
+.env
+__pycache__/
+.venv/
+*.pyc
