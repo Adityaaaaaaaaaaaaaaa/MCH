@@ -4,12 +4,12 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/appbar.dart';
 import '/models/scanned_item.dart';
 import 'smart_scan_controller.dart';
+import '../../services/gemini_scanFood.dart'; // <--- Make sure this path matches your project
 
 class ScanFood extends ConsumerStatefulWidget {
   const ScanFood({super.key});
@@ -24,10 +24,10 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   bool _isLoading = false;
   bool _hasPermission = false;
   File? _pickedImage;
-  List<DetectedObject>? _detectedObjects;
   Size? _imageSizeForDrawing;
+  String? _geminiResult; // New: For Gemini's response
 
-  final double _confidenceThreshold = 0.40;
+  //final double _confidenceThreshold = 0.40;
 
   @override
   void initState() {
@@ -83,8 +83,8 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   Future<void> _retakeOrNewScan() async {
     setState(() {
       _pickedImage = null;
-      _detectedObjects = null;
       _imageSizeForDrawing = null;
+      _geminiResult = null;
     });
     print('\x1B[34m[DEBUG] Resetting to live camera preview\x1B[0m');
   }
@@ -92,8 +92,8 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   Future<void> _resetStateForNewImage() async {
     setState(() {
       _pickedImage = null;
-      _detectedObjects = null;
       _imageSizeForDrawing = null;
+      _geminiResult = null;
     });
   }
 
@@ -108,7 +108,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
       final XFile image = await _cameraController!.takePicture();
       _pickedImage = File(image.path);
       print('\x1B[34m[DEBUG] Photo captured: ${image.path}\x1B[0m');
-      await _detectObjects(_pickedImage!);
+      await _analyzeWithGemini(_pickedImage!);
     } catch (e) {
       print('\x1B[31m[ERROR] Error taking photo: $e\x1B[0m');
       setState(() => _isLoading = false);
@@ -128,125 +128,45 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
       }
       _pickedImage = File(pickedFile.path);
       print('\x1B[34m[DEBUG] Image picked from gallery: ${pickedFile.path}\x1B[0m');
-      await _detectObjects(_pickedImage!);
+      await _analyzeWithGemini(_pickedImage!);
     } catch (e) {
       print('\x1B[31m[ERROR] Error picking gallery image: $e\x1B[0m');
       setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _detectObjects(File imageFile) async {
-    try {
-      final bytes = await imageFile.readAsBytes();
-      final decodedImage = await decodeImageFromList(bytes);
-      _imageSizeForDrawing = Size(decodedImage.width.toDouble(), decodedImage.height.toDouble());
-
-      final inputImage = InputImage.fromFile(imageFile);
-      final options = ObjectDetectorOptions(
-        classifyObjects: true,
-        multipleObjects: true,
-        mode: DetectionMode.single,
-      );
-      final detector = ObjectDetector(options: options);
-      final objects = await detector.processImage(inputImage);
-      print('\x1B[34m[DEBUG] Detected ${objects.length} objects\x1B[0m');
-      setState(() => _detectedObjects = objects);
-
-      for (final object in _detectedObjects!) {
-        final label = object.labels.isNotEmpty ? object.labels.first.text : 'Unknown';
-        final conf = object.labels.isNotEmpty ? object.labels.first.confidence : 0.0;
-        print('\x1B[34m[DEBUG] Object: $label (${(conf * 100).toStringAsFixed(1)}%), Box: ${object.boundingBox}\x1B[0m');
-      }
-      await detector.close();
-    } catch (e) {
-      print('\x1B[31m[ERROR] Object Detection ERROR: $e\x1B[0m');
-    } finally {
-      setState(() => _isLoading = false);
-    }
+  Future<void> _analyzeWithGemini(File imageFile) async {
+    setState(() {
+      _geminiResult = null;
+      _isLoading = true;
+    });
+    final geminiService = ref.read(geminiProvider);
+    final result = await geminiService.analyzeFoodImage(imageFile);
+    setState(() {
+      _geminiResult = result;
+      _isLoading = false;
+    });
+    print('\x1B[34m[DEBUG] Gemini result: $result\x1B[0m');
   }
 
-  Widget _buildImageWithBoxes(BuildContext context) {
-    if (_pickedImage == null || _imageSizeForDrawing == null) return const SizedBox.shrink();
+  Widget _buildImageWithPreview(BuildContext context) {
+    if (_pickedImage == null) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
     final double screenWidth = MediaQuery.of(context).size.width;
     final double maxWidth = screenWidth * 0.92;
-    final double imageW = _imageSizeForDrawing!.width;
-    final double imageH = _imageSizeForDrawing!.height;
-    final double imageAspect = imageW / imageH;
-
-    double displayW = maxWidth;
-    double displayH = displayW / imageAspect;
-    final double maxDisplayH = MediaQuery.of(context).size.height * 0.45;
-    if (displayH > maxDisplayH) {
-      displayH = maxDisplayH;
-      displayW = displayH * imageAspect;
-    }
 
     return Container(
-      width: displayW,
-      height: displayH,
+      width: maxWidth,
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: theme.primaryColor.withOpacity(0.4), width: 1.5),
       ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.file(
-            _pickedImage!,
-            width: displayW,
-            height: displayH,
-            fit: BoxFit.contain,
-          ),
-          if (_detectedObjects != null)
-            ..._detectedObjects!.map((object) {
-              final Rect boundingBox = object.boundingBox;
-              final double scaleToFitW = displayW / imageW;
-              final double scaleToFitH = displayH / imageH;
-              final double scale = math.min(scaleToFitW, scaleToFitH);
-
-              final double hOffset = (displayW - (imageW * scale)) / 2.0;
-              final double vOffset = (displayH - (imageH * scale)) / 2.0;
-
-              final left = boundingBox.left * scale + hOffset;
-              final top = boundingBox.top * scale + vOffset;
-              final width = boundingBox.width * scale;
-              final height = boundingBox.height * scale;
-
-              final String label = object.labels.isNotEmpty ? object.labels.first.text : 'Unknown';
-              final double confidence = object.labels.isNotEmpty ? object.labels.first.confidence : 0.0;
-
-              return Positioned(
-                left: left,
-                top: top,
-                width: width,
-                height: height,
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.redAccent, width: 2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Align(
-                    alignment: Alignment.topLeft,
-                    child: Container(
-                      color: Colors.redAccent.withOpacity(0.7),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      child: Text(
-                        "$label (${(confidence * 100).toStringAsFixed(0)}%)",
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-        ],
+      child: Image.file(
+        _pickedImage!,
+        width: maxWidth,
+        fit: BoxFit.contain,
       ),
     );
   }
@@ -293,10 +213,10 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   }) {
     final theme = Theme.of(context);
     final style = ButtonStyle(
-      padding: MaterialStateProperty.all(const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-      textStyle: MaterialStateProperty.all(
+      padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+      textStyle: WidgetStateProperty.all(
           TextStyle(fontSize: 14, fontWeight: isFilled ? FontWeight.bold : FontWeight.w500)),
-      shape: MaterialStateProperty.all(
+      shape: WidgetStateProperty.all(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
     );
     if (isFilled) {
@@ -312,17 +232,17 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
       label: Text(label),
       onPressed: onPressed,
       style: style.copyWith(
-        backgroundColor: MaterialStateProperty.resolveWith<Color?>(
-          (Set<MaterialState> states) {
-            if (states.contains(MaterialState.disabled)) {
+        backgroundColor: WidgetStateProperty.resolveWith<Color?>(
+          (Set<WidgetState> states) {
+            if (states.contains(WidgetState.disabled)) {
               return theme.colorScheme.onSurface.withOpacity(0.12);
             }
             return theme.colorScheme.secondaryContainer;
           },
         ),
-        foregroundColor: MaterialStateProperty.resolveWith<Color?>(
-          (Set<MaterialState> states) {
-            if (states.contains(MaterialState.disabled)) {
+        foregroundColor: WidgetStateProperty.resolveWith<Color?>(
+          (Set<WidgetState> states) {
+            if (states.contains(WidgetState.disabled)) {
               return theme.colorScheme.onSurface.withOpacity(0.38);
             }
             return theme.colorScheme.onSecondaryContainer;
@@ -377,9 +297,9 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                           padding: EdgeInsets.only(bottom: 16.0),
                           child: CircularProgressIndicator(),
                         ),
-                      _buildImageWithBoxes(context),
+                      _buildImageWithPreview(context),
                       const SizedBox(height: 18),
-                      if (!_isLoading && _detectedObjects != null && _detectedObjects!.isNotEmpty)
+                      if (!_isLoading && _geminiResult != null)
                         Card(
                           elevation: 2,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -389,59 +309,45 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Detected Items:", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                Text("Gemini Identified Items:", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 8),
-                                ..._detectedObjects!.map((obj) {
-                                  final label = obj.labels.isNotEmpty ? obj.labels.first.text : 'Unknown';
-                                  final conf = obj.labels.isNotEmpty ? obj.labels.first.confidence : 0.0;
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 2.0),
-                                    child: Text(
-                                      '• $label (${(conf * 100).toStringAsFixed(0)}%)'
-                                      '${conf < _confidenceThreshold && obj.labels.isNotEmpty ? " - Low Confidence" : ""}',
-                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                        color: (conf < _confidenceThreshold && obj.labels.isNotEmpty)
-                                            ? theme.colorScheme.onSurfaceVariant.withOpacity(0.7)
-                                            : theme.colorScheme.onSurface,
-                                        fontWeight: FontWeight.w500
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
+                                Text(_geminiResult!, style: theme.textTheme.bodyMedium),
                               ],
                             ),
                           ),
                         )
-                      else if (!_isLoading && _detectedObjects != null && _detectedObjects!.isEmpty)
-                         Padding(
-                           padding: const EdgeInsets.symmetric(vertical: 16.0),
-                           child: Text("No objects detected in the image.", style: theme.textTheme.labelLarge),
-                         ),
+                      else if (!_isLoading && _geminiResult == null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          child: Text("No result yet.", style: theme.textTheme.labelLarge),
+                        ),
                       const SizedBox(height: 22),
                       _styledButton(
                         context,
                         isFilled: true,
                         icon: Icons.check_circle_outline_rounded,
-                        label: "Add High Confidence Items",
-                        onPressed: (_detectedObjects == null || _detectedObjects!.where((obj) => obj.labels.isNotEmpty && obj.labels.first.confidence >= _confidenceThreshold).isEmpty)
+                        label: "Add Item(s) to Review",
+                        onPressed: (_geminiResult == null || _geminiResult!.isEmpty)
                           ? null
                           : () {
-                          int count = 0;
-                          for (var obj in _detectedObjects!) {
-                            if (obj.labels.isNotEmpty && obj.labels.first.confidence >= _confidenceThreshold) {
-                              final label = obj.labels.first.text;
+                            final items = _geminiResult!
+                                .split(',')
+                                .map((item) => item.trim())
+                                .where((item) => item.isNotEmpty)
+                                .toList();
+                            int count = 0;
+                            for (var label in items) {
                               scanController.addItem(
-                                ScannedItem(itemName: label, quantity: 1, unit: null, source: "food_scan_object", isReviewed: false, isEdited: false),
+                                ScannedItem(itemName: label, quantity: 1, unit: null, source: "gemini_vision", isReviewed: false, isEdited: false),
                               );
                               count++;
                             }
-                          }
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('$count item(s) added to review!')),
-                            );
-                          }
-                        },
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('$count item(s) added to review!')),
+                              );
+                            }
+                          },
                       ),
                       const SizedBox(height: 10),
                       _styledButton(
