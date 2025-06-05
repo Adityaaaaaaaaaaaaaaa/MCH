@@ -322,34 +322,50 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                       _buildImageWithPreview(context),
                       const SizedBox(height: 18),
                       // --- Display Gemini Results
-                      if (!_isLoading && _geminiResult != null && _geminiResult!.isNotEmpty)
-                        Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          margin: const EdgeInsets.symmetric(vertical: 10),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Gemini Detected Items:",
-                                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                ..._geminiResult!.map((item) => Text(
-                                  "${item['item']} × ${item['count']}",
-                                  style: theme.textTheme.bodyMedium,
-                                )),
-                              ],
-                            ),
-                          ),
-                        )
-                      else if (!_isLoading && (_geminiResult == null || _geminiResult!.isEmpty))
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
-                          child: Text("No result yet.", style: theme.textTheme.labelLarge),
-                        ),
+if (!_isLoading && _geminiResult != null && _geminiResult!.isNotEmpty)
+  Card(
+    elevation: 2,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    margin: const EdgeInsets.symmetric(vertical: 10),
+    child: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Gemini Identified Items:",
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          ..._geminiResult!.map((item) {
+            String name = item['item'] ?? '';
+            double? count;
+            if (item['count'] != null) {
+              if (item['count'] is int) {
+                count = (item['count'] as int).toDouble();
+              } else if (item['count'] is double) {
+                count = item['count'];
+              }
+            }
+            String? unit = item['unit'];
+            String display = name;
+            if (count != null) {
+              display += ": $count";
+              if (unit != null && unit.isNotEmpty) display += " $unit";
+            } else if (unit != null && unit.isNotEmpty) {
+              display += " ($unit)";
+            }
+            return Text(display, style: theme.textTheme.bodyMedium);
+          }).toList(),
+        ],
+      ),
+    ),
+  )
+else if (!_isLoading && (_geminiResult == null || _geminiResult!.isEmpty))
+  Padding(
+    padding: const EdgeInsets.symmetric(vertical: 16.0),
+    child: Text("No result yet.", style: theme.textTheme.labelLarge),
+  ),
                       const SizedBox(height: 22),
                       // --- Add Items to Review Button
                       _styledButton(

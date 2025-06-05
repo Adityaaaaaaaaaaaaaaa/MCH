@@ -4,6 +4,7 @@ import os
 import base64
 import requests
 import filetype
+import re
 
 router = APIRouter()
 
@@ -19,24 +20,40 @@ def build_food_prompt(
     style="short"):
     prompt = (
         f"Identify and count all {focus} in this image. "
-        f"List each food item with its count, separated by commas. "
-        f"Respond only with the format: itemName: count, itemName: count."
+        f"List each food item with its count and unit (if present), separated by commas. "
+        f"Respond only with the format: itemName: count unit, itemName: count unit."
     )
     return prompt
 
-def parse_gemini_response(response_json):
+def parse_gemini_food_response(response_json):
     try:
         text = response_json["candidates"][0]["content"]["parts"][0]["text"]
         items = []
         for pair in text.split(","):
             pair = pair.strip()
+            if not pair:
+                continue
             if ":" in pair:
-                label, count = pair.split(":")
-                items.append({"item": label.strip(), "count": int(count.strip())})
+                label, count = pair.split(":", 1)
+                label = label.strip()
+                count_str = count.strip()
+                # Extract number and unit
+                num_match = re.match(r"^([0-9]+(?:\.[0-9]+)?)\s*(.*)$", count_str)
+                if num_match:
+                    count_value = float(num_match.group(1))
+                    unit = num_match.group(2).strip()
+                    items.append({
+                        "item": label,
+                        "count": count_value,
+                        "unit": unit if unit else None
+                    })
+                else:
+                    # No number found; treat as unit/unknown
+                    items.append({"item": label, "count": None, "unit": count_str})
             else:
-                if pair:
-                    items.append({"item": pair.strip(), "count": 1})
-        print(f"[DEBUG] Parsed items: {items}")
+                label = pair.strip()
+                items.append({"item": label, "count": None, "unit": None})
+        print(f"[DEBUG] Parsed food items: {items}")
         return items
     except Exception as e:
         print(f"[ERROR] Failed to parse Gemini response: {e}")
@@ -56,7 +73,6 @@ async def analyze_food_image(file: UploadFile = File(...)):
 
     base64_img = base64.b64encode(img_bytes).decode('utf-8')
 
-    # Build the prompt (could also accept parameters from the request)
     prompt = build_food_prompt()
     print(f"[DEBUG] Using prompt: {prompt}")
 
@@ -84,7 +100,7 @@ async def analyze_food_image(file: UploadFile = File(...)):
         print(f"[DEBUG] Gemini API status: {resp.status_code}")
         print(f"[DEBUG] Gemini API raw response: {resp.text}")
         if resp.status_code == 200:
-            detected_items = parse_gemini_response(resp.json())
+            detected_items = parse_gemini_food_response(resp.json())
             return JSONResponse(status_code=200, content={"detected_items": detected_items})
         else:
             return JSONResponse(status_code=resp.status_code, content={"error": resp.text})
