@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 // ignore: constant_identifier_names
 const String BACKEND_API_URL = "https://mch-rtlu.onrender.com/receipt/scanReceipt"; // <-- Render backend URL
 // ignore: constant_identifier_names
-//const String BACKEND_API_URL = "http://192.168.223.52:8000/receipt/scanReceipt"; // <-- PC IP, update 
+//const String BACKEND_API_URL = "http://192.168.75.52:8000/receipt/scanReceipt"; // <-- PC IP, update 
 
 
 final geminiReceiptProvider = Provider((ref) => GeminiReceiptService());
