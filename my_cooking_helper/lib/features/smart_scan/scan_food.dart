@@ -6,8 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:go_router/go_router.dart';
 import '/utils/appbar.dart';
-import '/models/scanned_item.dart';
-import 'smart_scan_controller.dart';
+import '/models/item.dart';
+import 'item_controlller.dart';
 import '/services/gemini_scanFood.dart';
 
 class ScanFood extends ConsumerStatefulWidget {
