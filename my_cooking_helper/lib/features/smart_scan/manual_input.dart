@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '/models/item.dart';
-import 'item_controlller.dart';
+import 'item_controller.dart';
 import '/utils/appbar.dart';
 import '/theme/glassmorphic_card.dart';
 
