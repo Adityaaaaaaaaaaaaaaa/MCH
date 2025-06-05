@@ -1,19 +1,18 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 // ignore: constant_identifier_names
-const String BACKEND_API_URL = "https://mch-rtlu.onrender.com/food/scanFood"; // <-- Render backend URL
+const String BACKEND_API_URL = "https://mch-rtlu.onrender.com/food/scanFood";
 // ignore: constant_identifier_names
-//const String BACKEND_API_URL = "http://192.168.75.52:8000/food/scanFood"; // <-- PC IP, update 
-
+// const String BACKEND_API_URL = "http://192.168.75.52:8000/food/scanFood";
 
 final geminiProvider = Provider((ref) => GeminiService());
 
-
 class GeminiService {
-  // Returns a list of maps: [{"item": ..., "count": ...}, ...]
+  /// Sends a food image to the backend and returns
+  /// a list of maps: [{"item": String, "count": double?}, ...]
   Future<List<Map<String, dynamic>>> analyzeFoodImage(File imageFile) async {
     try {
       var request = http.MultipartRequest('POST', Uri.parse(BACKEND_API_URL));
@@ -27,17 +26,37 @@ class GeminiService {
 
       if (response.statusCode == 200) {
         final jsonResp = jsonDecode(responseBody);
-        // Defensive: Check if structure is as expected
+
         if (jsonResp is Map && jsonResp.containsKey('detected_items')) {
-          return List<Map<String, dynamic>>.from(jsonResp['detected_items']);
+          final List<Map<String, dynamic>> rawItems =
+              List<Map<String, dynamic>>.from(jsonResp['detected_items']);
+
+          // Ensure all counts are double? for downstream UI
+          return rawItems.map((item) {
+            String name = item['item'] ?? '';
+            double? count;
+            if (item['count'] != null) {
+              if (item['count'] is int) {
+                count = (item['count'] as int).toDouble();
+              } else if (item['count'] is double) {
+                count = item['count'];
+              } else if (item['count'] is String) {
+                // Defensive: try parsing string to double
+                count = double.tryParse(item['count']);
+              }
+            }
+            return {'item': name, 'count': count};
+          }).toList();
         } else {
+          print('\x1B[33m[DEBUG] "detected_items" missing in backend response\x1B[0m');
           return [];
         }
       } else {
+        print('\x1B[31m[DEBUG] Backend API error, non-200 response\x1B[0m');
         return [];
       }
     } catch (e) {
-      print('\x1B[31m[DEBUG] Backend API error: $e\x1B[0m');
+      print('\x1B[31m[DEBUG] Backend API exception: $e\x1B[0m');
       return [];
     }
   }

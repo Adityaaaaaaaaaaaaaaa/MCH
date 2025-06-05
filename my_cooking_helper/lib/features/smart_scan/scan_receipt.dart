@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -140,37 +139,19 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
       _isLoading = true;
     });
     final geminiReceiptService = ref.read(geminiReceiptProvider);
-    final result = await geminiReceiptService.analyzeReceiptImage(imageFile);
+    final result = await geminiReceiptService.analyzeReceiptImage(imageFile); // result is now List<Map<String, dynamic>>
     try {
-      final detected = _extractDetectedItems(result);
       setState(() {
-        _geminiResult = detected;
+        _geminiResult = result;
         _isLoading = false;
       });
-      print('\x1B[34m[DEBUG] Gemini receipt result: $detected\x1B[0m');
+      print('\x1B[34m[DEBUG] Gemini receipt result: $result\x1B[0m');
     } catch (e) {
       print('\x1B[31m[ERROR] Failed to extract items from response: $e\x1B[0m');
       setState(() => _isLoading = false);
     }
   }
 
-  List<Map<String, dynamic>>? _extractDetectedItems(String responseBody) {
-    try {
-      // Decode the responseBody string to a Map
-      final decoded = jsonDecode(responseBody);
-
-      if (decoded.containsKey('detected_items')) {
-        // Parse as List<Map<String, dynamic>>
-        final items = List<Map<String, dynamic>>.from(
-          decoded['detected_items'] as List
-        );
-        return items;
-      }
-    } catch (e) {
-      print('\x1B[31m[ERROR] Receipt item extraction failed: $e\x1B[0m');
-    }
-    return null;
-  }
 
   Widget _buildImageWithPreview(BuildContext context) {
     if (_pickedImage == null) return const SizedBox.shrink();
@@ -322,6 +303,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                       _buildImageWithPreview(context),
                       const SizedBox(height: 18),
                       // --- Display Gemini Results
+// --- Display Gemini Results
 if (!_isLoading && _geminiResult != null && _geminiResult!.isNotEmpty)
   Card(
     elevation: 2,
@@ -345,15 +327,13 @@ if (!_isLoading && _geminiResult != null && _geminiResult!.isNotEmpty)
                 count = (item['count'] as int).toDouble();
               } else if (item['count'] is double) {
                 count = item['count'];
+              } else if (item['count'] is String) {
+                count = double.tryParse(item['count']);
               }
             }
-            String? unit = item['unit'];
             String display = name;
             if (count != null) {
               display += ": $count";
-              if (unit != null && unit.isNotEmpty) display += " $unit";
-            } else if (unit != null && unit.isNotEmpty) {
-              display += " ($unit)";
             }
             return Text(display, style: theme.textTheme.bodyMedium);
           }).toList(),
@@ -368,35 +348,51 @@ else if (!_isLoading && (_geminiResult == null || _geminiResult!.isEmpty))
   ),
                       const SizedBox(height: 22),
                       // --- Add Items to Review Button
-                      _styledButton(
-                        context,
-                        isFilled: true,
-                        icon: Icons.check_circle_outline_rounded,
-                        label: "Add Item(s) to Review",
-                        onPressed: (_geminiResult == null || _geminiResult!.isEmpty)
-                          ? null
-                          : () {
-                              int count = 0;
-                              for (var item in _geminiResult!) {
-                                scanController.addItem(
-                                  ScannedItem(
-                                    itemName: item['item'],
-                                    quantity: (item['count'] as num).toDouble(),
-                                    unit: null,
-                                    source: "gemini_receipt",
-                                    isReviewed: false,
-                                    isEdited: false,
-                                  ),
-                                );
-                                count++;
-                              }
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('$count item(s) added to review!')),
-                                );
-                              }
-                            },
-                      ),
+// --- Add Items to Review Button
+_styledButton(
+  context,
+  isFilled: true,
+  icon: Icons.check_circle_outline_rounded,
+  label: "Add Item(s) to Review",
+  onPressed: (_geminiResult == null || _geminiResult!.isEmpty)
+    ? null
+    : () {
+        int countAdded = 0;
+        for (var item in _geminiResult!) {
+          String name = item['item'] ?? '';
+          double quantity = 1.0; // Default if count is missing
+
+          if (item['count'] != null) {
+            if (item['count'] is int) {
+              quantity = (item['count'] as int).toDouble();
+            } else if (item['count'] is double) {
+              quantity = item['count'];
+            } else if (item['count'] is String) {
+              final parsed = double.tryParse(item['count']);
+              if (parsed != null) quantity = parsed;
+            }
+          }
+
+          scanController.addItem(
+            ScannedItem(
+              itemName: name,
+              quantity: quantity,
+              unit: null,
+              source: "gemini_receipt",
+              isReviewed: false,
+              isEdited: false,
+            ),
+          );
+          countAdded++;
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$countAdded item(s) added to review!')),
+          );
+        }
+      },
+),
+
                       const SizedBox(height: 10),
                       _styledButton(
                         context,

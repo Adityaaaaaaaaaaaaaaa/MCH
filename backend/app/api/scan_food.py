@@ -16,12 +16,11 @@ def detect_mime_type(file_bytes: bytes):
 
 def build_food_prompt(
     language="English", 
-    focus="food items (Fruits, Vegetables, Ingredients, food products, Grocery food items)", 
-    style="short"):
+    focus="food items (Fruits, Vegetables, Ingredients, food products, Grocery food items)"):
     prompt = (
         f"Identify and count all {focus} in this image. "
-        f"List each food item with its count and unit (if present), separated by commas. "
-        f"Respond only with the format: itemName: count unit, itemName: count unit."
+        f"List each food item with its count, separated by commas. "
+        f"Respond only with the format: itemName: count, itemName: count."
     )
     return prompt
 
@@ -37,23 +36,15 @@ def parse_gemini_food_response(response_json):
                 label, count = pair.split(":", 1)
                 label = label.strip()
                 count_str = count.strip()
-                # Extract number and unit
-                num_match = re.match(r"^([0-9]+(?:\.[0-9]+)?)\s*(.*)$", count_str)
+                # Try to extract number (float or int)
+                num_match = re.match(r"^([0-9]+(?:\.[0-9]+)?)", count_str)
                 if num_match:
                     count_value = float(num_match.group(1))
-                    #unit = num_match.group(2).strip()
-                    items.append({
-                        "item": label,
-                        "count": count_value,
-                        #"unit": unit if unit else None
-                    })
+                    items.append({"item": label, "count": count_value})
                 else:
-                    # No number found; treat as unit/unknown
-                    #items.append({"item": label, "count": None, "unit": count_str})
                     items.append({"item": label, "count": None})
             else:
                 label = pair.strip()
-                #items.append({"item": label, "count": None, "unit": None})
                 items.append({"item": label, "count": None})
         print(f"[DEBUG] Parsed food items: {items}")
         return items
@@ -74,7 +65,6 @@ async def analyze_food_image(file: UploadFile = File(...)):
     print(f"[DEBUG] Detected MIME type: {mime_type}")
 
     base64_img = base64.b64encode(img_bytes).decode('utf-8')
-
     prompt = build_food_prompt()
     print(f"[DEBUG] Using prompt: {prompt}")
 
