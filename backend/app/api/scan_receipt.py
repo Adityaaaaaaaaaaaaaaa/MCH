@@ -17,14 +17,15 @@ def detect_mime_type(file_bytes: bytes):
 def build_receipt_prompt():
     return (
         "Extract all itemized purchases from this receipt image. "
-        "Respond ONLY in the format: itemName: count unit, itemName: count unit. "
-        "If unit is not available, omit it. If count is not available, omit it. Do NOT add any explanation or other text."
+        "Respond ONLY in the format: itemName: count, itemName: count. "
+        "If count is not available, just list the item name. Do NOT add any explanation or other text."
     )
 
 def parse_gemini_receipt_response(response_json):
     try:
         text = response_json["candidates"][0]["content"]["parts"][0]["text"]
         items = []
+        # Handles both newlines and comma-separated
         lines = text.splitlines()
         for line in lines:
             for pair in line.split(','):
@@ -35,21 +36,16 @@ def parse_gemini_receipt_response(response_json):
                     label, count = pair.split(":", 1)
                     label = label.strip()
                     count_str = count.strip()
-                    # Extract number and unit
-                    num_match = re.match(r"^([0-9]+(?:\.[0-9]+)?)\s*(.*)$", count_str)
+                    # Try to extract number (float or int)
+                    num_match = re.match(r"^([0-9]+(?:\.[0-9]+)?)", count_str)
                     if num_match:
                         count_value = float(num_match.group(1))
-                        unit = num_match.group(2).strip()
-                        items.append({
-                            "item": label,
-                            "count": count_value,
-                            "unit": unit if unit else None
-                        })
+                        items.append({"item": label, "count": count_value})
                     else:
-                        items.append({"item": label, "count": None, "unit": count_str})
+                        items.append({"item": label, "count": None})
                 else:
                     label = pair.strip()
-                    items.append({"item": label, "count": None, "unit": None})
+                    items.append({"item": label, "count": None})
         print(f"[DEBUG] Parsed receipt items: {items}")
         return items
     except Exception as e:

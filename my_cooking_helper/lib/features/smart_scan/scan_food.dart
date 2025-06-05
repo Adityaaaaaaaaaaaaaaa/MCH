@@ -328,15 +328,13 @@ if (!_isLoading && _geminiResult != null && _geminiResult!.isNotEmpty)
                 count = (item['count'] as int).toDouble();
               } else if (item['count'] is double) {
                 count = item['count'];
+              } else if (item['count'] is String) {
+                count = double.tryParse(item['count']);
               }
             }
-            String? unit = item['unit'];
             String display = name;
             if (count != null) {
               display += ": $count";
-              if (unit != null && unit.isNotEmpty) display += " $unit";
-            } else if (unit != null && unit.isNotEmpty) {
-              display += " ($unit)";
             }
             return Text(display, style: theme.textTheme.bodyMedium);
           }).toList(),
