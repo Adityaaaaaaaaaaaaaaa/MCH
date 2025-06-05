@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '/models/scanned_item.dart';
+import '/models/item.dart';
 
 // State: List of ScannedItems (mutable during a session)
 class SmartScanController extends StateNotifier<List<ScannedItem>> {

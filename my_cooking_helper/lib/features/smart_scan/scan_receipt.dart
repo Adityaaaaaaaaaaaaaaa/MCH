@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../utils/appbar.dart';
-import '/models/scanned_item.dart';
-import 'smart_scan_controller.dart';
+import '/utils/appbar.dart';
+import '/models/item.dart';
+import 'item_controlller.dart';
 import '/widgets/scan_action_button.dart';
 import '/utils/drawer.dart';
 import '/utils/nav.dart';
