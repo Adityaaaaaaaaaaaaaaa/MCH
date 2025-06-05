@@ -4,6 +4,7 @@ import os
 import base64
 import requests
 import filetype
+import re
 
 router = APIRouter()
 
@@ -14,25 +15,41 @@ def detect_mime_type(file_bytes: bytes):
     return "application/octet-stream"
 
 def build_receipt_prompt():
-    # Prompt for extracting line items (item name and price/quantity if possible)
     return (
         "Extract all itemized purchases from this receipt image. "
-        "Respond in the format: itemName: quantity (if available), itemName: quantity. "
-        "If quantity is not available, just list item names."
+        "Respond ONLY in the format: itemName: count unit, itemName: count unit. "
+        "If unit is not available, omit it. If count is not available, omit it. Do NOT add any explanation or other text."
     )
 
 def parse_gemini_receipt_response(response_json):
     try:
         text = response_json["candidates"][0]["content"]["parts"][0]["text"]
         items = []
-        for pair in text.split(","):
-            pair = pair.strip()
-            if ":" in pair:
-                label, count = pair.split(":")
-                items.append({"item": label.strip(), "count": int(count.strip())})
-            else:
-                if pair:
-                    items.append({"item": pair.strip(), "count": 1})
+        lines = text.splitlines()
+        for line in lines:
+            for pair in line.split(','):
+                pair = pair.strip()
+                if not pair:
+                    continue
+                if ":" in pair:
+                    label, count = pair.split(":", 1)
+                    label = label.strip()
+                    count_str = count.strip()
+                    # Extract number and unit
+                    num_match = re.match(r"^([0-9]+(?:\.[0-9]+)?)\s*(.*)$", count_str)
+                    if num_match:
+                        count_value = float(num_match.group(1))
+                        unit = num_match.group(2).strip()
+                        items.append({
+                            "item": label,
+                            "count": count_value,
+                            "unit": unit if unit else None
+                        })
+                    else:
+                        items.append({"item": label, "count": None, "unit": count_str})
+                else:
+                    label = pair.strip()
+                    items.append({"item": label, "count": None, "unit": None})
         print(f"[DEBUG] Parsed receipt items: {items}")
         return items
     except Exception as e:
