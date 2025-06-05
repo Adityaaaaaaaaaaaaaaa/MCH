@@ -118,7 +118,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
     setState(() => _isLoading = true);
     try {
       final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 92);
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
       if (pickedFile == null) {
         print('\x1B[34m[DEBUG] No gallery image picked\x1B[0m');
         setState(() => _isLoading = false);
