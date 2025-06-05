@@ -41,18 +41,20 @@ def parse_gemini_food_response(response_json):
                 num_match = re.match(r"^([0-9]+(?:\.[0-9]+)?)\s*(.*)$", count_str)
                 if num_match:
                     count_value = float(num_match.group(1))
-                    unit = num_match.group(2).strip()
+                    #unit = num_match.group(2).strip()
                     items.append({
                         "item": label,
                         "count": count_value,
-                        "unit": unit if unit else None
+                        #"unit": unit if unit else None
                     })
                 else:
                     # No number found; treat as unit/unknown
-                    items.append({"item": label, "count": None, "unit": count_str})
+                    #items.append({"item": label, "count": None, "unit": count_str})
+                    items.append({"item": label, "count": None})
             else:
                 label = pair.strip()
-                items.append({"item": label, "count": None, "unit": None})
+                #items.append({"item": label, "count": None, "unit": None})
+                items.append({"item": label, "count": None})
         print(f"[DEBUG] Parsed food items: {items}")
         return items
     except Exception as e:
