@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
 // ignore: constant_identifier_names
-//const String BACKEND_API_URL = "https://mch-rtlu.onrender.com/food/scanReceipt"; // <-- Render backend URL
+const String BACKEND_API_URL = "https://mch-rtlu.onrender.com/food/scanReceipt"; // <-- Render backend URL
 // ignore: constant_identifier_names
-const String BACKEND_API_URL = "http://192.168.223.52:8000/food/scanReceipt"; // <-- PC IP, update 
+//const String BACKEND_API_URL = "http://192.168.223.52:8000/food/scanReceipt"; // <-- PC IP, update 
 
 
 final geminiReceiptProvider = Provider((ref) => GeminiReceiptService());

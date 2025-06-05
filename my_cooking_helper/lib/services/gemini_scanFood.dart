@@ -4,9 +4,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 // ignore: constant_identifier_names
-//const String BACKEND_API_URL = "https://mch-rtlu.onrender.com/food/scanFood"; // <-- Render backend URL
+const String BACKEND_API_URL = "https://mch-rtlu.onrender.com/food/scanFood"; // <-- Render backend URL
 // ignore: constant_identifier_names
-const String BACKEND_API_URL = "http://192.168.223.52:8000/food/scanFood"; // <-- PC IP, update 
+//const String BACKEND_API_URL = "http://192.168.223.52:8000/food/scanFood"; // <-- PC IP, update 
 
 
 final geminiProvider = Provider((ref) => GeminiService());
