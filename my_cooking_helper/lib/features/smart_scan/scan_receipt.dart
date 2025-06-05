@@ -53,7 +53,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
         );
         _cameraController = CameraController(
           camera,
-          ResolutionPreset.high,
+          ResolutionPreset.medium,
           enableAudio: false,
           imageFormatGroup: Platform.isAndroid
               ? ImageFormatGroup.nv21
