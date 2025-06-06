@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '/widgets/glassmorphic_card.dart';
+import 'package:glass/glass.dart';
 
 class ProfileAccountSection extends StatelessWidget {
   final dynamic user;
@@ -20,9 +20,7 @@ class ProfileAccountSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 0),
       child: Hero(
         tag: "profile-icon",
-        child: GlassmorphicCard(
-          borderRadius: 34,
-          blur: 18,
+        child: Container(
           padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 18),
           child: Row(
             children: [
@@ -36,11 +34,14 @@ class ProfileAccountSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(user?.displayName ?? "User",
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    Text(user?.email ?? "",
-                        style: theme.textTheme.bodyMedium),
+                    Text(
+                      user?.displayName ?? "User",
+                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      user?.email ?? "",
+                      style: theme.textTheme.bodyMedium,
+                    ),
                   ],
                 ),
               ),
@@ -60,6 +61,13 @@ class ProfileAccountSection extends StatelessWidget {
               ),
             ],
           ),
+        )
+        .asGlass(
+          blurX: 10,
+          blurY: 10,
+          tintColor: Colors.white,
+          frosted: true,
+          clipBorderRadius: BorderRadius.circular(20),
         ),
       ),
     );

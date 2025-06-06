@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '/widgets/glassmorphic_card.dart';
+//import '/widgets/glassmorphic_card.dart';
 import '/utils/preference_utils.dart';
+import 'package:glass/glass.dart'; 
 
 class PreferenceSection extends StatelessWidget {
   final String? gender, cookingTime, spiceLevel;
@@ -19,7 +20,6 @@ class PreferenceSection extends StatelessWidget {
     required this.onUpdatePref,
   });
 
-  // Map a List<String> to List<PreferenceOption>
   List<PreferenceOption> mapLabelsToOptions(List<PreferenceOption> options, List<dynamic> labels) {
     return labels
         .where((label) => options.any((o) => o.label == label))
@@ -32,16 +32,13 @@ class PreferenceSection extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: GlassmorphicCard(
-        borderRadius: 30,
-        blur: 15,
+      child: Container(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("Your Preferences", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-
             AnimatedPreferenceTile<PreferenceOption>(
               title: "Gender",
               value: PreferenceUtils.genders.firstWhere(
@@ -102,6 +99,13 @@ class PreferenceSection extends StatelessWidget {
             ),
           ],
         ),
+      )
+      .asGlass(
+        blurX: 15,
+        blurY: 15,
+        //tintColor: Colors.white,
+        clipBorderRadius: BorderRadius.circular(30),
+        frosted: true,
       ),
     );
   }
@@ -191,7 +195,13 @@ class AnimatedPreferenceTile<T extends PreferenceOption> extends StatelessWidget
             await onChanged(result);
           }
         },
-      ),
+      ).asGlass(
+        blurX: 10,
+        blurY: 10,
+        //tintColor: Colors.white,
+        clipBorderRadius: BorderRadius.circular(18),
+        frosted: false,
+      )
     );
   }
 }

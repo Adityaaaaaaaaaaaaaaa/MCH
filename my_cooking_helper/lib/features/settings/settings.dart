@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '/utils/appbar.dart';
 import '/utils/loader.dart';
 import '/utils/snackbar.dart';
 import '/widgets/glassmorphic_card.dart';
@@ -282,31 +284,62 @@ class _SettingsScreenState extends ConsumerState<Settings>
     }
   }
 
-
   void _showDeleteDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent, // Makes dialog itself transparent
+        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Text("Delete Account?"),
-        content: const Text("This action is irreversible. Are you sure you want to delete your account?"),
-        actions: [
-          TextButton(
-            child: const Text("Cancel"),
-            onPressed: () => Navigator.of(ctx).pop(),
+        contentPadding: EdgeInsets.zero,
+        content: Container(
+          padding: const EdgeInsets.fromLTRB(20, 26, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Delete Account?",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "This action is irreversible. Are you sure you want to delete your account?",
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      child: const Text("Cancel"),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () async {
+                        Navigator.of(ctx).pop();
+                        await _deleteAccount();
+                      },
+                      child: const Text("Delete"),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white
-            ),
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              await _deleteAccount();
-            },
-            child: const Text("Delete"),
-          ),
-        ],
+        ).asGlass(
+          blurX: 14,
+          blurY: 14,
+          tintColor: Colors.white,
+          clipBorderRadius: BorderRadius.circular(18),
+          frosted: true,
+        ),
       ),
     );
   }
@@ -333,48 +366,29 @@ class _SettingsScreenState extends ConsumerState<Settings>
         : const AssetImage("assets/app_icon.png");
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: CustomAppBar(
+        showMenu: false,
+        title: "Settings",
+        themeToggleWidget: const ThemeToggleButton(),
+        onMenuTap: () => context.push('/home'),
+        height: 100,
+        borderRadius: 26,
+        topPadding: 60,
+      ),
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 36, left: 16, right: 16, bottom: 10),
-              child: GlassmorphicCard(
-                borderRadius: 24,
-                blur: 16,
-                opacity: 0.15,
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.arrow_back_ios_new_rounded,
-                          color: theme.colorScheme.primary, size: 28),
-                      onPressed: () => context.go('/home'),
-                      tooltip: "Back to Home",
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        "Settings",
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const ThemeToggleButton(),
-                  ],
-                ),
-              ),
-            ),
+            const SizedBox(height: 30),
             // Profile: Only profile and switch account
             ProfileAccountSection(
               user: user,
               avatar: avatar,
               onSwitchAccount: _switchAccount,
             ),
-            const SizedBox(height: 34),
+            const SizedBox(height: 30),
             // Preferences
             PreferenceSection(
               gender: gender,
@@ -404,7 +418,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
               ),
             ),
             // Account actions
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
             AccountActionsSection(
               onSignOut: _signOut,
               onDelete: _showDeleteDialog,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '/widgets/glassmorphic_card.dart';
+import 'package:glass/glass.dart';
 
 class AccountActionsSection extends StatelessWidget {
   final VoidCallback onSignOut;
@@ -14,13 +14,13 @@ class AccountActionsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Column(
       children: [
+        // --------- SIGN OUT CARD ----------
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 22),
-          child: GlassmorphicCard(
-            borderRadius: 20,
-            blur: 10,
+          child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -41,15 +41,20 @@ class AccountActionsSection extends StatelessWidget {
                 ),
               ],
             ),
+          )
+          .asGlass(
+            blurX: 10,
+            blurY: 10,
+            tintColor: Colors.white,
+            frosted: true,
+            clipBorderRadius: BorderRadius.circular(20),
           ),
         ),
         const SizedBox(height: 12),
+        // --------- DELETE CARD ----------
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 22),
-          child: GlassmorphicCard(
-            borderRadius: 16,
-            blur: 8,
-            opacity: 0.22,
+          child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -58,10 +63,13 @@ class AccountActionsSection extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Delete your Account",
-                          style: theme.textTheme.titleMedium?.copyWith(
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold)),
+                      Text(
+                        "Delete your Account",
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       Text(
                         "Irreversible action!",
                         style: TextStyle(color: Colors.red[700]),
@@ -83,6 +91,13 @@ class AccountActionsSection extends StatelessWidget {
                 ),
               ],
             ),
+          )
+          .asGlass(
+            blurX: 8,
+            blurY: 8,
+            tintColor: Colors.white,
+            frosted: true,
+            clipBorderRadius: BorderRadius.circular(16),
           ),
         ),
       ],
