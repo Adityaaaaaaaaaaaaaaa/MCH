@@ -30,18 +30,18 @@ class _SettingsScreenState extends ConsumerState<Settings>
   String? gender, cookingTime, spiceLevel;
   List<String> allergies = [], diets = [], cuisines = [], barriers = [];
 
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
+  // late AnimationController _controller;
+  // late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    /*_controller = AnimationController(
       duration: const Duration(milliseconds: 850),
       vsync: this,
-    );
-    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
-    _controller.forward();
+    );*/
+    // _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    // _controller.forward();
     _loadPrefs();
   }
 
@@ -376,56 +376,110 @@ class _SettingsScreenState extends ConsumerState<Settings>
         borderRadius: 26,
         topPadding: 60,
       ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-          children: [
-            const SizedBox(height: 30),
-            // Profile: Only profile and switch account
-            ProfileAccountSection(
-              user: user,
-              avatar: avatar,
-              onSwitchAccount: _switchAccount,
-            ),
-            const SizedBox(height: 30),
-            // Preferences
-            PreferenceSection(
-              gender: gender,
-              cookingTime: cookingTime,
-              spiceLevel: spiceLevel,
-              allergies: allergies,
-              diets: diets,
-              cuisines: cuisines,
-              barriers: barriers,
-              onUpdatePref: _updatePref,
-            ),
-            const SizedBox(height: 30),
-            // Theme 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: GlassmorphicCard(
-                borderRadius: 28,
-                blur: 14,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("Change Theme", style: theme.textTheme.bodyLarge),
-                    const ThemeToggleButton(),
-                  ],
-                ),
+      body: Stack(
+        children: [
+          // -------- BACKGROUND IMAGES --------
+          Positioned(
+            top: 60,
+            left: 100,
+            child: Transform.rotate(
+              angle: -1.5708, //radians
+              child: Image.asset(
+                'assets/images/settings/settings3.png',
+                width: 300,
+                height: 300,
+                fit: BoxFit.contain,
               ),
             ),
-            // Account actions
-            const SizedBox(height: 20),
-            AccountActionsSection(
-              onSignOut: _signOut,
-              onDelete: _showDeleteDialog,
+          ),
+          Positioned(
+            bottom: 250,
+            left: 40,
+            child: Transform.rotate(
+              angle: 0.3, 
+              child: Image.asset(
+                'assets/images/settings/settings1.png',
+                width: 200,
+                height: 200,
+                fit: BoxFit.contain,
+              ),
             ),
-            const SizedBox(height: 25),
-          ],
-        ),
+          ),
+          Positioned(
+            bottom: 55,
+            right: 35,
+            child: Transform.rotate(
+              angle: 0.1, 
+              child: Image.asset(
+                'assets/images/settings/settings2.png',
+                width: 150,
+                height: 150,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 75,
+            left: 20,
+            child: Transform.rotate(
+              angle: -0.4, 
+              child: Image.asset(
+                'assets/images/settings/settings3.png',
+                width: 150,
+                height: 150,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            children: [
+              const SizedBox(height: 30),
+              // Profile: Only profile and switch account
+              ProfileAccountSection(
+                user: user,
+                avatar: avatar,
+                onSwitchAccount: _switchAccount,
+              ),
+              const SizedBox(height: 30),
+              // Preferences
+              PreferenceSection(
+                gender: gender,
+                cookingTime: cookingTime,
+                spiceLevel: spiceLevel,
+                allergies: allergies,
+                diets: diets,
+                cuisines: cuisines,
+                barriers: barriers,
+                onUpdatePref: _updatePref,
+              ),
+              const SizedBox(height: 30),
+              // Theme 
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: GlassmorphicCard(
+                  borderRadius: 28,
+                  blur: 14,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Change Theme", style: theme.textTheme.bodyLarge),
+                      const ThemeToggleButton(),
+                    ],
+                  ),
+                ),
+              ),
+              // Account actions
+              const SizedBox(height: 20),
+              AccountActionsSection(
+                onSignOut: _signOut,
+                onDelete: _showDeleteDialog,
+              ),
+              const SizedBox(height: 25),
+            ],
+          ),
+        ],
       ),
     );
   }

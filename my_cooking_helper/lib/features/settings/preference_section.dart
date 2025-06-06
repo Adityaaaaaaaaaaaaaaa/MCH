@@ -37,7 +37,13 @@ class PreferenceSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Your Preferences", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Center(child: Text(
+              "Your Preferences", 
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                fontSize: 25,
+              )
+            )),
             const SizedBox(height: 16),
             AnimatedPreferenceTile<PreferenceOption>(
               title: "Gender",
@@ -164,7 +170,13 @@ class AnimatedPreferenceTile<T extends PreferenceOption> extends StatelessWidget
       child: ListTile(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         tileColor: theme.colorScheme.primary.withOpacity(0.045),
-        title: Text(title, style: theme.textTheme.bodyLarge),
+        title: Center(child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+          child: Text(
+            title, 
+            style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
+          ),
+        )),
         subtitle: multiSelect
             ? multiDisplay()
             : value != null

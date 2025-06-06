@@ -25,10 +25,22 @@ class AccountActionsSection extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Sign Out", style: theme.textTheme.bodyLarge),
+                Text(
+                  "Sign Out", 
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 20
+                  )),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.logout),
-                  label: const Text("Sign Out"),
+                  label: Text(
+                    "Sign Out", 
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    )),
                   onPressed: onSignOut,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent.withOpacity(0.93),
@@ -45,8 +57,8 @@ class AccountActionsSection extends StatelessWidget {
           .asGlass(
             blurX: 10,
             blurY: 10,
-            tintColor: Colors.white,
-            frosted: true,
+            tintColor: Colors.blue,
+            frosted: false,
             clipBorderRadius: BorderRadius.circular(20),
           ),
         ),
@@ -65,21 +77,30 @@ class AccountActionsSection extends StatelessWidget {
                     children: [
                       Text(
                         "Delete your Account",
-                        style: theme.textTheme.titleMedium?.copyWith(
+                        style: theme.textTheme.titleLarge?.copyWith(
                           color: Colors.red,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 20,
                         ),
                       ),
                       Text(
                         "Irreversible action!",
-                        style: TextStyle(color: Colors.red[700]),
-                      ),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 17,
+                        )),
                     ],
                   ),
                 ),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.delete_forever),
-                  label: const Text("Delete"),
+                  label: Text("Delete",
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),),
                   onPressed: () => onDelete(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
@@ -93,9 +114,9 @@ class AccountActionsSection extends StatelessWidget {
             ),
           )
           .asGlass(
-            blurX: 8,
-            blurY: 8,
-            tintColor: Colors.white,
+            blurX: 10,
+            blurY: 10,
+            tintColor: Colors.red,
             frosted: true,
             clipBorderRadius: BorderRadius.circular(16),
           ),

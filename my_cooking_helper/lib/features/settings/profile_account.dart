@@ -36,11 +36,17 @@ class ProfileAccountSection extends StatelessWidget {
                   children: [
                     Text(
                       user?.displayName ?? "User",
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 20,
+                      ),
                     ),
                     Text(
                       user?.email ?? "",
-                      style: theme.textTheme.bodyMedium,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -63,11 +69,11 @@ class ProfileAccountSection extends StatelessWidget {
           ),
         )
         .asGlass(
-          blurX: 10,
-          blurY: 10,
-          tintColor: Colors.white,
+          blurX: 15,
+          blurY: 15,
+          tintColor: Colors.blue,
           frosted: true,
-          clipBorderRadius: BorderRadius.circular(20),
+          clipBorderRadius: BorderRadius.circular(30),
         ),
       ),
     );
