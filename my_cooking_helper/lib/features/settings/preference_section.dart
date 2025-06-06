@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '/theme/glassmorphic_card.dart';
+import '/widgets/glassmorphic_card.dart';
 import '/utils/preference_utils.dart';
 
 class PreferenceSection extends StatelessWidget {
