@@ -5,7 +5,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import '/models/item.dart';
 import 'item_controller.dart';
 import '/utils/appbar.dart';
-import '/theme/glassmorphic_card.dart';
+import '/widgets/glassmorphic_card.dart';
 
 class ReviewScreen extends ConsumerWidget {
   const ReviewScreen({Key? key}) : super(key: key);
