@@ -56,7 +56,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       icon: const Icon(Icons.arrow_back_ios_new_rounded),
                       color: theme.colorScheme.primary,
                       tooltip: "Back",
-                      onPressed: () => Navigator.of(context).canPop() ? Navigator.of(context).pop() : Navigator.of(context).maybePop(),
+                      onPressed: onMenuTap ?? () {
+                        // Fallback: Try pop, then maybePop, then go home
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        } else {
+                          Navigator.of(context).maybePop();
+                        }
+                      },
                     ),
               ),
               Expanded(
