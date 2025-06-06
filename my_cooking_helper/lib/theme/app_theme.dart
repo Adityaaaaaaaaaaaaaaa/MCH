@@ -1,38 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '/utils/colors.dart';
 import 'theme_provider.dart';
 
 class AppThemes {
-  // Light theme 
+  // Light Theme
   static ThemeData lightTheme = ThemeData(
-    colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF0B8FAC)),
-    scaffoldBackgroundColor: Color(0xFFE5F1FA),
+    colorScheme: ColorScheme.light(
+      primary: AppColors.lightPrimary,
+      secondary: AppColors.lightSecondary,
+      background: AppColors.lightBackground,
+      surface: AppColors.lightCard,
+      onPrimary: Colors.white,
+      onSurface: AppColors.lightText,
+    ),
+    scaffoldBackgroundColor: AppColors.lightBackground,
+    cardColor: AppColors.lightCard,
     appBarTheme: AppBarTheme(
-      backgroundColor: Color(0xFF0B8FAC),
+      backgroundColor: AppColors.lightPrimary,
       foregroundColor: Colors.white,
+    ),
+    textTheme: const TextTheme(
+      bodyMedium: TextStyle(
+        color: AppColors.lightText,
+      ),
+      titleMedium: TextStyle(
+        color: AppColors.lightText,
+        fontWeight: FontWeight.w600,
+      ),
     ),
     useMaterial3: true,
   );
 
-  // dark theme
+  // Dark Theme
   static ThemeData darkTheme = ThemeData(
     colorScheme: ColorScheme.dark(
-      primary: Color(0xFF189AB4),      
-      secondary: Color(0xFF05445E),    
-      background: Color(0xFF102B3F),   
-      surface: Color(0xFF243B53),      
+      primary: AppColors.darkPrimary,
+      secondary: AppColors.darkSecondary,
+      background: AppColors.darkBackground,
+      surface: AppColors.darkCard,
       onPrimary: Colors.white,
-      onSurface: Colors.white,
+      onSurface: AppColors.darkText,
     ),
-    scaffoldBackgroundColor: Color(0xFF102B3F),
+    scaffoldBackgroundColor: AppColors.darkBackground,
+    cardColor: AppColors.darkCard,
     appBarTheme: AppBarTheme(
-      backgroundColor: Color(0xFF05445E),
+      backgroundColor: AppColors.darkPrimary,
       foregroundColor: Colors.white,
+    ),
+    textTheme: const TextTheme(
+      bodyMedium: TextStyle(
+        color: AppColors.darkText,
+      ),
+      titleMedium: TextStyle(
+        color: AppColors.darkText,
+        fontWeight: FontWeight.w600,
+      ),
     ),
     useMaterial3: true,
   );
 }
-
 
 class ThemeToggleButton extends ConsumerWidget {
   const ThemeToggleButton({super.key});
@@ -44,10 +71,10 @@ class ThemeToggleButton extends ConsumerWidget {
 
     return IconButton(
       icon: AnimatedSwitcher(
-        duration: Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 300),
         child: themeMode == ThemeMode.dark
-            ? Icon(Icons.nights_stay, color: Colors.amber, key: ValueKey('dark'))
-            : Icon(Icons.wb_sunny, color: Colors.blueAccent, key: ValueKey('light')),
+            ? const Icon(Icons.nights_stay, color: Colors.amber, key: ValueKey('dark'))
+            : const Icon(Icons.wb_sunny, color: Colors.blueAccent, key: ValueKey('light')),
       ),
       tooltip: "Switch theme",
       onPressed: () => notifier.toggleTheme(),
