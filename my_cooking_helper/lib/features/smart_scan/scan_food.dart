@@ -187,7 +187,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              context.go('/manualInput');
+              context.push('/manualInput');
             },
             child: const Text('Manual Input'),
           ),
