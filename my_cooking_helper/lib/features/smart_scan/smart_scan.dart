@@ -30,14 +30,14 @@ class SmartScan extends StatelessWidget {
         children: [
           // -------- BACKGROUND IMAGES --------
           Positioned(
-            top: 100,
+            top: 110,
             left: 30,
             child: Transform.rotate(
               angle: -0.15, //radians
               child: Image.asset(
                 'assets/images/smartScan/scanFood.png',
-                width: 250,
-                height: 250,
+                width: 210,
+                height: 210,
                 fit: BoxFit.contain,
               ),
             ),

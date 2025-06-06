@@ -62,6 +62,7 @@ flutter:
     - assets/images/smartScan/
     - assets/images/smartScan/scanFood/
     - assets/images/smartScan/scanReceipt/
+    - assets/images/settings/
 
   # example:
   # fonts:
