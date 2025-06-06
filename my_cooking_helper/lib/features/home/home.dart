@@ -1,11 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../utils/appbar.dart';
+import 'dart:ui';
+import '/utils/appbar.dart';
 import '/theme/app_theme.dart';
 import '/utils/loader.dart';
 import '/utils/drawer.dart';
 import '/utils/nav.dart';
+
+// ---- GLASS EXTENSION (if not globally available) ----
+extension GlassWidget<T extends Widget> on T {
+  Widget asGlass({
+    bool enabled = true,
+    double blurX = 18.0,
+    double blurY = 18.0,
+    Color tintColor = Colors.white,
+    bool frosted = true,
+    BorderRadius clipBorderRadius = BorderRadius.zero,
+    Clip clipBehaviour = Clip.antiAlias,
+    TileMode tileMode = TileMode.clamp,
+    CustomClipper<RRect>? clipper,
+  }) {
+    return !enabled
+        ? this
+        : ClipRRect(
+            clipper: clipper,
+            clipBehavior: clipBehaviour,
+            borderRadius: clipBorderRadius,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: blurX,
+                sigmaY: blurY,
+                tileMode: tileMode,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: (tintColor != Colors.transparent)
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            tintColor.withOpacity(0.10),
+                            tintColor.withOpacity(0.08),
+                          ],
+                        )
+                      : null,
+                ),
+                child: this,
+              ),
+            ),
+          );
+  }
+}
+// -----------------------------------------------------
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -17,7 +64,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
 
   final List<_FeatureCardData> features = [
     _FeatureCardData('Scan and Cook', Icons.camera_alt_rounded, Colors.deepOrange, '/scan'),
@@ -35,7 +81,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       duration: const Duration(milliseconds: 950),
       vsync: this,
     );
-    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
     _controller.forward();
   }
 
@@ -51,26 +96,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       barrierDismissible: false,
       builder: (_) => Center(
         child: loader(
-          Colors.deepOrangeAccent, // color
-          70,                // size
-          5,                 // lineWidth
-          8,                 // itemCount
-          500               // duration (ms)
+          Colors.deepOrangeAccent,
+          70,
+          5,
+          8,
+          500,
         ),
       ),
     );
 
-    // Wait for 1.2 seconds for the loader animation
     await Future.delayed(const Duration(milliseconds: 700));
-
-    // Dismiss the loader
     if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
-
-    // Now navigate to settings
     if (context.mounted) context.go('/settings');
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -78,8 +116,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final isLight = theme.brightness == Brightness.light;
 
     //width/height of all feature cards!
-    const double cardWidth = 170;  //  width
-    const double cardHeight = 155; //  height
+    const double cardWidth = 160;  //  width
+    const double cardHeight = 135; //  height
 
     return Scaffold(
       backgroundColor: isLight
@@ -98,38 +136,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         borderRadius: 26,
         topPadding: 60,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isLight
-                ? [
-                    const Color(0xfff8fafc),
-                    const Color(0xffa1c4fd).withOpacity(0.11),
-                  ]
-                : [
-                    const Color(0xff232526),
-                    const Color(0xff393e46).withOpacity(0.13),
-                  ],
+      body: Stack(
+        children: [
+          // -------- BACKGROUND IMAGES --------
+          Positioned(
+            top: 40,
+            left: 90,
+            child: Transform.rotate(
+              angle: -0.6, //radians
+              child: Image.asset(
+                'assets/images/home/salad.png',
+                width: 300,
+                height: 300,
+                fit: BoxFit.contain,
+              ),
+            ),
           ),
-        ),
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Center(
-            // Center the grid
+          Positioned(
+            bottom: 250,
+            left: 40,
+            child: Transform.rotate(
+              angle: 0.9, 
+              child: Image.asset(
+                'assets/images/home/curry.png',
+                width: 300,
+                height: 300,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 60,
+            right: 55,
+            child: Transform.rotate(
+              angle: 0.1, 
+              child: Image.asset(
+                'assets/images/home/burger.png',
+                width: 150,
+                height: 150,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 40,
+            left: 15,
+            child: Transform.rotate(
+              angle: -0.4, 
+              child: Image.asset(
+                'assets/images/home/tenders.png',
+                width: 150,
+                height: 150,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          // -------- FEATURE CARDS IN GLASS EFFECT --------
+          Center(
             child: SizedBox(
               width: (cardWidth + 24) * 2,
-              // 2 columns: card + spacing
               child: GridView.builder(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.only(top: 150, bottom: 10),
                 itemCount: features.length,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,         // Always 2 per row
-                  mainAxisSpacing: 26,       // Vertical spacing
-                  crossAxisSpacing: 24,      // Horizontal spacing
-                  childAspectRatio: cardWidth / cardHeight, // Controls exact shape!
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 26,
+                  crossAxisSpacing: 24,
+                  childAspectRatio: cardWidth / cardHeight,
                 ),
                 itemBuilder: (context, index) {
                   final feature = features[index];
@@ -146,6 +220,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         width: cardWidth,
                         height: cardHeight,
                         onTap: () => context.push(feature.route),
+                      ).asGlass(
+                        blurX: 10,
+                        blurY: 10,
+                        tintColor: /*feature.color*/ const Color.fromARGB(255, 255, 255, 255), // Color tint from card color
+                        clipBorderRadius: BorderRadius.circular(25),
+                        frosted: true, // Uncomment if using a noise texture
                       ),
                     ),
                   );
@@ -153,12 +233,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
+// ------ Feature Card ------
 class FeatureCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -179,19 +260,19 @@ class FeatureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isLight = theme.brightness == Brightness.light;
+    //final isLight = theme.brightness == Brightness.light;
     return Material(
-      color: isLight ? Colors.white : Colors.grey[900],
+      color: Colors.transparent,
       elevation: 8,
       borderRadius: BorderRadius.circular(25),
-      shadowColor: color.withOpacity(0.5), //glow edge
+      shadowColor: color.withOpacity(0.5),
       child: InkWell(
         borderRadius: BorderRadius.circular(28),
         splashColor: color.withOpacity(0.18),
         onTap: onTap,
         child: SizedBox(
-          width: width,         // << controls card width
-          height: height,       // << controls card height
+          width: width,
+          height: height,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -200,7 +281,7 @@ class FeatureCard extends StatelessWidget {
                   color: color.withOpacity(0.13),
                   shape: BoxShape.circle,
                 ),
-                padding: const EdgeInsets.all(15), // Icon padding inside circle
+                padding: const EdgeInsets.all(15),
                 child: Icon(icon, size: 32, color: color),
               ),
               const SizedBox(height: 14),
@@ -220,6 +301,7 @@ class FeatureCard extends StatelessWidget {
   }
 }
 
+// Helper class for feature card metadata
 class _FeatureCardData {
   final String title;
   final IconData icon;

@@ -49,6 +49,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.12.0"
+  blurrycontainer:
+    dependency: "direct main"
+    description:
+      name: blurrycontainer
+      sha256: ceb51f5bf0c746509a64fec43988a482adbcdf8bc5e0a11f3cc49b9ed35ff230
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -352,6 +360,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  glass:
+    dependency: "direct main"
+    description:
+      name: glass
+      sha256: "444684d73df51782d3d9e0dec7cb37fbe1f4a1456e1dc591663966ab37c4cd0e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0+2"
   go_router:
     dependency: "direct main"
     description:
