@@ -38,6 +38,10 @@ dependencies:
   image_picker: ^1.1.2
   #google_mlkit_object_detection: ^0.15.0
   http: ^1.4.0
+  #animate_gradient: ^0.0.3
+  blurrycontainer: ^2.1.0
+  glass: ^2.0.0+2
+  #fluid_background: ^1.0.2
 
 dev_dependencies:
   flutter_test:
@@ -59,6 +63,7 @@ flutter:
     - assets/images/
     - assets/images/onboarding/
     - assets/images/loginSignup/
+    - assets/images/home/
 
   # example:
   # fonts:
