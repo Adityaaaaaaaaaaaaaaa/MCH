@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../utils/colors.dart';
+
 class ScanActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -26,13 +28,15 @@ class ScanActionButton extends StatelessWidget {
         elevation: 6,
       ),
       onPressed: onPressed,
-      icon: Icon(icon, size: 28),
+      icon: Icon(
+        icon, size: 30,
+        color: Colors.white,),
       label: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
             fontSize: 18, 
             fontWeight: FontWeight.w600, 
-            color: Colors.white,
+            color: textColor(context),
           ),
       ),
     );

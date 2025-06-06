@@ -1,58 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:ui';
+import '/utils/colors.dart';
 import '/utils/appbar.dart';
 import '/theme/app_theme.dart';
 import '/utils/loader.dart';
 import '/utils/drawer.dart';
 import '/utils/nav.dart';
-
-// ---- GLASS EXTENSION (if not globally available) ----
-extension GlassWidget<T extends Widget> on T {
-  Widget asGlass({
-    bool enabled = true,
-    double blurX = 18.0,
-    double blurY = 18.0,
-    Color tintColor = Colors.white,
-    bool frosted = true,
-    BorderRadius clipBorderRadius = BorderRadius.zero,
-    Clip clipBehaviour = Clip.antiAlias,
-    TileMode tileMode = TileMode.clamp,
-    CustomClipper<RRect>? clipper,
-  }) {
-    return !enabled
-        ? this
-        : ClipRRect(
-            clipper: clipper,
-            clipBehavior: clipBehaviour,
-            borderRadius: clipBorderRadius,
-            child: BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: blurX,
-                sigmaY: blurY,
-                tileMode: tileMode,
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: (tintColor != Colors.transparent)
-                      ? LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            tintColor.withOpacity(0.10),
-                            tintColor.withOpacity(0.08),
-                          ],
-                        )
-                      : null,
-                ),
-                child: this,
-              ),
-            ),
-          );
-  }
-}
-// -----------------------------------------------------
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -112,17 +67,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isLight = theme.brightness == Brightness.light;
+    //final theme = Theme.of(context);
+    //final isLight = theme.brightness == Brightness.light;
 
     //width/height of all feature cards!
     const double cardWidth = 160;  //  width
     const double cardHeight = 135; //  height
 
     return Scaffold(
-      backgroundColor: isLight
-          ? const Color(0xfff8fafc)
-          : const Color(0xff232526),
+      backgroundColor: bgColor(context),
       extendBodyBehindAppBar: true,
       extendBody: true,
       drawer: CustomDrawer(),
@@ -221,11 +174,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         height: cardHeight,
                         onTap: () => context.push(feature.route),
                       ).asGlass(
-                        blurX: 10,
-                        blurY: 10,
-                        tintColor: /*feature.color*/ const Color.fromARGB(255, 255, 255, 255), // Color tint from card color
+                        blurX: 5,
+                        blurY: 5,
+                        //tintColor: const Color.fromARGB(255, 255, 255, 255),
                         clipBorderRadius: BorderRadius.circular(25),
-                        frosted: true, // Uncomment if using a noise texture
+                        frosted: true, 
                       ),
                     ),
                   );
