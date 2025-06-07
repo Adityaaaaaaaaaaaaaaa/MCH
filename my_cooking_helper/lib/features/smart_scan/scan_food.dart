@@ -382,10 +382,10 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                         alignment: Alignment.center,
                         children: [
                           _buildImageWithPreview(context),
-                            if (_isLoading)
-                              Container(
-                                color: Colors.black.withOpacity(0.35),
-                                child: Center(
+                          if (_isLoading)
+                            Container(
+                              color: Colors.transparent,
+                              child: Center(
                                 child: loader(
                                   Colors.lightGreen,
                                   70,
@@ -393,8 +393,8 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                                   10,
                                   500,
                                 ),
-                                ),
                               ),
+                            ),
                           ],
                         ),
                       const SizedBox(height: 20),
