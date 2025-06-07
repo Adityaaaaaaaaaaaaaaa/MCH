@@ -30,7 +30,7 @@ class SnackbarUtils {
             Flexible(
               child: Text(
                 message,
-                style: textStyle ?? theme.textTheme.bodyMedium?.copyWith(color: Colors.white),
+                style: textStyle ?? theme.textTheme.bodyLarge?.copyWith(color: Colors.white),
               ),
             ),
           ],

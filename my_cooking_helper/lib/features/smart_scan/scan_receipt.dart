@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:go_router/go_router.dart';
+import '../../utils/colors.dart';
 import '/utils/appbar.dart';
 import '/models/item.dart';
 import 'item_controller.dart';
@@ -273,9 +274,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
       extendBodyBehindAppBar: true,
       extendBody: true,
       appBar: appBarWidget,
-      backgroundColor: theme.brightness == Brightness.light
-          ? const Color(0xfff8fafc)
-          : const Color(0xff232526),
+      backgroundColor: bgColor(context),
       body: FutureBuilder<void>(
         future: _initFuture,
         builder: (context, snapshot) {
