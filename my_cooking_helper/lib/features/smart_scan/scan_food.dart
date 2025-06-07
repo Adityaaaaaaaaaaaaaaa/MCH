@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:go_router/go_router.dart';
+import '../../utils/loader.dart';
+import '../../utils/snackbar.dart';
+import '/utils/colors.dart';
 import '/utils/appbar.dart';
 import '/models/item.dart';
 import 'item_controller.dart';
@@ -22,10 +25,30 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   bool _isCameraReady = false;
   bool _isLoading = false;
   bool _hasPermission = false;
+  bool _isFlashOn = false;
+  bool _isAutoFocus = true;
   File? _pickedImage;
   // ignore: unused_field
   Size? _imageSizeForDrawing;
-  List<Map<String, dynamic>>? _geminiResult; 
+  List<Map<String, dynamic>>? _geminiResult;
+  int _lastTipIdx = -1;
+
+  final List<String> _scanTips = [
+    "Tip: Good lighting helps Gemini recognize food better!",
+    "Tip: Try to capture the food from above.",
+    "Tip: Keep the camera steady for a clearer scan.",
+    "Tip: Avoid blurry images for best results.",
+    "Tip: Remove packaging for more accurate recognition.",
+    "Tip: Place only one food item at a time for better scanning.",
+    "Tip: Tap to focus on the food for sharper results.",
+  ];
+
+  String get _randomTip {
+    int idx = DateTime.now().millisecondsSinceEpoch % _scanTips.length;
+    if (idx == _lastTipIdx) idx = (idx + 1) % _scanTips.length;
+    _lastTipIdx = idx;
+    return _scanTips[idx];
+  }
 
   @override
   void initState() {
@@ -41,7 +64,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
       try {
         final cameras = await availableCameras();
         if (cameras.isEmpty) {
-          print('\x1B[31m[ERROR] No cameras available\x1B[0m');
+          print('\x1B[34m[DEBUG] No cameras available\x1B[0m');
           _hasPermission = false;
           setState(() => _isLoading = false);
           return;
@@ -52,17 +75,15 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
         );
         _cameraController = CameraController(
           camera,
-          ResolutionPreset.high,
+          ResolutionPreset.medium,
           enableAudio: false,
-          imageFormatGroup: Platform.isAndroid
-              ? ImageFormatGroup.nv21
-              : ImageFormatGroup.bgra8888,
+          imageFormatGroup: Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888,
         );
         await _cameraController!.initialize();
         setState(() => _isCameraReady = true);
         print('\x1B[34m[DEBUG] Camera initialized and ready\x1B[0m');
       } catch (e) {
-        print('\x1B[31m[ERROR] Failed to initialize camera: $e\x1B[0m');
+        print('\x1B[34m[DEBUG] Failed to initialize camera: $e\x1B[0m');
         _hasPermission = false;
       }
     } else {
@@ -76,6 +97,48 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   void dispose() {
     _cameraController?.dispose();
     super.dispose();
+  }
+
+  Future<void> _toggleFlash() async {
+    if (_cameraController == null) return;
+    try {
+      _isFlashOn = !_isFlashOn;
+      await _cameraController!.setFlashMode(
+        _isFlashOn ? FlashMode.torch : FlashMode.off,
+      );
+      setState(() {});
+      print('\x1B[34m[DEBUG] Flash toggled: $_isFlashOn\x1B[0m');
+    } catch (e) {
+      print('\x1B[34m[DEBUG] Toggling flash: $e\x1B[0m');
+    }
+  }
+
+  Future<void> _toggleFocusMode() async {
+    if (_cameraController == null) return;
+    try {
+      _isAutoFocus = !_isAutoFocus;
+      await _cameraController!.setFocusMode(
+        _isAutoFocus ? FocusMode.auto : FocusMode.locked,
+      );
+      setState(() {});
+      print('\x1B[34m[DEBUG] Focus mode toggled: ${_isAutoFocus ? "Auto" : "Locked"}\x1B[0m');
+    } catch (e) {
+      print('\x1B[34m[DEBUG] Toggling focus mode: $e\x1B[0m');
+    }
+  }
+
+  Future<void> _tapToFocus(TapDownDetails details, BoxConstraints constraints) async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+    final offset = Offset(
+      details.localPosition.dx / constraints.maxWidth,
+      details.localPosition.dy / constraints.maxHeight,
+    );
+    try {
+      await _cameraController!.setFocusPoint(offset);
+      print('\x1B[34m[DEBUG] Focus set at: $offset\x1B[0m');
+    } catch (e) {
+      print('\x1B[34m[DEBUG] Failed to set focus point: $e\x1B[0m');
+    }
   }
 
   Future<void> _retakeOrNewScan() async {
@@ -97,7 +160,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
 
   Future<void> _takePicture() async {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      print('\x1B[31m[ERROR] Camera not ready to take picture\x1B[0m');
+      print('\x1B[34m[DEBUG] Camera not ready to take picture\x1B[0m');
       return;
     }
     await _resetStateForNewImage();
@@ -108,7 +171,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
       print('\x1B[34m[DEBUG] Photo captured: ${image.path}\x1B[0m');
       await _analyzeWithGemini(_pickedImage!);
     } catch (e) {
-      print('\x1B[31m[ERROR] Error taking photo: $e\x1B[0m');
+      print('\x1B[34m[DEBUG] Error taking photo: $e\x1B[0m');
       setState(() => _isLoading = false);
     }
   }
@@ -128,7 +191,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
       print('\x1B[34m[DEBUG] Image picked from gallery: ${pickedFile.path}\x1B[0m');
       await _analyzeWithGemini(_pickedImage!);
     } catch (e) {
-      print('\x1B[31m[ERROR] Error picking gallery image: $e\x1B[0m');
+      print('\x1B[34m[DEBUG] Error picking gallery image: $e\x1B[0m');
       setState(() => _isLoading = false);
     }
   }
@@ -147,10 +210,387 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
     print('\x1B[34m[DEBUG] Gemini result: $result\x1B[0m');
   }
 
+  Widget _buildTipBanner(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10, top: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          )
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.lightbulb, color: Colors.amber, size: 22),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              _randomTip,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCameraControls(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Flash
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: Icon(
+                _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                color: _isFlashOn ? Colors.green :  Colors.orange,
+                size: 28,
+              ),
+              onPressed: _toggleFlash,
+              tooltip: _isFlashOn ? 'Turn off flash' : 'Turn on flash',
+            ),
+            const SizedBox(width: 10),
+            IconButton(
+              icon: Icon(
+                _isAutoFocus ? Icons.center_focus_strong : Icons.center_focus_weak,
+                color: _isAutoFocus ? Colors.green : Colors.orange,
+                size: 28,
+              ),
+              onPressed: _toggleFocusMode,
+              tooltip: _isAutoFocus ? 'Auto Focus' : 'Focus Locked',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShutterButton({required VoidCallback onTap, bool enabled = true}) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        width: enabled ? 76 : 68,
+        height: enabled ? 76 : 68,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: enabled ? Colors.white : Colors.grey[400]!,
+            width: 7,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 12,
+              spreadRadius: 1,
+              offset: const Offset(0, 5),
+            )
+          ],
+          color: enabled ? Colors.white : Colors.grey[200],
+        ),
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            width: enabled ? 40 : 34,
+            height: enabled ? 40 : 34,
+            decoration: BoxDecoration(
+              color: enabled ? Colors.redAccent : Colors.grey[400],
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGalleryButton(BuildContext context) {
+    return FloatingActionButton(
+      heroTag: 'galleryBtn',
+      backgroundColor: Colors.white,
+      elevation: 4,
+      mini: true,
+      onPressed: _pickFromGallery,
+      tooltip: "Select from Gallery",
+      child: Icon(
+        Icons.photo_library_rounded, 
+        color: Theme.of(context).primaryColor, 
+        size: 28
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scanController = ref.read(smartScanControllerProvider.notifier);
+
+    final PreferredSizeWidget appBarWidget = CustomAppBar(
+      title: "Scan Food",
+      showMenu: false,
+      height: 90,
+      borderRadius: 26,
+      topPadding: 48,
+    );
+
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      extendBody: true,
+      appBar: appBarWidget,
+      backgroundColor: bgColor(context),
+      body: FutureBuilder<void>(
+        future: _initFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting || (_isLoading && _pickedImage == null)) {
+            return Center(child: 
+              loader(
+                Colors.tealAccent,
+                70,
+                5,
+                10,
+                500,
+            ));
+          }
+          if (!_hasPermission) return _buildNoPermissionUI(context);
+
+          // --- If image has been picked/captured
+          if (_pickedImage != null) {
+            return SafeArea(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  top: 20,
+                  bottom: 20, 
+                  left: 14, 
+                  right: 14,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                        Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          _buildImageWithPreview(context),
+                            if (_isLoading)
+                              Container(
+                                color: Colors.black.withOpacity(0.35),
+                                child: Center(
+                                child: loader(
+                                  Colors.lightGreen,
+                                  70,
+                                  5,
+                                  10,
+                                  500,
+                                ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      const SizedBox(height: 20),
+                      // --- Gemini Results
+                      if (!_isLoading && _geminiResult != null && _geminiResult!.isNotEmpty)
+                        Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          margin: const EdgeInsets.symmetric(vertical: 10),
+                          child: Padding(
+                            //padding: const EdgeInsets.all(16.0),
+                            padding: EdgeInsets.symmetric(horizontal: 50, vertical: 30),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Identified Items:",
+                                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
+                                ),
+                                const SizedBox(height: 8),
+                                ..._geminiResult!.map((item) {
+                                  String name = item['item'] ?? '';
+                                  double? count;
+                                  if (item['count'] != null) {
+                                    if (item['count'] is int) {
+                                      count = (item['count'] as int).toDouble();
+                                    } else if (item['count'] is double) {
+                                      count = item['count'];
+                                    } else if (item['count'] is String) {
+                                      count = double.tryParse(item['count']);
+                                    }
+                                  }
+                                  String display = name;
+                                  if (count != null) {
+                                    display += ": $count";
+                                  }
+                                  return Text(display, style: theme.textTheme.bodyMedium);
+                                }).toList(),
+                              ],
+                            ),
+                          ),
+                        )
+                      else if (!_isLoading && (_geminiResult == null || _geminiResult!.isEmpty))
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          child: Text("No result yet.", style: theme.textTheme.labelLarge),
+                        ),
+                      const SizedBox(height: 22),
+                      // --- Add Items to Review Button
+                      FilledButton.icon(
+                        icon: const Icon(Icons.check_circle_outline_rounded, size: 22),
+                        label: const Text("Add Item(s) to Review"),
+                        onPressed: (_geminiResult == null || _geminiResult!.isEmpty)
+                            ? null
+                            : () {
+                                int count = 0;
+                                for (var item in _geminiResult!) {
+                                  scanController.addItem(
+                                    ScannedItem(
+                                      itemName: item['item'],
+                                      quantity: (item['count'] as num).toDouble(),
+                                      unit: null,
+                                      source: "gemini_vision",
+                                      isReviewed: false,
+                                      isEdited: false,
+                                    ),
+                                  );
+                                  count++;
+                                }
+                                if (mounted) {
+                                  SnackbarUtils.show(
+                                    context, 
+                                    "$count item(s) added to review!",
+                                    duration: 1500, 
+                                    behavior: SnackBarBehavior.floating,
+                                    icon: Icons.add,
+                                    iconColor: Colors.deepPurple,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                                  );
+                                }
+                              },
+                        style: ButtonStyle(
+                          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 20, vertical: 14)),
+                          shape: WidgetStateProperty.all(
+                            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      FilledButton.icon(
+                        icon: Icon(
+                          Icons.reviews_outlined, 
+                          size: 22,
+                          color: Theme.of(context).colorScheme.primary,),
+                        label: Text(
+                          "Go to Review Screen",
+                          style: theme.textTheme.labelMedium,
+                        ),
+                        onPressed: () {
+                          print('\x1B[34m[DEBUG] Navigating to /reviewScreen\x1B[0m');
+                          context.push('/reviewScreen');
+                        },
+                        style: ButtonStyle(
+                          backgroundColor: WidgetStateProperty.all(theme.colorScheme.secondaryContainer),
+                          foregroundColor: WidgetStateProperty.all(theme.colorScheme.onSecondaryContainer),
+                          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 20, vertical: 14)),
+                          shape: WidgetStateProperty.all(
+                            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      Text("Scan another item:", style: theme.textTheme.titleSmall),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.camera_enhance_outlined),
+                            label: const Text("New Scan"),
+                            onPressed: _retakeOrNewScan,
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+
+          // --- Camera Live Preview UI
+          if (!_isCameraReady || _cameraController == null || !_cameraController!.value.isInitialized) {
+            print('\x1B[34m[DEBUG] Camera not ready, showing loader or error if any.\x1B[0m');
+            return const Center(child: Text("Camera not available."));
+          }
+
+          return Column(
+            children: [
+              SizedBox(height: 120),
+              _buildTipBanner(context), // Tips above
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (ctx, constraints) => GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTapDown: (details) => _tapToFocus(details, constraints),
+                    child: Center(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(22),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(22),
+                          child: CameraPreview(_cameraController!),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              _buildCameraControls(context), // Controls below preview
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildGalleryButton(context),
+                    _buildShutterButton(
+                      onTap: _isLoading ? () {} : _takePicture,
+                      enabled: !_isLoading,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildImageWithPreview(BuildContext context) {
     if (_pickedImage == null) return const SizedBox.shrink();
-
-    final theme = Theme.of(context);
+    //final theme = Theme.of(context);
     final double screenWidth = MediaQuery.of(context).size.width;
     final double maxWidth = screenWidth * 0.92;
 
@@ -159,7 +599,14 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.primaryColor.withOpacity(0.4), width: 1.5),
+        border: Border.all(width: 1.5),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.lightBlueAccent,
+            blurRadius: 16,
+            offset: Offset(1, 1),
+          ),
+        ]
       ),
       child: Image.file(
         _pickedImage!,
@@ -199,247 +646,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
             child: const Text('Settings'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _styledButton(BuildContext context, {
-    required VoidCallback? onPressed,
-    required IconData icon,
-    required String label,
-    bool isFilled = false,
-  }) {
-    final theme = Theme.of(context);
-    final style = ButtonStyle(
-      padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-      textStyle: WidgetStateProperty.all(
-        TextStyle(
-          fontSize: 14, 
-          fontWeight: isFilled ? FontWeight.bold : FontWeight.w500
-        )
-      ),
-      shape: WidgetStateProperty.all(
-        RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12)
-        )
-      ),
-    );
-    if (isFilled) {
-      return FilledButton.icon(
-        icon: Icon(icon, size: 18),
-        label: Text(label),
-        onPressed: onPressed,
-        style: style,
-      );
-    }
-    return ElevatedButton.icon(
-      icon: Icon(icon, size: 18),
-      label: Text(label),
-      onPressed: onPressed,
-      style: style.copyWith(
-        backgroundColor: WidgetStateProperty.resolveWith<Color?>(
-          (Set<WidgetState> states) {
-            if (states.contains(WidgetState.disabled)) {
-              return theme.colorScheme.onSurface.withOpacity(0.12);
-            }
-            return theme.colorScheme.secondaryContainer;
-          },
-        ),
-        foregroundColor: WidgetStateProperty.resolveWith<Color?>(
-          (Set<WidgetState> states) {
-            if (states.contains(WidgetState.disabled)) {
-              return theme.colorScheme.onSurface.withOpacity(0.38);
-            }
-            return theme.colorScheme.onSecondaryContainer;
-          },
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scanController = ref.read(smartScanControllerProvider.notifier);
-
-    final PreferredSizeWidget appBarWidget = CustomAppBar(
-      title: "Scan Food",
-      showMenu: false,
-      height: 90,
-      borderRadius: 26,
-      topPadding: 48,
-    );
-
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      extendBody: true,
-      appBar: appBarWidget,
-      backgroundColor: theme.brightness == Brightness.light
-          ? const Color(0xfff8fafc)
-          : const Color(0xff232526),
-      body: FutureBuilder<void>(
-        future: _initFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting || (_isLoading && _pickedImage == null)) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!_hasPermission) return _buildNoPermissionUI(context);
-
-          // === UI when an image has been picked/captured and is ready for review ===
-          if (_pickedImage != null) {
-            return SafeArea(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  top: appBarWidget.preferredSize.height + MediaQuery.of(context).padding.top + 18,
-                  bottom: 20, left: 14, right: 14,
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (_isLoading)
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 16.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      _buildImageWithPreview(context),
-                      const SizedBox(height: 18),
-                      // --- Display Gemini Results
-if (!_isLoading && _geminiResult != null && _geminiResult!.isNotEmpty)
-  Card(
-    elevation: 2,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    margin: const EdgeInsets.symmetric(vertical: 10),
-    child: Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Gemini Identified Items:",
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ..._geminiResult!.map((item) {
-            String name = item['item'] ?? '';
-            double? count;
-            if (item['count'] != null) {
-              if (item['count'] is int) {
-                count = (item['count'] as int).toDouble();
-              } else if (item['count'] is double) {
-                count = item['count'];
-              } else if (item['count'] is String) {
-                count = double.tryParse(item['count']);
-              }
-            }
-            String display = name;
-            if (count != null) {
-              display += ": $count";
-            }
-            return Text(display, style: theme.textTheme.bodyMedium);
-          }).toList(),
-        ],
-      ),
-    ),
-  )
-else if (!_isLoading && (_geminiResult == null || _geminiResult!.isEmpty))
-  Padding(
-    padding: const EdgeInsets.symmetric(vertical: 16.0),
-    child: Text("No result yet.", style: theme.textTheme.labelLarge),
-  ),
-
-                      const SizedBox(height: 22),
-                      // --- Add Items to Review Button
-                      _styledButton(
-                        context,
-                        isFilled: true,
-                        icon: Icons.check_circle_outline_rounded,
-                        label: "Add Item(s) to Review",
-                        onPressed: (_geminiResult == null || _geminiResult!.isEmpty)
-                          ? null
-                          : () {
-                              int count = 0;
-                              for (var item in _geminiResult!) {
-                                scanController.addItem(
-                                  ScannedItem(
-                                    itemName: item['item'],
-                                    quantity: (item['count'] as num).toDouble(),
-                                    unit: null,
-                                    source: "gemini_vision",
-                                    isReviewed: false,
-                                    isEdited: false,
-                                  ),
-                                );
-                                count++;
-                              }
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('$count item(s) added to review!')),
-                                );
-                              }
-                            },
-                      ),
-                      const SizedBox(height: 10),
-                      _styledButton(
-                        context,
-                        icon: Icons.reviews_outlined,
-                        label: "Go to Review Screen",
-                        onPressed: () {
-                          print('\x1B[34m[DEBUG] Navigating to /reviewScreen\x1B[0m');
-                          context.push('/reviewScreen');
-                        },
-                      ),
-                      const SizedBox(height: 22),
-                      Text("Scan another item:", style: theme.textTheme.titleSmall),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _styledButton(
-                            context,
-                            onPressed: _retakeOrNewScan,
-                            icon: Icons.camera_enhance_outlined,
-                            label: "New Scan",
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }
-
-          // === UI for Live Camera Preview ===
-          if (!_isCameraReady || _cameraController == null || !_cameraController!.value.isInitialized) {
-            print('\x1B[34m[DEBUG] Camera not ready, showing loader or error if any.\x1B[0m');
-            return const Center(child: Text("Camera not available."));
-          }
-
-          return Column(
-            children: [
-              SizedBox(height: appBarWidget.preferredSize.height + MediaQuery.of(context).padding.top + 8),
-              Expanded(
-                child: Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: CameraPreview(_cameraController!),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _styledButton(context, onPressed: _takePicture, icon: Icons.camera_alt_rounded, label: "Snap Photo", isFilled: true),
-                    _styledButton(context, onPressed: _pickFromGallery, icon: Icons.photo_library_rounded, label: "From Gallery"),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
       ),
     );
   }
