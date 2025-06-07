@@ -8,7 +8,7 @@ import 'package:go_router/go_router.dart';
 import '/utils/colors.dart';
 import '/utils/loader.dart';
 import '/utils/snackbar.dart';
-import '/utils/appbar.dart';
+import '/widgets/appbar.dart';
 import '/models/item.dart';
 import 'item_controller.dart';
 import '/services/gemini_scanReceipt.dart'; 

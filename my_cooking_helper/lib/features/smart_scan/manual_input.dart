@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import '/widgets/appbar.dart';
+import '/widgets/glassmorphic_card.dart';
 import '/models/item.dart';
 import 'item_controller.dart';
-import '/utils/appbar.dart';
-import '/widgets/glassmorphic_card.dart';
 
 class ManualInputScreen extends ConsumerStatefulWidget {
   const ManualInputScreen({Key? key}) : super(key: key);
