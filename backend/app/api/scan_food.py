@@ -5,24 +5,9 @@ import base64
 import requests
 import filetype
 import re
+from app.utils.utils import detect_mime_type, build_food_ingredient_prompt, gemini_model_url
 
 router = APIRouter()
-
-def detect_mime_type(file_bytes: bytes):
-    kind = filetype.guess(file_bytes)
-    if kind is not None:
-        return kind.mime
-    return "application/octet-stream"
-
-def build_food_prompt(
-    language="English", 
-    focus="food items (Fruits, Vegetables, Ingredients, food products, Grocery food items)"):
-    prompt = (
-        f"Identify and count all {focus} in this image. "
-        f"List each food item with its count, separated by commas. "
-        f"Respond only with the format: itemName: count, itemName: count."
-    )
-    return prompt
 
 def parse_gemini_food_response(response_json):
     try:
@@ -59,16 +44,17 @@ async def analyze_food_image(file: UploadFile = File(...)):
     if not GEMINI_API_KEY:
         print("[ERROR] Gemini API key not set.")
         return JSONResponse(status_code=500, content={"error": "Gemini API key not set"})
+
+    prompt = build_food_ingredient_prompt()
+    url = gemini_model_url(api_key=GEMINI_API_KEY)
     
     img_bytes = await file.read()
     mime_type = detect_mime_type(img_bytes)
     print(f"[DEBUG] Detected MIME type: {mime_type}")
 
     base64_img = base64.b64encode(img_bytes).decode('utf-8')
-    prompt = build_food_prompt()
     print(f"[DEBUG] Using prompt: {prompt}")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}"
     payload = {
         "contents": [
             {
