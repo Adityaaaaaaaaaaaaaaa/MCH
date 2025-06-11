@@ -1,12 +1,13 @@
+// ignore_for_file: file_names
+
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'backend_config.dart';
 
 // ignore: constant_identifier_names
-const String BACKEND_API_URL = "https://mch-rtlu.onrender.com/food/scanFood";
-// ignore: constant_identifier_names
-// const String BACKEND_API_URL = "http://192.168.75.52:8000/food/scanFood";
+const String BACKEND_API_URL = "$backendApiUrl/food/scanFood";
 
 final geminiProvider = Provider((ref) => GeminiService());
 

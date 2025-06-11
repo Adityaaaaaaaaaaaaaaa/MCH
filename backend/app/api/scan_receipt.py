@@ -5,21 +5,9 @@ import base64
 import requests
 import filetype
 import re
+from app.utils.utils import detect_mime_type, build_receipt_ingredient_prompt, gemini_model_url
 
 router = APIRouter()
-
-def detect_mime_type(file_bytes: bytes):
-    kind = filetype.guess(file_bytes)
-    if kind is not None:
-        return kind.mime
-    return "application/octet-stream"
-
-def build_receipt_prompt():
-    return (
-        "Extract all itemized purchases from this receipt image. "
-        "Respond ONLY in the format: itemName: count, itemName: count. "
-        "If count is not available, just list the item name. Do NOT add any explanation or other text."
-    )
 
 def parse_gemini_receipt_response(response_json):
     try:
@@ -59,16 +47,18 @@ async def analyze_receipt_image(file: UploadFile = File(...)):
     if not GEMINI_API_KEY:
         print("[ERROR] Gemini API key not set.")
         return JSONResponse(status_code=500, content={"error": "Gemini API key not set"})
+
+    prompt = build_receipt_ingredient_prompt()
+    url = gemini_model_url(api_key=GEMINI_API_KEY)
+
     
     img_bytes = await file.read()
     mime_type = detect_mime_type(img_bytes)
     print(f"[DEBUG] Detected MIME type: {mime_type}")
 
     base64_img = base64.b64encode(img_bytes).decode('utf-8')
-    prompt = build_receipt_prompt()
     print(f"[DEBUG] Using receipt prompt: {prompt}")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}"
     payload = {
         "contents": [
             {
