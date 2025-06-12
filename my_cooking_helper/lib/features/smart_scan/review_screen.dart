@@ -5,7 +5,7 @@ import 'package:glass/glass.dart';
 import '/models/item.dart';
 import '/utils/colors.dart';
 import 'item_controller.dart';
-import '/widgets/appbar.dart';
+import '../../widgets/navigation/appbar.dart';
 
 class ReviewScreen extends ConsumerWidget {
   const ReviewScreen({Key? key}) : super(key: key);
@@ -185,7 +185,7 @@ class ReviewScreen extends ConsumerWidget {
                                 ).asGlass(
                                   blurX: 15,
                                   blurY: 15,
-                                  tintColor: Colors.cyanAccent,
+                                  tintColor: Colors.white,
                                   frosted: true,
                                   clipBorderRadius: BorderRadius.circular(15),
                                 ),
@@ -296,7 +296,7 @@ class _EditItemDialogState extends State<EditItemDialog> {
         padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(26),
-          color: theme.cardColor.withOpacity(0.61),
+          //color: Colors.amber,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -304,8 +304,8 @@ class _EditItemDialogState extends State<EditItemDialog> {
             Text(
               "Edit Item",
               style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.primaryColor,
+                fontWeight: FontWeight.normal,
+                color: textColor(context),
                 letterSpacing: 0.1,
               ),
             ),
@@ -324,27 +324,30 @@ class _EditItemDialogState extends State<EditItemDialog> {
             Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.remove_circle, color: theme.colorScheme.error, size: 30),
+                  icon: Icon(Icons.remove_circle, color: Colors.red[300], size: 30),
                   onPressed: _decrementQty,
                 ),
                 Expanded(
-                  child: TextField(
-                    textAlign: TextAlign.center,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    controller: TextEditingController(text: quantity.toStringAsFixed(quantity.truncateToDouble() == quantity ? 0 : 2)),
-                    onChanged: (val) {
-                      final parsed = double.tryParse(val);
-                      if (parsed != null && parsed > 0) {
-                        setState(() {
-                          quantity = parsed;
-                        });
-                      }
-                    },
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    decoration: InputDecoration(
-                      labelText: "Quantity",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 40, right: 40),
+                    child: TextField(
+                      textAlign: TextAlign.center,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      controller: TextEditingController(text: quantity.toStringAsFixed(quantity.truncateToDouble() == quantity ? 0 : 2)),
+                      onChanged: (val) {
+                        final parsed = double.tryParse(val);
+                        if (parsed != null && parsed > 0) {
+                          setState(() {
+                            quantity = parsed;
+                          });
+                        }
+                      },
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
+                        labelText: "Quantity",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
                   ),
@@ -401,14 +404,14 @@ class _EditItemDialogState extends State<EditItemDialog> {
               ],
             ),
           ],
-        ).asGlass(
-          blurX: 10,
-          blurY: 10,
-          frosted: true,
-          //tintColor: theme.primaryColor.withOpacity(0.13),
-          clipBorderRadius: BorderRadius.circular(15),
         ),
-      ),
+      ).asGlass(
+          blurX: 12,
+          blurY: 12,
+          frosted: true,
+          //tintColor: Colors.tealAccent,
+          clipBorderRadius: BorderRadius.circular(15),
+      )
     );
   }
 }
