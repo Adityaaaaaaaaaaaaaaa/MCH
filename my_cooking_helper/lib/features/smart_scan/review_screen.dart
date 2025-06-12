@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:glass/glass.dart';
+import '/widgets/edit_add_item_dialog.dart';
 import '/models/item.dart';
 import '/utils/colors.dart';
 import 'item_controller.dart';
-import '../../widgets/navigation/appbar.dart';
+import '/widgets/navigation/appbar.dart';
 
 class ReviewScreen extends ConsumerWidget {
   const ReviewScreen({Key? key}) : super(key: key);
@@ -175,7 +176,7 @@ class ReviewScreen extends ConsumerWidget {
                                     onPressed: () async {
                                       final edited = await showDialog<ScannedItem>(
                                         context: context,
-                                        builder: (_) => EditItemDialog(item: item),
+                                        builder: (_) => EditOrAddItemDialog(item: item),
                                       );
                                       if (edited != null) {
                                         scanController.editItem(index, edited);
@@ -237,12 +238,43 @@ class ReviewScreen extends ConsumerWidget {
                 ),
             ],
           ),
+          Positioned(
+            bottom: 110,
+            right: 25,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.primaryColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                elevation: 13,
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+              ),
+              icon: const Icon(Icons.add_circle_rounded, color: Colors.white, size: 28),
+              label: const Text(
+                'Add Item',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                ),
+              ),
+              onPressed: () async {
+                final added = await showDialog<ScannedItem>(
+                  context: context,
+                  builder: (_) => EditOrAddItemDialog(),
+                );
+                if (added != null) {
+                  scanController.addItem(added);
+                }
+              },
+            ),
+          ),
+
         ],
       ),
     );
   }
 }
-
+/*
 class EditItemDialog extends StatefulWidget {
   final ScannedItem item;
   const EditItemDialog({super.key, required this.item});
@@ -414,4 +446,4 @@ class _EditItemDialogState extends State<EditItemDialog> {
       )
     );
   }
-}
+}*/
