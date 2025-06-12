@@ -10,8 +10,8 @@ import '/utils/loader.dart';
 import '/utils/snackbar.dart';
 import '/utils/preference_utils.dart';
 
-import '/widgets/glassmorphic_card.dart';
-import '/widgets/appbar.dart';
+import '../../widgets/navigation/glassmorphic_card.dart';
+import '../../widgets/navigation/appbar.dart';
 
 import '/theme/app_theme.dart';
 

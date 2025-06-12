@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '/widgets/glassmorphic_card.dart';
+import 'glassmorphic_card.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
