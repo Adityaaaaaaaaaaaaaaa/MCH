@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
 import '/utils/colors.dart';
-import '../../widgets/navigation/appbar.dart';
+import '/widgets/navigation/appbar.dart';
 import '/widgets/scan_action_button.dart';
-import '../../widgets/navigation/drawer.dart';
-import '../../widgets/navigation/nav.dart';
+import '/widgets/navigation/drawer.dart';
+import '/widgets/navigation/nav.dart';
 
 class SmartScan extends StatelessWidget {
   const SmartScan({super.key});
