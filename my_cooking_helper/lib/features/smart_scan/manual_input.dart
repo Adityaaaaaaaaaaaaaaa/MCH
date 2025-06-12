@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:glass/glass.dart';
+import 'package:go_router/go_router.dart';
+import '../../services/inventory_service.dart';
+import '../../utils/snackbar.dart';
 import '/widgets/edit_add_item_dialog.dart';
 import '/models/item.dart';
 import '/utils/colors.dart';
@@ -18,6 +21,7 @@ class ManualInputScreen extends ConsumerWidget {
       .where((item) => item.source == "manual_input")
       .toList();
     final controller = ref.read(smartScanControllerProvider.notifier);
+    final InventoryService _inventoryService = InventoryService();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -181,20 +185,24 @@ class ManualInputScreen extends ConsumerWidget {
                         'Confirm All',
                         style: TextStyle(color: Colors.white),
                       ),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            title: const Text('Confirm'),
-                            content: const Text('Items confirmed! (Later this will save to Firebase.)'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          ),
-                        );
+                      onPressed: () async {
+                        try {
+                          // Convert to list of maps
+                          final itemsToSave = manualItems.map((item) => item.toJson()).toList();
+
+                          // Save to Firestore
+                          await _inventoryService.addItemsToInventory(itemsToSave);
+
+                          // Clear only manual input items
+                          // (You may want to implement a function in your controller to remove all items where source == "manual_input")
+                          controller.clearItems();
+
+                          // Show success
+                          SnackbarUtils.show(context, "Items added!");
+                          context.go('/home');
+                        } catch (e) {
+                          SnackbarUtils.show(context, "Error saving items", icon: Icons.error);
+                        }
                       },
                     ),
                   ),

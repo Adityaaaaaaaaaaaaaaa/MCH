@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:glass/glass.dart';
@@ -21,11 +22,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   late AnimationController _controller;
 
   final List<_FeatureCardData> features = [
-    _FeatureCardData('Scan and Cook', Icons.camera_alt_rounded, Colors.deepOrange, '/scan'),
+    _FeatureCardData('Scan and Cook', Icons.camera_alt_rounded, Colors.red, '/scan'),
     _FeatureCardData('Meal Planner', Icons.calendar_month_rounded, Colors.indigo, '/planner'),
     _FeatureCardData('My Inventory', Icons.kitchen_rounded, Colors.teal, '/inventory'),
-    _FeatureCardData('My Cravings', Icons.fastfood_rounded, Colors.amber, '/cravings'),
-    _FeatureCardData('Past Meals', Icons.history_rounded, Colors.purple, '/history'),
+    _FeatureCardData('My Cravings', Icons.fastfood_rounded, Colors.purple, '/cravings'),
+    _FeatureCardData('Past Meals', Icons.history_rounded, Colors.grey, '/history'),
     _FeatureCardData('My Shopping List', Icons.shopping_cart_rounded, Colors.cyan, '/shopping'),
   ];
 
@@ -174,12 +175,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         height: cardHeight,
                         onTap: () => context.push(feature.route),
                       ).asGlass(
-                        blurX: 5,
-                        blurY: 5,
-                        //tintColor: const Color.fromARGB(255, 255, 255, 255),
-                        clipBorderRadius: BorderRadius.circular(25),
-                        frosted: true, 
-                      ),
+                          blurX: 7,
+                          blurY: 7,
+                          tintColor: Colors.black,
+                          clipBorderRadius: BorderRadius.circular(25),
+                          frosted: true, 
+                        ),
                     ),
                   );
                 },
@@ -231,11 +232,11 @@ class FeatureCard extends StatelessWidget {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.13),
+                  color: /*color.withOpacity(0.13)*/Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
                 padding: const EdgeInsets.all(15),
-                child: Icon(icon, size: 32, color: color),
+                child: Icon(icon, size: 32, color: /*color*/ color),
               ),
               const SizedBox(height: 14),
               Text(
