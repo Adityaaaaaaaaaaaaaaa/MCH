@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:glass/glass.dart';
+import 'package:go_router/go_router.dart';
+import '../../services/inventory_service.dart';
+import '../../utils/snackbar.dart';
 import '/widgets/edit_add_item_dialog.dart';
 import '/models/item.dart';
 import '/utils/colors.dart';
@@ -16,6 +19,7 @@ class ReviewScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final scannedItems = ref.watch(smartScanControllerProvider);
     final scanController = ref.read(smartScanControllerProvider.notifier);
+    final InventoryService _inventoryService = InventoryService();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -217,21 +221,24 @@ class ReviewScreen extends ConsumerWidget {
                         'Confirm All',
                         style: TextStyle(color: Colors.white),
                       ),
-                      onPressed: () {
-                        // TODO: Firestore integration
-                        showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            title: const Text('Confirm'),
-                            content: const Text('Items confirmed! (Later this will save to Firebase.)'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          ),
-                        );
+                      onPressed: () async {
+                        try {
+                          // Convert your model list to a list of map
+                          final itemsToSave = scannedItems.map((item) => item.toJson()).toList();
+
+                          // Save to Firestore using your service
+                          await _inventoryService.addItemsToInventory(itemsToSave);
+
+                          // Clear the items using your controller (not setState)
+                          scanController.clearItems();
+
+                          // Show success
+                          SnackbarUtils.show(context, "Items added!");
+                          //GoRouter.of(context).go('/home');
+                          context.go('/home');
+                        } catch (e) {
+                          SnackbarUtils.show(context, "Error saving items", icon: Icons.error);
+                        }
                       },
                     ),
                   ),
