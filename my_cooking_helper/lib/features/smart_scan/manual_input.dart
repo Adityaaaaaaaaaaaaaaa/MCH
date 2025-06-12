@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:glass/glass.dart';
-
-import '../../widgets/edit_add_item_dialog.dart';
+import '/widgets/edit_add_item_dialog.dart';
 import '/models/item.dart';
 import '/utils/colors.dart';
 import 'item_controller.dart';
-import '../../widgets/navigation/appbar.dart';
+import '/widgets/navigation/appbar.dart';
 
 class ManualInputScreen extends ConsumerWidget {
   const ManualInputScreen({Key? key}) : super(key: key);
