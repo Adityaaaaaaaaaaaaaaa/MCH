@@ -5,16 +5,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
 import '/utils/loader.dart';
 import '/utils/snackbar.dart';
 import '/utils/preference_utils.dart';
-
-import '/widgets/glassmorphic_card.dart';
-import '/widgets/appbar.dart';
-
+import '/widgets/navigation/glassmorphic_card.dart';
+import '/widgets/navigation/appbar.dart';
 import '/theme/app_theme.dart';
-
 import 'profile_account.dart';
 import 'preference_section.dart';
 import 'account_actions.dart';

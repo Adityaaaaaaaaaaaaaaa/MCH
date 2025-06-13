@@ -13,7 +13,7 @@ final geminiProvider = Provider((ref) => GeminiService());
 
 class GeminiService {
   /// Sends a food image to the backend and returns
-  /// a list of maps: [{"item": String, "count": double?}, ...]
+  /// a list of maps: [{"itemName": String, "count": double?, "category": String}, ...]
   Future<List<Map<String, dynamic>>> analyzeFoodImage(File imageFile) async {
     try {
       var request = http.MultipartRequest('POST', Uri.parse(BACKEND_API_URL));
@@ -29,12 +29,12 @@ class GeminiService {
         final jsonResp = jsonDecode(responseBody);
 
         if (jsonResp is Map && jsonResp.containsKey('detected_items')) {
-          final List<Map<String, dynamic>> rawItems =
-              List<Map<String, dynamic>>.from(jsonResp['detected_items']);
+          final List<dynamic> rawItems = jsonResp['detected_items'];
 
-          // Ensure all counts are double? for downstream UI
-          return rawItems.map((item) {
-            String name = item['item'] ?? '';
+          // Each item should now have itemName, count, and category
+          return rawItems.map<Map<String, dynamic>>((item) {
+            // Defensive: handle missing or old fields gracefully
+            String name = item['itemName'] ?? item['item'] ?? '';
             double? count;
             if (item['count'] != null) {
               if (item['count'] is int) {
@@ -42,11 +42,11 @@ class GeminiService {
               } else if (item['count'] is double) {
                 count = item['count'];
               } else if (item['count'] is String) {
-                // Defensive: try parsing string to double
                 count = double.tryParse(item['count']);
               }
             }
-            return {'item': name, 'count': count};
+            String category = (item['category'] ?? 'uncategorized').toString();
+            return {'itemName': name, 'count': count, 'category': category};
           }).toList();
         } else {
           print('\x1B[33m[DEBUG] "detected_items" missing in backend response\x1B[0m');
