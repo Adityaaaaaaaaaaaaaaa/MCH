@@ -396,6 +396,46 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
     );
   }
 
+  List<Widget> _buildGroupedGeminiResults(List<Map<String, dynamic>> items, ThemeData theme) {
+    final Map<String, List<Map<String, dynamic>>> grouped = {};
+    for (var item in items) {
+      final String cat = (item['category'] ?? 'Uncategorized').toString().capitalize();
+      grouped.putIfAbsent(cat, () => []).add(item);
+    }
+    final sortedCats = grouped.keys.toList()
+      ..sort((a, b) {
+        if (a == 'Uncategorized') return 1;
+        if (b == 'Uncategorized') return -1;
+        return a.compareTo(b);
+      });
+    return [
+      for (final cat in sortedCats) ...[
+        Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 4),
+          child: Text(
+            cat,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.primaryColor,
+              fontSize: 17,
+            ),
+          ),
+        ),
+        ...grouped[cat]!.map((item) {
+          final String name = item['itemName'] ?? item['item'] ?? '';
+          final count = item['count'] ?? 1;
+          return Padding(
+            padding: const EdgeInsets.only(left: 16.0, bottom: 2),
+            child: Text(
+              "$name: $count",
+              style: theme.textTheme.bodyMedium,
+            ),
+          );
+        }),
+      ]
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -482,24 +522,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                ..._geminiResult!.map((item) {
-                                  String name = item['item'] ?? '';
-                                  double? count;
-                                  if (item['count'] != null) {
-                                    if (item['count'] is int) {
-                                      count = (item['count'] as int).toDouble();
-                                    } else if (item['count'] is double) {
-                                      count = item['count'];
-                                    } else if (item['count'] is String) {
-                                      count = double.tryParse(item['count']);
-                                    }
-                                  }
-                                  String display = name;
-                                  if (count != null) {
-                                    display += ": $count";
-                                  }
-                                  return Text(display, style: theme.textTheme.bodyMedium);
-                                }).toList(),
+                                ..._buildGroupedGeminiResults(_geminiResult!, theme),
                               ],
                             ),
                           ),
@@ -519,7 +542,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                             : () {
                                 int countAdded = 0;
                                 for (var item in _geminiResult!) {
-                                  String name = item['item'] ?? '';
+                                  String name = item['itemName'] ?? item['item'] ?? '';
                                   double quantity = 1.0;
                                   if (item['count'] != null) {
                                     if (item['count'] is int) {
@@ -537,6 +560,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                                       quantity: quantity,
                                       unit: null,
                                       source: "gemini_receipt",
+                                      category: item['category'] ?? 'Uncategorized', // <-- ADDED!
                                       isReviewed: false,
                                       isEdited: false,
                                     ),
@@ -667,4 +691,8 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
       ),
     );
   }
+}
+
+extension StringCapitalize on String {
+  String capitalize() => isEmpty ? this : '${this[0].toUpperCase()}${substring(1).toLowerCase()}';
 }

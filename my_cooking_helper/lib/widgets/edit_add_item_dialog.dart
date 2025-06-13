@@ -26,6 +26,7 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
     nameController = TextEditingController(text: widget.item?.itemName ?? "");
     quantity = widget.item?.quantity ?? 1.0;
     unitController = TextEditingController(text: widget.item?.unit ?? "");
+    _selectedCategory = _normalizeCategory(widget.item?.category) ?? 'Uncategorized';
   }
 
   @override
@@ -37,6 +38,22 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
 
   void _incrementQty() => setState(() => quantity += 1);
   void _decrementQty() => setState(() { if (quantity > 1) quantity -= 1; });
+
+  static const List<String> _categories = [
+    'Fruits', 'Vegetables', 'Grains', 'Dairy', 'Protein', 'Uncategorized'
+  ];
+  String? _selectedCategory;
+
+  String? _normalizeCategory(String? category) {
+  if (category == null) return null;
+  // Try to match ignoring case
+  final match = _categories.firstWhere(
+    (cat) => cat.toLowerCase() == category.toLowerCase(),
+    orElse: () => 'Uncategorized',
+  );
+  return match;
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +143,23 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _selectedCategory,
+              onChanged: (val) => setState(() => _selectedCategory = val),
+              items: _categories
+                  .map((cat) => DropdownMenuItem(
+                        value: cat,
+                        child: Text(cat),
+                      ))
+                  .toList(),
+              decoration: InputDecoration(
+                labelText: "Category",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
             const SizedBox(height: 26),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -146,7 +180,7 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
                   onPressed: () {
                     final name = nameController.text.trim();
                     final unit = unitController.text.trim().isEmpty ? null : unitController.text.trim();
-                    if (name.isEmpty) return; // You can show a snackbar for required fields
+                    if (name.isEmpty) return; 
                     final newItem = ScannedItem(
                       itemName: name,
                       quantity: quantity,
@@ -154,6 +188,7 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
                       isEdited: widget.isEdit,
                       isReviewed: true,
                       source: widget.item?.source ?? "manual_input",
+                      category: _selectedCategory ?? "Uncategorized", // <-- add this
                     );
                     Navigator.pop(context, newItem);
                   },
