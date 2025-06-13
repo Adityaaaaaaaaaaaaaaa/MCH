@@ -10,7 +10,7 @@ class SmartScanController extends StateNotifier<List<ScannedItem>> {
     state = [...state, item];
   }
 
-  // Add multiple scanned items at once (e.g., after OCR/ML)
+  // Add multiple scanned items at once 
   void addItems(List<ScannedItem> items) {
     state = [...state, ...items];
   }
@@ -29,7 +29,7 @@ class SmartScanController extends StateNotifier<List<ScannedItem>> {
   }
 
   // Clear all items (e.g., on new scan session)
-  void clear() {
+  void clearItems() {
     state = [];
   }
 }

@@ -8,7 +8,7 @@ import 'package:go_router/go_router.dart';
 import '/utils/loader.dart';
 import '/utils/snackbar.dart';
 import '/utils/colors.dart';
-import '/widgets/appbar.dart';
+import '/widgets/navigation/appbar.dart';
 import '/models/item.dart';
 import '/services/gemini_scanFood.dart';
 import 'item_controller.dart';
@@ -415,7 +415,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
                                 ),
                                 const SizedBox(height: 8),
-                                ..._geminiResult!.map((item) {
+                                /* ..._geminiResult!.map((item) {
                                   String name = item['item'] ?? '';
                                   double? count;
                                   if (item['count'] != null) {
@@ -432,7 +432,8 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                                     display += ": $count";
                                   }
                                   return Text(display, style: theme.textTheme.bodyMedium);
-                                }).toList(),
+                                }).toList(), */
+                                ..._buildGroupedGeminiResults(_geminiResult!, theme),
                               ],
                             ),
                           ),
@@ -454,10 +455,11 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                                 for (var item in _geminiResult!) {
                                   scanController.addItem(
                                     ScannedItem(
-                                      itemName: item['item'],
-                                      quantity: (item['count'] as num).toDouble(),
+                                      itemName: item['itemName'] ?? item['item'] ?? '',
+                                      quantity: (item['count'] as num?)?.toDouble() ?? 1.0,
                                       unit: null,
                                       source: "gemini_vision",
+                                      category: item['category'] ?? 'Uncategorized', // <-- ADDED!
                                       isReviewed: false,
                                       isEdited: false,
                                     ),
@@ -649,4 +651,51 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
       ),
     );
   }
+
+  List<Widget> _buildGroupedGeminiResults(List<Map<String, dynamic>> items, ThemeData theme) {
+    // Group items by category (default to 'Uncategorized')
+    final Map<String, List<Map<String, dynamic>>> grouped = {};
+    for (var item in items) {
+      final String cat = (item['category'] ?? 'Uncategorized').toString().capitalize();
+      grouped.putIfAbsent(cat, () => []).add(item);
+    }
+    // Sort categories: "Uncategorized" always last
+    final sortedCats = grouped.keys.toList()
+      ..sort((a, b) {
+        if (a == 'Uncategorized') return 1;
+        if (b == 'Uncategorized') return -1;
+        return a.compareTo(b);
+      });
+
+    // Build the widget list
+    return [
+      for (final cat in sortedCats) ...[
+        Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 4),
+          child: Text(
+            cat,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.primaryColor,
+              fontSize: 17,
+            ),
+          ),
+        ),
+        ...grouped[cat]!.map((item) {
+          final String name = item['itemName'] ?? item['item'] ?? '';
+          final count = item['count'] ?? 1;
+          return Padding(
+            padding: const EdgeInsets.only(left: 16.0, bottom: 2),
+            child: Text(
+              "$name: $count",
+              style: theme.textTheme.bodyMedium,
+            ),
+          );
+        }),
+      ]
+    ];
+  }
+}
+extension StringCapitalize on String {
+  String capitalize() => isEmpty ? this : '${this[0].toUpperCase()}${substring(1).toLowerCase()}';
 }
