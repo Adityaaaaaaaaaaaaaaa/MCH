@@ -74,7 +74,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/inventory', 
-    builder: (context, state) => const InventoryPage()
+      builder: (context, state) => const InventoryPage()
     )
   ],
 );
