@@ -37,6 +37,9 @@ dependencies:
   http: ^1.4.0
   blurrycontainer: ^2.1.0
   glass: ^2.0.0+2
+  hive: ^2.2.3
+  connectivity_plus: ^6.1.4
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:

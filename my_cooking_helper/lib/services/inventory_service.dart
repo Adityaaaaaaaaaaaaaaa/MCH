@@ -11,7 +11,10 @@ class InventoryService {
     final user = _auth.currentUser;
     if (user == null) throw Exception("No user logged in");
 
-    final inventoryRef = _db.collection('users').doc(user.uid).collection('inventory');
+    final inventoryRef = _db.collection('users')
+                            .doc(user.uid)
+                            .collection('inventory');
+                            
     final batch = _db.batch();
 
     for (final item in items) {
