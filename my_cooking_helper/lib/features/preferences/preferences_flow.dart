@@ -101,13 +101,13 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
                       controller: _controller,
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
-                        // 1. Intro
+                        //Intro
                         _QuestionPage(
                           title: "First, let's get to know you better!",
                           subtitle: "Let's tailor your experience for a food-tastic journey!",
                           onNext: _nextPage,
                         ),
-                        // 2. Gender
+                        //Gender
                         AnimatedSingleSelectBig(
                           title: "Choose Your Gender",
                           options: PreferenceUtils.genders,
@@ -116,7 +116,7 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
                           onNext: _nextPage,
                           onBack: _prevPage,
                         ),
-                        // 3. Cooking Time
+                        //Cooking Time
                         AnimatedSingleSelectBig(
                           title: "How much time do you have for cooking?",
                           options: PreferenceUtils.cookingTimes,
@@ -125,7 +125,7 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
                           onNext: _nextPage,
                           onBack: _prevPage,
                         ),
-                        // 4. Allergies
+                        //Allergies
                         AnimatedMultiSelectSmall(
                           title: "Do you have any allergies or intolerances?",
                           options: PreferenceUtils.allergies,
@@ -134,7 +134,7 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
                           onNext: _nextPage,
                           onBack: _prevPage,
                         ),
-                        // 5. Diet Type
+                        //Diet Type
                         AnimatedMultiSelectSmall(
                           title: "What type of diet do you follow/prefer?",
                           options: PreferenceUtils.diets,
@@ -143,7 +143,7 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
                           onNext: _nextPage,
                           onBack: _prevPage,
                         ),
-                        // 6. Cuisines Loved
+                        //Cuisines Loved
                         AnimatedMultiSelectSmall(
                           title: "Which cuisines do you love?",
                           options: PreferenceUtils.cuisines,
@@ -152,16 +152,16 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
                           onNext: _nextPage,
                           onBack: _prevPage,
                         ),
-                        // 7. Spice Level
+                        //Spice Level
                         AnimatedSingleSelectBig(
-                          title: "What’s the max spice level you can handle?",
+                          title: "What's the max spice level you can handle?",
                           options: PreferenceUtils.spiceLevels,
                           value: preferences.spiceLevel,
                           onChanged: (val) => setState(() => preferences.spiceLevel = val),
                           onNext: _nextPage,
                           onBack: _prevPage,
                         ),
-                        // 8. Barriers
+                        //Barriers
                         AnimatedMultiSelectSmall(
                           title: "What typically stops you from cooking at home?",
                           options: PreferenceUtils.barriers,
@@ -170,7 +170,7 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
                           onNext: _nextPage,
                           onBack: _prevPage,
                         ),
-                        // 9. Thank you / Confirmation
+                        //Thank you
                         _ThankYouPage(
                           onNext: () async {
                             final user = FirebaseAuth.instance.currentUser;
