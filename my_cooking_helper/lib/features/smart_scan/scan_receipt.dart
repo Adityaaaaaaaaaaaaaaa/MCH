@@ -503,7 +503,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                         ],
                       ),
                       const SizedBox(height: 20),
-                      // --- Gemini Results
+                      // Gemini Results
                       if (!_isLoading && _geminiResult != null && _geminiResult!.isNotEmpty)
                         Card(
                           elevation: 2,

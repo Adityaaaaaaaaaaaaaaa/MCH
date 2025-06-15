@@ -13,9 +13,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   int _currentIndex = 0;
 
   final List<List<Color>> _gradients = [
-    [Color(0xFFB8E1FC), Color(0xFFE5F1FA)],   // Blue
-    [Color(0xFFD0F2C7), Color(0xFFE5F1FA)],   // Light green
-    [Color(0xFFF9D4C1), Color(0xFFE5F1FA)],   // Light orange/pink
+    [Color(0xFFB8E1FC), Color(0xFFE5F1FA)],   
+    [Color(0xFFD0F2C7), Color(0xFFE5F1FA)],   
+    [Color(0xFFF9D4C1), Color(0xFFE5F1FA)],  
   ];
 
   final List<Map<String, String>> _pages = [

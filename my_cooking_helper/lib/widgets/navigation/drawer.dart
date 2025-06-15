@@ -100,12 +100,11 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 routePath: route.path,
                 isSelected: GoRouterState.of(context).uri.toString() == route.path,
                 onTap: () {
-                  // Only navigate if not already there
                   if (GoRouterState.of(context).uri.toString() != route.path) {
-                    context.pop(); // Close drawer first
+                    context.pop();
                     context.go(route.path);
                   } else {
-                    context.pop(); // Just close drawer
+                    context.pop();
                   }
                 },
               )),

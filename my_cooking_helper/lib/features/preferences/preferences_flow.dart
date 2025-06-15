@@ -25,7 +25,6 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
       setState(() => _currentPage++);
       _controller.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
     } else {
-      // Go to home with preferences
       context.go('/home', extra: preferences);
     }
   }
@@ -51,7 +50,6 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
 
   @override
   Widget build(BuildContext context) {
-    // Animated background color gradient per page
     final List<List<Color>> lightGradients = [
       [Color(0xFFB8E1FC), Color(0xFFE5F1FA)],
       [Color(0xFFD0F2C7), Color(0xFFE5F1FA)],

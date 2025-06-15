@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
-import '../../services/inventory_service.dart';
-import '../../utils/snackbar.dart';
+import '/services/inventory_service.dart';
+import '/utils/snackbar.dart';
 import '/widgets/edit_add_item_dialog.dart';
 import '/models/item.dart';
 import '/utils/colors.dart';
@@ -34,7 +34,7 @@ class ReviewScreen extends ConsumerWidget {
       backgroundColor: bgColor(context),
       body: Stack(
         children: [
-          // You can add your background images here, below the content.
+          //image la dan downloads.
           Positioned(
             top: 110,
             left: 30,
@@ -223,21 +223,36 @@ class ReviewScreen extends ConsumerWidget {
                       ),
                       onPressed: () async {
                         try {
-                          // Convert your model list to a list of map
+                          // Convert model list to a list of map
                           final itemsToSave = scannedItems.map((item) => item.toJson()).toList();
 
                           // Save to Firestore using your service
                           await _inventoryService.addItemsToInventory(itemsToSave);
 
-                          // Clear the items using your controller (not setState)
                           scanController.clearItems();
 
-                          // Show success
-                          SnackbarUtils.show(context, "Items added!");
-                          //GoRouter.of(context).go('/home');
+                          SnackbarUtils.show(
+                            context, 
+                            "Items Added!",
+                            duration: 500, 
+                            behavior: SnackBarBehavior.floating,
+                            icon: Icons.check,
+                            iconColor: Colors.lightGreenAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                          );
                           context.go('/home');
                         } catch (e) {
-                          SnackbarUtils.show(context, "Error saving items", icon: Icons.error);
+                          SnackbarUtils.show(
+                            context, 
+                            "Error adding items !",
+                            duration: 500, 
+                            behavior: SnackBarBehavior.floating,
+                            icon: Icons.warning_amber_rounded,
+                            iconColor: Colors.redAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                          );
                         }
                       },
                     ),

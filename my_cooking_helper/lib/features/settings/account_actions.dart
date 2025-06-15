@@ -17,7 +17,7 @@ class AccountActionsSection extends StatelessWidget {
 
     return Column(
       children: [
-        // --------- SIGN OUT CARD ----------
+        //SIGN OUT
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 22),
           child: Container(
@@ -63,7 +63,7 @@ class AccountActionsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        // --------- DELETE CARD ----------
+        // DELETE CARD 
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 22),
           child: Container(

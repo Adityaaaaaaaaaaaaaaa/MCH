@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart'; 
-
 import '/utils/preference_utils.dart';
 
 class PreferenceSection extends StatelessWidget {
