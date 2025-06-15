@@ -30,18 +30,9 @@ class _SettingsScreenState extends ConsumerState<Settings>
   String? gender, cookingTime, spiceLevel;
   List<String> allergies = [], diets = [], cuisines = [], barriers = [];
 
-  // late AnimationController _controller;
-  // late Animation<double> _fadeAnimation;
-
   @override
   void initState() {
     super.initState();
-    /*_controller = AnimationController(
-      duration: const Duration(milliseconds: 850),
-      vsync: this,
-    );*/
-    // _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
-    // _controller.forward();
     _loadPrefs();
   }
 
@@ -121,44 +112,6 @@ class _SettingsScreenState extends ConsumerState<Settings>
     );
   }
 
-  /*Future<void> _signOut() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => Center(
-        child: loader(
-          Theme.of(context).colorScheme.primary,
-          70,    
-          4,     
-          10,     
-          1000,  
-        ),
-      ),
-    );
-    try {
-      await FirebaseAuth.instance.signOut();
-      if (!mounted) return;
-      Navigator.of(context).pop(); 
-      SnackbarUtils.alert(
-        context,
-        "Signed out!",
-        typeInfo: TypeInfo.info,
-        position: MessagePosition.top,
-        duration: 2,
-        iconColor: Colors.blue,
-      );
-      context.go('/signin');
-    } catch (e) {
-      Navigator.of(context).pop(); 
-      SnackbarUtils.alert(
-        context,
-        "Error signing out!",
-        typeInfo: TypeInfo.error,
-        position: MessagePosition.top,
-        duration: 3,
-      );
-    }
-  }*/
   Future<void> _signOut() async {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
@@ -288,7 +241,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.transparent, // Makes dialog itself transparent
+        backgroundColor: Colors.transparent, 
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         contentPadding: EdgeInsets.zero,
@@ -347,20 +300,6 @@ class _SettingsScreenState extends ConsumerState<Settings>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    /* leave commented, will see later 
-    if (loading) {
-      return Scaffold(
-        body: Center(
-          child: loader(
-            Colors.deepOrange, // color
-            70,                // size
-            5,                 // lineWidth
-            8,                 // itemCount
-            300               // duration (ms)
-          ),
-        ),
-      );
-    }*/
     final avatar = user?.photoURL != null
         ? NetworkImage(user!.photoURL!)
         : const AssetImage("assets/app_icon.png");
@@ -378,7 +317,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
       ),
       body: Stack(
         children: [
-          // -------- BACKGROUND IMAGES --------
+          //BACKGROUND IMAGES
           Positioned(
             top: 60,
             left: 100,

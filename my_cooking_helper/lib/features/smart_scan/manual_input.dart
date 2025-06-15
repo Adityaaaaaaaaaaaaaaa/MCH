@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
-import '../../services/inventory_service.dart';
-import '../../utils/snackbar.dart';
+import '/services/inventory_service.dart';
+import '/utils/snackbar.dart';
 import '/widgets/edit_add_item_dialog.dart';
 import '/models/item.dart';
 import '/utils/colors.dart';
@@ -21,7 +21,7 @@ class ManualInputScreen extends ConsumerWidget {
       .where((item) => item.source == "manual_input")
       .toList();
     final controller = ref.read(smartScanControllerProvider.notifier);
-    final InventoryService _inventoryService = InventoryService();
+    final InventoryService inventoryService = InventoryService();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -191,17 +191,33 @@ class ManualInputScreen extends ConsumerWidget {
                           final itemsToSave = manualItems.map((item) => item.toJson()).toList();
 
                           // Save to Firestore
-                          await _inventoryService.addItemsToInventory(itemsToSave);
+                          await inventoryService.addItemsToInventory(itemsToSave);
 
                           // Clear only manual input items
-                          // (You may want to implement a function in your controller to remove all items where source == "manual_input")
                           controller.clearItems();
 
-                          // Show success
-                          SnackbarUtils.show(context, "Items added!");
+                          SnackbarUtils.show(
+                            context, 
+                            "Items Added!",
+                            duration: 500, 
+                            behavior: SnackBarBehavior.floating,
+                            icon: Icons.check,
+                            iconColor: Colors.lightGreenAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                          );
                           context.go('/home');
                         } catch (e) {
-                          SnackbarUtils.show(context, "Error saving items", icon: Icons.error);
+                          SnackbarUtils.show(
+                            context, 
+                            "Error adding items !",
+                            duration: 500, 
+                            behavior: SnackBarBehavior.floating,
+                            icon: Icons.warning_amber_rounded,
+                            iconColor: Colors.redAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                          );
                         }
                       },
                     ),
@@ -209,7 +225,7 @@ class ManualInputScreen extends ConsumerWidget {
                 ),
             ],
           ),
-          // Add floating Add Item button
+          //Add Item button
           Positioned(
             bottom: 110,
             right: 25,

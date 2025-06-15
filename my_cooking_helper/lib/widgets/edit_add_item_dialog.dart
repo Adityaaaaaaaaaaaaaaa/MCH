@@ -46,7 +46,6 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
 
   String? _normalizeCategory(String? category) {
   if (category == null) return null;
-  // Try to match ignoring case
   final match = _categories.firstWhere(
     (cat) => cat.toLowerCase() == category.toLowerCase(),
     orElse: () => 'Uncategorized',
@@ -67,7 +66,6 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
         padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
-          //color: theme.cardColor.withOpacity(0.74),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -188,7 +186,7 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
                       isEdited: widget.isEdit,
                       isReviewed: true,
                       source: widget.item?.source ?? "manual_input",
-                      category: _selectedCategory ?? "Uncategorized", // <-- add this
+                      category: _selectedCategory ?? "Uncategorized", 
                     );
                     Navigator.pop(context, newItem);
                   },

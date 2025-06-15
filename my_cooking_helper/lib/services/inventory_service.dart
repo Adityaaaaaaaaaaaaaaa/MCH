@@ -18,15 +18,15 @@ class InventoryService {
     final batch = _db.batch();
 
     for (final item in items) {
-      final doc = inventoryRef.doc(); // Auto-ID
+      final doc = inventoryRef.doc();
       batch.set(doc, {
-        'itemName': item['itemName'],            // <-- match your model field name
+        'itemName': item['itemName'],           
         'quantity': item['quantity'],
-        'unit': item['unit'] ?? '',              // optional, fallback empty string
-        'category': item['category'] ?? '',      // optional, fallback empty string
-        'source': item['source'] ?? '',          // optional, fallback empty string
-        'nutritionId': item['nutritionId'] ?? '',// optional, fallback empty string
-        'imageUrl': item['imageUrl'] ?? '',      // optional, fallback empty string
+        'unit': item['unit'] ?? '',              
+        'category': item['category'] ?? '',      
+        'source': item['source'] ?? '',          
+        'nutritionId': item['nutritionId'] ?? '',
+        'imageUrl': item['imageUrl'] ?? '',      
         'dateAdded': FieldValue.serverTimestamp(),
       });
     }

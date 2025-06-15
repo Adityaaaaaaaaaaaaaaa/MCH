@@ -28,7 +28,7 @@ class SmartScan extends StatelessWidget {
       backgroundColor: bgColor(context),
       body: Stack(
         children: [
-          // -------- BACKGROUND IMAGES --------
+          // BACKGROUND IMAGES 
           Positioned(
             top: 110,
             left: 30,
@@ -68,13 +68,13 @@ class SmartScan extends StatelessWidget {
               ),
             ),
           ),
-          // --- GLASS CARD CONTENT ---
+          // GLASS CARD CONTENT
           Center(
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 50),
                 child: Container(
-                  width: 250, // Set width as you like, or use constraints
+                  width: 250, 
                   padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(30),
@@ -121,7 +121,6 @@ class SmartScan extends StatelessWidget {
                     ],
                   ),
                 )
-                // --- Apply the glass effect here ---
                 .asGlass(
                   blurX: 5,
                   blurY: 5,

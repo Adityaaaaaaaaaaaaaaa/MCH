@@ -405,7 +405,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           margin: const EdgeInsets.symmetric(vertical: 10),
                           child: Padding(
-                            //padding: const EdgeInsets.all(16.0),
                             padding: EdgeInsets.symmetric(horizontal: 50, vertical: 30),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,24 +414,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
                                 ),
                                 const SizedBox(height: 8),
-                                /* ..._geminiResult!.map((item) {
-                                  String name = item['item'] ?? '';
-                                  double? count;
-                                  if (item['count'] != null) {
-                                    if (item['count'] is int) {
-                                      count = (item['count'] as int).toDouble();
-                                    } else if (item['count'] is double) {
-                                      count = item['count'];
-                                    } else if (item['count'] is String) {
-                                      count = double.tryParse(item['count']);
-                                    }
-                                  }
-                                  String display = name;
-                                  if (count != null) {
-                                    display += ": $count";
-                                  }
-                                  return Text(display, style: theme.textTheme.bodyMedium);
-                                }).toList(), */
                                 ..._buildGroupedGeminiResults(_geminiResult!, theme),
                               ],
                             ),
@@ -592,7 +573,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
 
   Widget _buildImageWithPreview(BuildContext context) {
     if (_pickedImage == null) return const SizedBox.shrink();
-    //final theme = Theme.of(context);
     final double screenWidth = MediaQuery.of(context).size.width;
     final double maxWidth = screenWidth * 0.92;
 
@@ -667,7 +647,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
         return a.compareTo(b);
       });
 
-    // Build the widget list
     return [
       for (final cat in sortedCats) ...[
         Padding(

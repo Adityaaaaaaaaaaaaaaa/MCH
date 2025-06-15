@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// All project color constants.
+//Project color constants.
 class AppColors {
   // Light Theme Colors
   static const Color lightBackground = Color(0xFFE5F1FA);
@@ -18,10 +18,6 @@ class AppColors {
   static const Color darkText = Colors.white;
   static const Color darkSubtleText = Color(0xFFCCCCCC);
 
-  // Accent and custom colors
-  static const Color accentOrange = Color(0xFFFF785A);
-  static const Color accentIndigo = Color(0xFF3A86FF);
-  // ...add more as needed
 }
 
 /// Helper to get the correct background color

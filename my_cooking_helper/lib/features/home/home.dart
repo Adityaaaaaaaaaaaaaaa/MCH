@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:glass/glass.dart';
@@ -68,12 +67,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    //final theme = Theme.of(context);
-    //final isLight = theme.brightness == Brightness.light;
 
     //width/height of all feature cards!
-    const double cardWidth = 160;  //  width
-    const double cardHeight = 135; //  height
+    const double cardWidth = 160; 
+    const double cardHeight = 135; 
 
     return Scaffold(
       backgroundColor: bgColor(context),
@@ -214,7 +211,6 @@ class FeatureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    //final isLight = theme.brightness == Brightness.light;
     return Material(
       color: Colors.transparent,
       elevation: 8,
@@ -232,11 +228,11 @@ class FeatureCard extends StatelessWidget {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: /*color.withOpacity(0.13)*/Colors.white.withOpacity(0.2),
+                  color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
                 padding: const EdgeInsets.all(15),
-                child: Icon(icon, size: 32, color: /*color*/ color),
+                child: Icon(icon, size: 32, color: color),
               ),
               const SizedBox(height: 14),
               Text(
