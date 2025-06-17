@@ -10,10 +10,10 @@ final inventoryControllerProvider = StateNotifierProvider<InventoryController, L
 });
 
 class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
-  late Box _inventoryBox;
-  StreamSubscription? _firestoreSub;
-  StreamSubscription? _connectivitySub;
-  bool _isListeningFirestore = false;
+  late Box inventoryBox;
+  StreamSubscription? firestoreSub;
+  StreamSubscription? connectivitySub;
+  bool isListeningFirestore = false;
 
   InventoryController() : super([]) {
     _init();
@@ -21,7 +21,7 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
 
   Future<void> _init() async {
     print('\x1B[34m[DEBUG] Initializing InventoryController\x1B[0m');
-    _inventoryBox = await Hive.openBox('inventoryBox');
+    inventoryBox = await Hive.openBox('inventoryBox');
     _loadLocal();
     _listenConnectivity();
     if (await _isOnline()) {
@@ -31,12 +31,12 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
 
   void _loadLocal() {
     print('\x1B[34m[DEBUG] Loading inventory from Hive\x1B[0m');
-    state = _inventoryBox.values.map((e) => Map<String, dynamic>.from(e)).toList();
+    state = inventoryBox.values.map((e) => Map<String, dynamic>.from(e)).toList();
     print('\x1B[34m[DEBUG] Current local state: $state\x1B[0m');
   }
 
   void _listenFirestore() {
-    if (_isListeningFirestore) {
+    if (isListeningFirestore) {
       print('\x1B[34m[DEBUG] Already listening to Firestore, skipping re-listen\x1B[0m');
       return;
     }
@@ -46,9 +46,9 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
       return;
     }
     print('\x1B[34m[DEBUG] Listening to Firestore: users/${user.uid}/inventory\x1B[0m');
-    _isListeningFirestore = true;
-    _firestoreSub?.cancel();
-    _firestoreSub = FirebaseFirestore.instance
+    isListeningFirestore = true;
+    firestoreSub?.cancel();
+    firestoreSub = FirebaseFirestore.instance
         .collection('users').doc(user.uid).collection('inventory')
         .snapshots()
         .listen((snapshot) {
@@ -65,27 +65,27 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
           print('\x1B[34m[DEBUG] Firestore state updated: $state\x1B[0m');
           // Save to Hive
           for (var item in state) {
-            _inventoryBox.put(item['id'], item);
+            inventoryBox.put(item['id'], item);
           }
         }, onDone: () {
-          _isListeningFirestore = false;
+          isListeningFirestore = false;
           print('\x1B[34m[DEBUG] Firestore listen closed\x1B[0m');
         }, onError: (e) {
-          _isListeningFirestore = false;
+          isListeningFirestore = false;
           print('\x1B[34m[DEBUG] Firestore listen error: $e\x1B[0m');
         });
   }
 
   void _listenConnectivity() {
     print('\x1B[34m[DEBUG] Listening for connectivity changes\x1B[0m');
-    _connectivitySub = Connectivity().onConnectivityChanged.listen((status) async {
+    connectivitySub = Connectivity().onConnectivityChanged.listen((status) async {
       print('\x1B[34m[DEBUG] Connectivity changed: $status\x1B[0m');
       if (await _isOnline()) {
         _listenFirestore();
         await syncLocalToFirestore();
       } else {
-        _firestoreSub?.cancel();
-        _isListeningFirestore = false;
+        firestoreSub?.cancel();
+        isListeningFirestore = false;
         _loadLocal();
       }
     });
@@ -122,7 +122,7 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
       if (item['dateAdded'] is int) {
         item['dateAdded'] = Timestamp.fromMillisecondsSinceEpoch(item['dateAdded']);
       }
-      await _inventoryBox.put(id, item);
+      await inventoryBox.put(id, item);
       print('\x1B[34m[DEBUG] Saved item offline: $id\x1B[0m');
     }
     _loadLocal();
@@ -139,12 +139,12 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
       for (var id in ids) {
         await ref.doc(id).delete();
         print('\x1B[34m[DEBUG] Deleted item online: $id\x1B[0m');
-        await _inventoryBox.delete(id);
+        await inventoryBox.delete(id);
       }
     } else {
       // Only delete locally
       for (var id in ids) {
-        await _inventoryBox.delete(id);
+        await inventoryBox.delete(id);
         print('\x1B[34m[DEBUG] Deleted item offline: $id\x1B[0m');
       }
     }
@@ -159,7 +159,7 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
     }
     final ref = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('inventory');
     print('\x1B[34m[DEBUG] Syncing offline changes to Firestore...\x1B[0m');
-    for (var item in _inventoryBox.values) {
+    for (var item in inventoryBox.values) {
       final m = Map<String, dynamic>.from(item);
       if (m['offline'] == true) {
         if (m['id'] != null) {
@@ -169,7 +169,7 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
           m['id'] = doc.id;
         }
         m['offline'] = false;
-        await _inventoryBox.put(m['id'], m);
+        await inventoryBox.put(m['id'], m);
         print('\x1B[34m[DEBUG] Synced item online: ${m['id']}\x1B[0m');
       }
     }
@@ -178,8 +178,8 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
 
   @override
   void dispose() {
-    _firestoreSub?.cancel();
-    _connectivitySub?.cancel();
+    firestoreSub?.cancel();
+    connectivitySub?.cancel();
     print('\x1B[34m[DEBUG] InventoryController disposed\x1B[0m');
     super.dispose();
   }

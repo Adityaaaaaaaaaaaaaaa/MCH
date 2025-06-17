@@ -20,8 +20,8 @@ class InventoryService {
     for (final item in items) {
       final doc = inventoryRef.doc();
       batch.set(doc, {
-        'itemName': item['itemName'],           
-        'quantity': item['quantity'],
+        'itemName': item['itemName'] ?? '',           
+        'quantity': item['quantity'] ?? 1.0,
         'unit': item['unit'] ?? '',              
         'category': item['category'] ?? '',      
         'source': item['source'] ?? '',          
