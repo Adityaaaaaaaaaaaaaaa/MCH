@@ -52,7 +52,10 @@ class InventoryTile extends StatelessWidget {
                   child: imageUrl.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                          child: Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported)),
+                          child: Image.network(
+                            imageUrl, fit: BoxFit.cover, 
+                            errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported)
+                          ),
                         )
                       : Icon(Icons.image, size: 38, color: Colors.grey[400]),
                 ),

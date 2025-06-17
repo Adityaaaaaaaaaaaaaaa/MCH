@@ -56,55 +56,63 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: InventorySortBar(sortBy: sortBy, onSort: (s) => setState(() => sortBy = s)),
+            padding: const EdgeInsets.only(top: 140),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                InventorySortBar(sortBy: sortBy, onSort: (s) => setState(() => sortBy = s)),
+              ],
+            ),
           ),
           Expanded(
-            child: GridView.builder(
-              itemCount: sortedItems.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 0.62,
-                crossAxisSpacing: 13,
-                mainAxisSpacing: 13,
-              ),
-              itemBuilder: (context, idx) {
-                final item = sortedItems[idx];
-                return InventoryTile(
-                  imageUrl: item["imageUrl"] ?? "",
-                  itemName: item["itemName"] ?? "",
-                  quantity: item["quantity"]?.toString() ?? "1",
-                  unit: item["unit"] ?? "",
-                  category: item["category"] ?? "",
-                  isSelected: deleteMode && selectedIds.contains(item["id"]),
-                  isOffline: item["offline"] ?? false,
-                  onTap: () async {
-                    if (deleteMode) {
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: GridView.builder(
+                itemCount: sortedItems.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 0.62,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                ),
+                itemBuilder: (context, idx) {
+                  final item = sortedItems[idx];
+                  return InventoryTile(
+                    imageUrl: item["imageUrl"] ?? "",
+                    itemName: item["itemName"] ?? "",
+                    quantity: item["quantity"]?.toString() ?? "1",
+                    unit: item["unit"] ?? "",
+                    category: item["category"] ?? "",
+                    isSelected: deleteMode && selectedIds.contains(item["id"]),
+                    isOffline: item["offline"] ?? false,
+                    onTap: () async {
+                      if (deleteMode) {
+                        setState(() {
+                          if (selectedIds.contains(item["id"])) {
+                            selectedIds.remove(item["id"]);
+                          } else {
+                            selectedIds.add(item["id"]);
+                          }
+                        });
+                      } else {
+                        await showDialog(
+                          context: context,
+                          builder: (_) => InventoryEditModal(
+                            item: item,
+                            onSave: (data) => ref.read(inventoryControllerProvider.notifier).addOrUpdateItem(data),
+                          ),
+                        );
+                      }
+                    },
+                    onLongPress: () {
                       setState(() {
-                        if (selectedIds.contains(item["id"])) {
-                          selectedIds.remove(item["id"]);
-                        } else {
-                          selectedIds.add(item["id"]);
-                        }
+                        deleteMode = true;
+                        selectedIds = [item["id"]];
                       });
-                    } else {
-                      await showDialog(
-                        context: context,
-                        builder: (_) => InventoryEditModal(
-                          item: item,
-                          onSave: (data) => ref.read(inventoryControllerProvider.notifier).addOrUpdateItem(data),
-                        ),
-                      );
-                    }
-                  },
-                  onLongPress: () {
-                    setState(() {
-                      deleteMode = true;
-                      selectedIds = [item["id"]];
-                    });
-                  },
-                );
-              },
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ],

@@ -22,8 +22,15 @@ class _InventoryEditModalState extends State<InventoryEditModal> {
     nameController = TextEditingController(text: widget.item?['itemName'] ?? "");
     quantityController = TextEditingController(text: widget.item?['quantity']?.toString() ?? "1");
     unitController = TextEditingController(text: widget.item?['unit'] ?? "");
-    category = widget.item?['category'] ?? "Uncategorized";
-  }
+
+    // Ensure the category matches the _categories list (case-insensitive)
+    final incoming = widget.item?['category'] ?? "Uncategorized";
+    category = _categories.firstWhere(
+      (cat) => cat.toLowerCase() == incoming.toString().toLowerCase(),
+      orElse: () => "Uncategorized"
+    );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -65,13 +72,18 @@ class _InventoryEditModalState extends State<InventoryEditModal> {
                 TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
                 const SizedBox(width: 12),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (nameController.text.trim().isEmpty) return;
+                    final now = DateTime.now(); // For local, since Firestore uses serverTimestamp
                     final map = {
                       "itemName": nameController.text.trim(),
                       "quantity": double.tryParse(quantityController.text.trim()) ?? 1.0,
                       "unit": unitController.text.trim(),
                       "category": category,
+                      "source": widget.item?['source'] ?? 'manual_ingredient_in',
+                      "nutritionId": widget.item?['nutritionId'] ?? '',
+                      "imageUrl": widget.item?['imageUrl'] ?? '',
+                      "dateAdded": widget.item?['dateAdded'] ?? now,
                     };
                     if (widget.item?['id'] != null) map['id'] = widget.item!['id'];
                     Navigator.pop(context);
