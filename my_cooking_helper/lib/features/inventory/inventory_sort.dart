@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class InventorySortBar extends StatelessWidget {
   final String sortBy;
@@ -10,7 +11,7 @@ class InventorySortBar extends StatelessWidget {
     return Row(
       children: [
         const Text("Sort by:", style: TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(width: 8),
+        SizedBox(width: 8.w),
         DropdownButton<String>(
           value: sortBy,
           onChanged: (value) {

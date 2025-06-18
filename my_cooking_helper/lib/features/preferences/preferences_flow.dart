@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:step_progress_indicator/step_progress_indicator.dart';
 import '/theme/app_theme.dart';
 import '/utils/preference_utils.dart';
 import '/widgets/preference_question_widgets.dart';
@@ -36,14 +38,34 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
     }
   }
 
-  Widget _buildProgressBar() {
+  /*Widget _buildProgressBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 0),
+      padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 0.h),
       child: LinearProgressIndicator(
         value: (_currentPage + 1) / totalPages,
         backgroundColor: Colors.blue[50],
         valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
-        minHeight: 7,
+        minHeight: 7.h,
+      ),
+    );
+  }*/
+  Widget _buildProgressBar() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 30.w, vertical: 0.h),
+      child: StepProgressIndicator(
+        totalSteps: totalPages,
+        currentStep: _currentPage + 1, // +1 because steps are 1-indexed
+        size: 6.h, // Thickness of the bar
+        direction: Axis.horizontal,
+        progressDirection: TextDirection.ltr,
+        padding: 3.w,
+        roundedEdges: Radius.circular(15.r),
+        selectedGradientColor: LinearGradient(
+          colors: [Colors.green, Colors.lightGreenAccent],
+        ),
+        unselectedGradientColor: LinearGradient(
+          colors: [Colors.lightBlue, Colors.blue],
+        ),
       ),
     );
   }
@@ -92,7 +114,7 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
             children: [
               Column(
                 children: [
-                  const SizedBox(height: 60), // Lower progress bar a bit
+                  SizedBox(height: 60.h), // Lower progress bar a bit
                   _buildProgressBar(),
                   Expanded(
                     child: PageView(
@@ -189,8 +211,8 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
               ),
               // theme button
               Positioned(
-                top: 10,
-                right: 18,
+                top: 10.h,
+                right: 18.w,
                 child: ThemeToggleButton(),
               ),
             ],
@@ -215,30 +237,38 @@ class _QuestionPage extends StatelessWidget {
       children: [
         const Spacer(),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Text(title, style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
+          padding: EdgeInsets.symmetric(horizontal: 30.w),
+          child: Text(
+            title, 
+            style: Theme.of(context).textTheme.headlineSmall, 
+            textAlign: TextAlign.center
+          ),
         ),
         if (subtitle != null)
           Padding(
-            padding: const EdgeInsets.only(top: 18.0, left: 24, right: 24),
-            child: Text(subtitle!, style: Theme.of(context).textTheme.bodyLarge, textAlign: TextAlign.center),
+            padding: EdgeInsets.only(top: 25.0.h, left: 25.w, right: 25.w),
+            child: Text(
+              subtitle!, 
+              style: Theme.of(context).textTheme.bodyLarge, 
+              textAlign: TextAlign.center
+            ),
           ),
         const Spacer(),
         ElevatedButton(
           onPressed: onNext,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blueAccent,
-            minimumSize: const Size(110, 48),
+            minimumSize: Size(130.w, 50.h),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
             ),
           ),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32.0, vertical: 14),
-            child: Text("Next", style: TextStyle(fontSize: 18, color: Colors.white)),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 25.0.w, vertical: 10.h),
+            child: Text("Next", style: TextStyle(fontSize: 18.sp, color: Colors.white, fontWeight: FontWeight.w900)),
           ),
         ),
-        const SizedBox(height: 100),
+        SizedBox(height: 100.h),
       ],
     );
   }
@@ -255,12 +285,13 @@ class _ThankYouPage extends StatelessWidget {
       children: [
         const Spacer(),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: EdgeInsets.symmetric(horizontal: 30.w),
           child: Text("Thank you for trusting us!",
               style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
         ),
+        const Spacer(),
         Padding(
-          padding: const EdgeInsets.all(50.0),
+          padding: EdgeInsets.all(50.0.w),
           child: Text(
             "We're committed to protecting your information with the highest standards of privacy and security.\n\n"
             "Ready to discover your new cooking partner? Complete this step and click Ready below!",
@@ -273,17 +304,17 @@ class _ThankYouPage extends StatelessWidget {
           onPressed: onNext,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blueAccent,
-            minimumSize: const Size(110, 48),
+            minimumSize: Size(110.w, 48.h),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
             ),
           ),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32.0, vertical: 14),
-            child: Text("Ready!", style: TextStyle(fontSize: 18, color: Colors.white)),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 30.0.w, vertical: 15.h),
+            child: Text("Ready!", style: TextStyle(fontSize: 18.sp, color: Colors.white)),
           ),
         ),
-        const SizedBox(height: 40),
+        SizedBox(height: 50.h),
       ],
     );
   }

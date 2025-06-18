@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '/utils/colors.dart';
 
 class ScanActionButton extends StatelessWidget {
@@ -21,20 +21,20 @@ class ScanActionButton extends StatelessWidget {
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
         backgroundColor: color ?? Theme.of(context).primaryColor,
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+        padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 18.h),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(20.r),
         ),
         elevation: 6,
       ),
       onPressed: onPressed,
       icon: Icon(
-        icon, size: 30,
+        icon, size: 30.sp,
         color: Colors.white,),
       label: Text(
         label,
         style: TextStyle(
-            fontSize: 18, 
+            fontSize: 18.sp, 
             fontWeight: FontWeight.w600, 
             color: textColor(context),
           ),

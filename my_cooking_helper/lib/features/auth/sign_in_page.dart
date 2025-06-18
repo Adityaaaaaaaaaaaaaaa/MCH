@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '/utils/snackbar.dart';
 
 class SignInPage extends StatefulWidget {
@@ -98,76 +99,76 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 56),
+              SizedBox(height: 56.h),
               Text(
                 'My Cooking Helper',
                 style: TextStyle(
                   fontFamily: 'DancingScript',
-                  fontSize: 40,
+                  fontSize: 30.sp,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 26),
+              SizedBox(height: 26.h),
               Image.asset(
                 "assets/images/loginSignup/signup.png",
-                height: 190,
+                height: 190.h,
                 fit: BoxFit.contain,
               ),
               const Spacer(),
-                const Text(
+              Text(
                 'Login or Sign up to continue\nto My Cooking Helper',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 17.sp,
                   color: Colors.black,
                 ),
                 textAlign: TextAlign.center,
-                ),
-              const SizedBox(height: 36),
+              ),
+              SizedBox(height: 36.h),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                padding: EdgeInsets.symmetric(horizontal: 16.0.w),
                 child: Column(
                   children: [
                     ElevatedButton.icon(
                       icon: Image.asset(
                         "assets/images/loginSignup/google_logo.png",
-                        width: 24,
-                        height: 24,
+                        width: 24.w,
+                        height: 24.h,
                       ),
-                      label: const Text(
+                      label: Text(
                         'Continue with Google',
-                        style: TextStyle(fontSize: 16, color: Colors.black),
+                        style: TextStyle(fontSize: 16.sp, color: Colors.black),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: Colors.black,
-                        minimumSize: const Size(double.infinity, 54),
+                        minimumSize: Size(double.infinity, 45.h),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(14.r),
                         ),
                         elevation: 1,
                         side: const BorderSide(color: Color(0xFFE0E0E0)),
                       ),
                       onPressed: () => _signInWithGoogle(context),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     ElevatedButton.icon(
                       icon: Image.asset(
                         "assets/images/loginSignup/apple_logo.png",
-                        width: 24,
-                        height: 24,
+                        width: 24.w,
+                        height: 24.h,
                       ),
-                      label: const Text(
+                      label: Text(
                         'Continue with Apple',
-                        style: TextStyle(fontSize: 16, color: Colors.black),
+                        style: TextStyle(fontSize: 16.sp, color: Colors.black),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: Colors.black,
-                        minimumSize: const Size(double.infinity, 54),
+                        minimumSize: Size(double.infinity, 45.h),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(14.r),
                         ),
                         elevation: 1,
                         side: const BorderSide(color: Color(0xFFE0E0E0)),
@@ -183,9 +184,9 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
                   ],
                 ),
               ),
-              const SizedBox(height: 22),
+              SizedBox(height: 25.h),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 22.0),
+                padding: EdgeInsets.symmetric(horizontal: 22.0.w),
                 child: Text.rich(
                   TextSpan(
                     text: 'By clicking continue, you agree to our ',
@@ -201,11 +202,11 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
                       ),
                     ],
                   ),
-                  style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                  style: TextStyle(color: Colors.grey[700], fontSize: 12.sp),
                   textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18.h),
             ],
           ),
         ),

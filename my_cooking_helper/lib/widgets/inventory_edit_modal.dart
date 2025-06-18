@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class InventoryEditModal extends StatefulWidget {
   final Map<String, dynamic>? item;
@@ -36,41 +37,41 @@ class _InventoryEditModalState extends State<InventoryEditModal> {
   Widget build(BuildContext context) {
     return Dialog(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 24),
+        padding: EdgeInsets.symmetric(vertical: 22.h, horizontal: 24.w),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(widget.item == null ? "Add Ingredient" : "Edit Ingredient",
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             TextField(
               controller: nameController,
               decoration: InputDecoration(labelText: "Name"),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10.h),
             TextField(
               controller: quantityController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(labelText: "Quantity"),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10.h),
             TextField(
               controller: unitController,
               decoration: InputDecoration(labelText: "Unit"),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10.h),
             DropdownButtonFormField<String>(
               value: category,
               items: _categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
               onChanged: (val) => setState(() => category = val!),
               decoration: InputDecoration(labelText: "Category"),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 ElevatedButton(
                   onPressed: () async {
                     if (nameController.text.trim().isEmpty) return;

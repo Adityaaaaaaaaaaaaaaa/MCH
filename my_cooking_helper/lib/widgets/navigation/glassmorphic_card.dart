@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class GlassmorphicCard extends StatelessWidget {
   final Widget child;
@@ -32,12 +33,12 @@ class GlassmorphicCard extends StatelessWidget {
         Positioned.fill(
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(borderRadius + 4),
+              borderRadius: BorderRadius.circular((borderRadius + 4).r),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(isLight ? 0.10 : 0.18),
-                  blurRadius: elevation,
-                  offset: const Offset(0, 18),
+                  blurRadius: elevation.r,
+                  offset: Offset(0, 18.h),
                 ),
               ],
             ),
@@ -45,11 +46,11 @@ class GlassmorphicCard extends StatelessWidget {
         ),
         // Glass main content
         ClipRRect(
-          borderRadius: BorderRadius.circular(borderRadius),
+          borderRadius: BorderRadius.circular(borderRadius.r),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+            filter: ImageFilter.blur(sigmaX: blur.r, sigmaY: blur.r),
             child: Container(
-              padding: padding ?? const EdgeInsets.all(20),
+              padding: padding ?? EdgeInsets.all(20.w),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -61,10 +62,10 @@ class GlassmorphicCard extends StatelessWidget {
                         : Colors.grey.shade800.withOpacity(opacity),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(borderRadius),
+                borderRadius: BorderRadius.circular(borderRadius.r),
                 border: Border.all(
                   color: Colors.white.withOpacity(isLight ? 0.33 : 0.18),
-                  width: 1.6,
+                  width: 1.6.w,
                 ),
               ),
               child: child,
@@ -76,10 +77,10 @@ class GlassmorphicCard extends StatelessWidget {
           child: IgnorePointer(
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(borderRadius - 3),
+                borderRadius: BorderRadius.circular((borderRadius - 3).r),
                 border: Border.all(
                   color: Colors.white.withOpacity(0.09),
-                  width: 1.2,
+                  width: 1.2.w,
                 ),
               ),
             ),
@@ -91,10 +92,10 @@ class GlassmorphicCard extends StatelessWidget {
           top: 0,
           child: IgnorePointer(
             child: Container(
-              height: 32,
+              height: 32.h,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(borderRadius),
+                  top: Radius.circular(borderRadius.r),
                 ),
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
