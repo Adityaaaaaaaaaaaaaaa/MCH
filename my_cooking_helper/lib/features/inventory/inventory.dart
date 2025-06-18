@@ -14,6 +14,7 @@ import '/widgets/inventory_tile.dart';
 import 'inventory_controller.dart';
 import '/widgets/inventory_edit_modal.dart';
 import 'inventory_sort.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class InventoryPage extends ConsumerStatefulWidget {
   const InventoryPage({super.key});
@@ -49,14 +50,14 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
       appBar: CustomAppBar(
         title: "Inventory",
         showMenu: true,
-        height: 100,
-        borderRadius: 26,
-        topPadding: 60,
+        height: 100.h,
+        borderRadius: 26.r,
+        topPadding: 60.h,
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 140),
+            padding: EdgeInsets.only(top: 140.h),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -66,14 +67,14 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: EdgeInsets.all(20.0.w),
               child: GridView.builder(
                 itemCount: sortedItems.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
                   childAspectRatio: 0.62,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10.w,
+                  mainAxisSpacing: 10.h,
                 ),
                 itemBuilder: (context, idx) {
                   final item = sortedItems[idx];
@@ -133,7 +134,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                   icon: const Icon(Icons.delete),
                   label: const Text("Delete"),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: 14.w),
                 FloatingActionButton.extended(
                   onPressed: () => setState(() {
                     deleteMode = false;

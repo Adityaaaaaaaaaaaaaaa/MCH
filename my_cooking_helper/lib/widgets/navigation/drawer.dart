@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({Key? key}) : super(key: key);
@@ -79,13 +80,13 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black12,
-                    blurRadius: 16,
+                    blurRadius: 16.r,
                   ),
                 ],
               ),
               child: Center(
                 child: CircleAvatar(
-                  radius: 44,
+                  radius: 44.r,
                   backgroundImage: selectedImage.startsWith('http')
                       ? NetworkImage(selectedImage)
                       : AssetImage(selectedImage) as ImageProvider,
@@ -124,7 +125,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
               }
             },
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18.h),
         ],
       ),
     );

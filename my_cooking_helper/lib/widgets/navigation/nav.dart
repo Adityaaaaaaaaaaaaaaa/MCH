@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'glassmorphic_card.dart';
 
 class CustomNavBar extends StatelessWidget {
@@ -19,12 +20,12 @@ class CustomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(left: 18, right: 18, bottom: 14),
+      padding: EdgeInsets.only(left: 15.w, right: 15.w, bottom: 25.h),
       child: GlassmorphicCard(
-        borderRadius: 22,
+        borderRadius: 22.r,
         blur: 16,
         opacity: 0.12,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
         child: SalomonBottomBar(
           currentIndex: currentIndex,
           onTap: (index) {
@@ -36,7 +37,7 @@ class CustomNavBar extends StatelessWidget {
           items: _navItems
               .map(
                 (item) => SalomonBottomBarItem(
-                  icon: Icon(item.icon, size: 26),
+                  icon: Icon(item.icon, size: 20.sp),
                   title: Text(item.title),
                   selectedColor: theme.colorScheme.primary,
                   unselectedColor: theme.colorScheme.onSurface.withOpacity(0.6),
@@ -44,10 +45,10 @@ class CustomNavBar extends StatelessWidget {
               )
               .toList(),
           backgroundColor: Colors.transparent,
-          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          margin: EdgeInsets.symmetric(horizontal: 4.w, vertical: 4.h),
           duration: const Duration(milliseconds: 400),
           itemShape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
         ),
       ),
     );

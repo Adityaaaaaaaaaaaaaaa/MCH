@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart';
-import '../utils/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/utils/colors.dart';
 import '/models/item.dart';
 
 class EditOrAddItemDialog extends StatefulWidget {
@@ -60,12 +61,12 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+      insetPadding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 24.h),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+        padding: EdgeInsets.symmetric(vertical: 28.h, horizontal: 24.w),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(22.r),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -78,30 +79,30 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
                 letterSpacing: 0.1,
               ),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18.h),
             TextField(
               controller: nameController,
               textInputAction: TextInputAction.next,
               decoration: InputDecoration(
                 labelText: "Item Name",
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(14.r),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             Row(
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(left: 20.0),
+                  padding: EdgeInsets.only(left: 20.0.w),
                   child: IconButton(
-                    icon: Icon(Icons.remove_circle, color: Colors.red[300], size: 30),
+                    icon: Icon(Icons.remove_circle, color: Colors.red[300], size: 30.sp),
                     onPressed: _decrementQty,
                   ),
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 30, right: 30),
+                    padding: EdgeInsets.only(left: 30.w, right: 30.w),
                     child: TextField(
                       textAlign: TextAlign.center,
                       keyboardType: TextInputType.numberWithOptions(decimal: true),
@@ -123,15 +124,15 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(right: 20),
+                  padding: EdgeInsets.only(right: 20.w),
                   child: IconButton(
-                    icon: Icon(Icons.add_circle, color: Colors.green, size: 30),
+                    icon: Icon(Icons.add_circle, color: Colors.green, size: 30.sp),
                     onPressed: _incrementQty,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             TextField(
               controller: unitController,
               decoration: InputDecoration(
@@ -141,7 +142,7 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             DropdownButtonFormField<String>(
               value: _selectedCategory,
               onChanged: (val) => setState(() => _selectedCategory = val),
@@ -154,11 +155,11 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
               decoration: InputDecoration(
                 labelText: "Category",
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(14.r),
                 ),
               ),
             ),
-            const SizedBox(height: 26),
+            SizedBox(height: 26.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -166,13 +167,13 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Cancel'),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10.w),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.primaryColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(14.r),
                     ),
                   ),
                   onPressed: () {
@@ -200,7 +201,7 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
           blurX: 15,
           blurY: 15,
           frosted: true,
-          clipBorderRadius: BorderRadius.circular(15),
+          clipBorderRadius: BorderRadius.circular(15.r),
         ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
 import '/theme/app_theme.dart';
@@ -69,8 +70,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget build(BuildContext context) {
 
     //width/height of all feature cards!
-    const double cardWidth = 160; 
-    const double cardHeight = 135; 
+    double cardWidth = 150.w; 
+    double cardHeight = 125.h; 
 
     return Scaffold(
       backgroundColor: bgColor(context),
@@ -80,12 +81,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       bottomNavigationBar: CustomNavBar(currentIndex: 2),
       appBar: CustomAppBar(
         title: "My Cooking Helper",
-        themeToggleWidget: const ThemeToggleButton(),
+        themeToggleWidget: ThemeToggleButton(),
         trailingIcon: Icons.settings_rounded,
         onTrailingIconTap: () => _openSettings(context),
-        height: 100,
-        borderRadius: 26,
-        topPadding: 60,
+        height: 70.h,
+        borderRadius: 26.r,
+        topPadding: 40.h,
       ),
       body: Stack(
         children: [
@@ -143,44 +144,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           ),
           // -------- FEATURE CARDS IN GLASS EFFECT --------
-          Center(
-            child: SizedBox(
-              width: (cardWidth + 24) * 2,
-              child: GridView.builder(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.only(top: 150, bottom: 10),
-                itemCount: features.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 26,
-                  crossAxisSpacing: 24,
-                  childAspectRatio: cardWidth / cardHeight,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.0.w, vertical: 20.0.h),
+            child: Center(
+              child: SizedBox(
+                width: (cardWidth + 24) * 2,
+                child: GridView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.only(top: 110.h, bottom: 10.h),
+                  itemCount: features.length,
+                  gridDelegate:  SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 25.h,
+                    crossAxisSpacing: 50.w,
+                    childAspectRatio: cardWidth / cardHeight,
+                  ),
+                  itemBuilder: (context, index) {
+                    final feature = features[index];
+                    return ScaleTransition(
+                      scale: CurvedAnimation(
+                        parent: _controller,
+                        curve: Interval(index * 0.09, 1, curve: Curves.elasticOut),
+                      ),
+                      child: Center(
+                        child: FeatureCard(
+                          icon: feature.icon,
+                          title: feature.title,
+                          color: feature.color,
+                          width: cardWidth,
+                          height: cardHeight,
+                          onTap: () => context.push(feature.route),
+                        ).asGlass(
+                            blurX: 15,
+                            blurY: 15,
+                            tintColor: Colors.black,
+                            clipBorderRadius: BorderRadius.circular(15.r),
+                            frosted: true, 
+                          ),
+                      ),
+                    );
+                  },
                 ),
-                itemBuilder: (context, index) {
-                  final feature = features[index];
-                  return ScaleTransition(
-                    scale: CurvedAnimation(
-                      parent: _controller,
-                      curve: Interval(index * 0.09, 1, curve: Curves.elasticOut),
-                    ),
-                    child: Center(
-                      child: FeatureCard(
-                        icon: feature.icon,
-                        title: feature.title,
-                        color: feature.color,
-                        width: cardWidth,
-                        height: cardHeight,
-                        onTap: () => context.push(feature.route),
-                      ).asGlass(
-                          blurX: 7,
-                          blurY: 7,
-                          tintColor: Colors.black,
-                          clipBorderRadius: BorderRadius.circular(25),
-                          frosted: true, 
-                        ),
-                    ),
-                  );
-                },
               ),
             ),
           ),
@@ -214,10 +218,10 @@ class FeatureCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       elevation: 8,
-      borderRadius: BorderRadius.circular(25),
+      borderRadius: BorderRadius.circular(25.r),
       shadowColor: color.withOpacity(0.5),
       child: InkWell(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(28.r),
         splashColor: color.withOpacity(0.18),
         onTap: onTap,
         child: SizedBox(
@@ -231,15 +235,16 @@ class FeatureCard extends StatelessWidget {
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                padding: const EdgeInsets.all(15),
-                child: Icon(icon, size: 32, color: color),
+                padding: EdgeInsets.all(10.w),
+                child: Icon(icon, size: 30.sp, color: color),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14.h),
               Text(
                 title,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.10,
+                  fontSize: 15.sp,
                 ),
                 textAlign: TextAlign.center,
               ),

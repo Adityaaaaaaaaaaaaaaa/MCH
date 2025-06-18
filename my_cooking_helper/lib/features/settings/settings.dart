@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '/utils/loader.dart';
 import '/utils/snackbar.dart';
 import '/utils/preference_utils.dart';
@@ -107,8 +108,8 @@ class _SettingsScreenState extends ConsumerState<Settings>
       behavior: SnackBarBehavior.floating,
       icon: Icons.check_circle_sharp,
       iconColor: Colors.lightGreenAccent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
     );
   }
 
@@ -156,8 +157,8 @@ class _SettingsScreenState extends ConsumerState<Settings>
         behavior: SnackBarBehavior.floating,
         icon: Icons.logout_outlined,
         iconColor: Colors.amber[200],
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
       );
       await Future.delayed(const Duration(milliseconds: 1000));
       context.go('/');
@@ -210,8 +211,8 @@ class _SettingsScreenState extends ConsumerState<Settings>
             behavior: SnackBarBehavior.floating,
             icon: Icons.check_circle_sharp,
             iconColor: Colors.lightGreen,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
           );
         } else {
           // Not registered, send to signin/onboarding
@@ -243,23 +244,23 @@ class _SettingsScreenState extends ConsumerState<Settings>
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.transparent, 
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
         contentPadding: EdgeInsets.zero,
         content: Container(
-          padding: const EdgeInsets.fromLTRB(20, 26, 20, 16),
+          padding: EdgeInsets.fromLTRB(20.w, 26.h, 20.w, 16.h),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+               Text(
                 "Delete Account?",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20.sp),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               const Text(
                 "This action is irreversible. Are you sure you want to delete your account?",
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24.h),
               Row(
                 children: [
                   Expanded(
@@ -287,10 +288,10 @@ class _SettingsScreenState extends ConsumerState<Settings>
             ],
           ),
         ).asGlass(
-          blurX: 14,
-          blurY: 14,
-          tintColor: Colors.white,
-          clipBorderRadius: BorderRadius.circular(18),
+          blurX: 15,
+          blurY: 15,
+          tintColor: Colors.redAccent,
+          clipBorderRadius: BorderRadius.circular(18.r),
           frosted: true,
         ),
       ),
@@ -311,9 +312,9 @@ class _SettingsScreenState extends ConsumerState<Settings>
         title: "Settings",
         themeToggleWidget: const ThemeToggleButton(),
         onMenuTap: () => context.push('/home'),
-        height: 100,
-        borderRadius: 26,
-        topPadding: 60,
+        height: 70.h,
+        borderRadius: 26.r,
+        topPadding: 40.h,
       ),
       body: Stack(
         children: [
@@ -371,16 +372,16 @@ class _SettingsScreenState extends ConsumerState<Settings>
             ),
           ),
           ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
             children: [
-              const SizedBox(height: 30),
+              SizedBox(height: 30.h),
               // Profile: Only profile and switch account
               ProfileAccountSection(
                 user: user,
                 avatar: avatar,
                 onSwitchAccount: _switchAccount,
               ),
-              const SizedBox(height: 30),
+              SizedBox(height: 25.h),
               // Preferences
               PreferenceSection(
                 gender: gender,
@@ -392,14 +393,14 @@ class _SettingsScreenState extends ConsumerState<Settings>
                 barriers: barriers,
                 onUpdatePref: _updatePref,
               ),
-              const SizedBox(height: 30),
+              SizedBox(height: 25.h),
               // Theme 
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 22),
+                padding: EdgeInsets.symmetric(horizontal: 22.w),
                 child: GlassmorphicCard(
-                  borderRadius: 28,
+                  borderRadius: 20.r,
                   blur: 14,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -410,12 +411,12 @@ class _SettingsScreenState extends ConsumerState<Settings>
                 ),
               ),
               // Account actions
-              const SizedBox(height: 20),
+              SizedBox(height: 25.h),
               AccountActionsSection(
                 onSignOut: _signOut,
                 onDelete: _showDeleteDialog,
               ),
-              const SizedBox(height: 25),
+              SizedBox(height: 25.h),
             ],
           ),
         ],
