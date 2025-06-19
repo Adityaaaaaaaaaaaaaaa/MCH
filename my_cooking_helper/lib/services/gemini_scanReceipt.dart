@@ -29,9 +29,9 @@ class GeminiReceiptService {
         final jsonResp = jsonDecode(responseBody);
 
         if (jsonResp is Map && jsonResp.containsKey('detected_items')) {
-          final List<dynamic> rawItems = jsonResp['detected_items'];
+          final List<dynamic> gemItems = jsonResp['detected_items'];
 
-          return rawItems.map<Map<String, dynamic>>((item) {
+          return gemItems.map<Map<String, dynamic>>((item) {
             String name = item['itemName'] ?? item['item'] ?? '';
             double? count;
             if (item['count'] != null) {

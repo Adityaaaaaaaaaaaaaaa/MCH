@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
-import '../../services/inventory_service.dart';
-import '../../utils/snackbar.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/services/inventory_service.dart';
+import '/utils/snackbar.dart';
 import '/widgets/edit_add_item_dialog.dart';
 import '/models/item.dart';
 import '/utils/colors.dart';
@@ -21,7 +22,7 @@ class ManualInputScreen extends ConsumerWidget {
       .where((item) => item.source == "manual_input")
       .toList();
     final controller = ref.read(smartScanControllerProvider.notifier);
-    final InventoryService _inventoryService = InventoryService();
+    final InventoryService inventoryService = InventoryService();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -29,23 +30,23 @@ class ManualInputScreen extends ConsumerWidget {
       appBar: CustomAppBar(
         title: "Manual Input",
         showMenu: false,
-        height: 90,
-        borderRadius: 22,
-        topPadding: 48,
+        height: 70.h,
+        borderRadius: 26.r,
+        topPadding: 40.h,
       ),
       backgroundColor: bgColor(context),
       body: Stack(
         children: [
           Column(
             children: [
-              const SizedBox(height: 120),
+              SizedBox(height: 120.h),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                  padding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 20.w),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20.r),
                     color: theme.cardColor.withOpacity(0.60),
                   ),
                   child: Text(
@@ -53,6 +54,7 @@ class ManualInputScreen extends ConsumerWidget {
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w500,
+                      fontSize: 10.sp,
                       color: theme.textTheme.bodyLarge?.color?.withOpacity(1),
                     ),
                   ),
@@ -60,10 +62,10 @@ class ManualInputScreen extends ConsumerWidget {
                   blurX: 10,
                   blurY: 10,
                   frosted: true,
-                  clipBorderRadius: BorderRadius.circular(20),
+                  clipBorderRadius: BorderRadius.circular(20.r),
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10.h),
               Expanded(
                 child: manualItems.isEmpty
                     ? Center(
@@ -76,12 +78,12 @@ class ManualInputScreen extends ConsumerWidget {
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                        padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
                         itemCount: manualItems.length,
                         itemBuilder: (context, index) {
                           final item = manualItems[index];
                           return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 2),
+                            padding: EdgeInsets.symmetric(vertical: 9.h, horizontal: 2.w),
                             child: Slidable(
                               key: ValueKey(item.itemName + index.toString()),
                               endActionPane: ActionPane(
@@ -96,16 +98,16 @@ class ManualInputScreen extends ConsumerWidget {
                                     foregroundColor: Colors.white,
                                     icon: Icons.delete_forever_rounded,
                                     label: 'Delete',
-                                    borderRadius: BorderRadius.circular(18),
+                                    borderRadius: BorderRadius.circular(18.r),
                                   ),
                                 ],
                               ),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(20.r),
                                   border: Border.all(
                                     color: theme.primaryColor.withOpacity(0.11),
-                                    width: 1.2,
+                                    width: 1.2.w,
                                   ),
                                   gradient: LinearGradient(
                                     colors: [
@@ -120,7 +122,7 @@ class ManualInputScreen extends ConsumerWidget {
                                   leading: Icon(
                                     Icons.edit_note_rounded,
                                     color: theme.primaryColor,
-                                    size: 32,
+                                    size: 32.sp,
                                   ),
                                   title: Text(
                                     item.itemName,
@@ -156,7 +158,7 @@ class ManualInputScreen extends ConsumerWidget {
                                   blurY: 15,
                                   tintColor: Colors.white,
                                   frosted: true,
-                                  clipBorderRadius: BorderRadius.circular(15),
+                                  clipBorderRadius: BorderRadius.circular(15.r),
                                 ),
                               ),
                             ),
@@ -166,20 +168,23 @@ class ManualInputScreen extends ConsumerWidget {
               ),
               if (manualItems.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 30, top: 18, left: 18, right: 18),
+                  padding: EdgeInsets.only(bottom: 30.h, top: 18.h, left: 18.w, right: 18.w),
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      icon: const Icon(Icons.done_rounded, size: 26, color: Colors.white),
+                      icon: Icon(Icons.done_rounded, size: 26.sp, color: Colors.white),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 19, horizontal: 16),
+                        padding: EdgeInsets.symmetric(vertical: 19.h, horizontal: 16.w),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(26),
+                          borderRadius: BorderRadius.circular(26.r),
                         ),
                         elevation: 9,
-                        textStyle: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+                        textStyle: TextStyle(
+                          fontSize: 18.sp, 
+                          fontWeight: FontWeight.w600, 
+                          color: Colors.white
+                        ),
                       ),
                       label: const Text(
                         'Confirm All',
@@ -191,17 +196,33 @@ class ManualInputScreen extends ConsumerWidget {
                           final itemsToSave = manualItems.map((item) => item.toJson()).toList();
 
                           // Save to Firestore
-                          await _inventoryService.addItemsToInventory(itemsToSave);
+                          await inventoryService.addItemsToInventory(itemsToSave);
 
                           // Clear only manual input items
-                          // (You may want to implement a function in your controller to remove all items where source == "manual_input")
                           controller.clearItems();
 
-                          // Show success
-                          SnackbarUtils.show(context, "Items added!");
+                          SnackbarUtils.show(
+                            context, 
+                            "Items Added!",
+                            duration: 500, 
+                            behavior: SnackBarBehavior.floating,
+                            icon: Icons.check,
+                            iconColor: Colors.lightGreenAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+                            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                          );
                           context.go('/home');
                         } catch (e) {
-                          SnackbarUtils.show(context, "Error saving items", icon: Icons.error);
+                          SnackbarUtils.show(
+                            context, 
+                            "Error adding items !",
+                            duration: 500, 
+                            behavior: SnackBarBehavior.floating,
+                            icon: Icons.warning_amber_rounded,
+                            iconColor: Colors.redAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+                            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.r),
+                          );
                         }
                       },
                     ),
@@ -209,24 +230,28 @@ class ManualInputScreen extends ConsumerWidget {
                 ),
             ],
           ),
-          // Add floating Add Item button
+          //Add Item button
           Positioned(
-            bottom: 110,
-            right: 25,
+            bottom: 110.h,
+            right: 25.w,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-                elevation: 13,
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+                backgroundColor: Colors.grey,
+                shadowColor: Colors.transparent,
+                elevation: 100,
+                padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 15.w),
               ),
-              icon: const Icon(Icons.add_circle_rounded, color: Colors.white, size: 28),
-              label: const Text(
+              icon: Icon(
+                Icons.add_circle_rounded, 
+                color: Colors.white, 
+                size: 20.sp
+              ),
+              label: Text(
                 'Add Item',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 17,
+                  fontSize: 17.sp,
                 ),
               ),
               onPressed: () async {
@@ -238,6 +263,12 @@ class ManualInputScreen extends ConsumerWidget {
                   controller.addItem(added);
                 }
               },
+            ).asGlass(
+              blurX: 30,
+              blurY: 30,
+              frosted: true,
+              tintColor: Colors.blueGrey,
+              clipBorderRadius: BorderRadius.circular(15.r),
             ),
           ),
         ],

@@ -2,7 +2,7 @@
 const String ip = "192.168.233.52";
 
 // Render web server
-//const String backendApiUrl = "https://mch-rtlu.onrender.com";
+const String backendApiUrl = "https://mch-rtlu.onrender.com";
 
 // Local development
-const String backendApiUrl = "http://$ip:8000";
+//const String backendApiUrl = "http://$ip:8000";
