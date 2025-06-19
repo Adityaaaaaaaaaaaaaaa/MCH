@@ -12,6 +12,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double height;
   final double borderRadius;
   final double topPadding;
+  final double fontSize;
 
   const CustomAppBar({
     Key? key,
@@ -24,6 +25,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.height = 85,
     this.borderRadius = 26,
     this.topPadding = 35,
+    this.fontSize = 16,
   }) : super(key: key);
 
   @override
@@ -48,7 +50,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               Builder(
                 builder: (context) => showMenu
                   ? IconButton(
-                      icon: Icon(Icons.menu_rounded, size: 30.sp),
+                      icon: Icon(Icons.menu_rounded, size: 25.sp),
                       color: theme.colorScheme.primary,
                       tooltip: "Open menu",
                       onPressed: onMenuTap ?? () => Scaffold.of(context).openDrawer(),
@@ -73,7 +75,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     title,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 0.2,
+                      letterSpacing: 0.2, 
+                      fontSize: fontSize.sp, 
                     ),
                   ),
                 ),
@@ -83,7 +86,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   if (themeToggleWidget != null) themeToggleWidget!,
                   if (trailingIcon != null)
                     IconButton(
-                      icon: Icon(trailingIcon, size: 28.sp),
+                      icon: Icon(trailingIcon, size: 25.sp),
                       tooltip: "Action",
                       color: theme.colorScheme.primary,
                       onPressed: onTrailingIconTap ?? () {},

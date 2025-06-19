@@ -30,9 +30,9 @@ class ManualInputScreen extends ConsumerWidget {
       appBar: CustomAppBar(
         title: "Manual Input",
         showMenu: false,
-        height: 90.h,
-        borderRadius: 22.r,
-        topPadding: 48.h,
+        height: 70.h,
+        borderRadius: 26.r,
+        topPadding: 40.h,
       ),
       backgroundColor: bgColor(context),
       body: Stack(
@@ -54,6 +54,7 @@ class ManualInputScreen extends ConsumerWidget {
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w500,
+                      fontSize: 10.sp,
                       color: theme.textTheme.bodyLarge?.color?.withOpacity(1),
                     ),
                   ),
@@ -235,12 +236,16 @@ class ManualInputScreen extends ConsumerWidget {
             right: 25.w,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.r)),
-                elevation: 13,
-                padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 18.w),
+                backgroundColor: Colors.grey,
+                shadowColor: Colors.transparent,
+                elevation: 100,
+                padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 15.w),
               ),
-              icon: Icon(Icons.add_circle_rounded, color: Colors.white, size: 28.sp),
+              icon: Icon(
+                Icons.add_circle_rounded, 
+                color: Colors.white, 
+                size: 20.sp
+              ),
               label: Text(
                 'Add Item',
                 style: TextStyle(
@@ -258,6 +263,12 @@ class ManualInputScreen extends ConsumerWidget {
                   controller.addItem(added);
                 }
               },
+            ).asGlass(
+              blurX: 30,
+              blurY: 30,
+              frosted: true,
+              tintColor: Colors.blueGrey,
+              clipBorderRadius: BorderRadius.circular(15.r),
             ),
           ),
         ],
