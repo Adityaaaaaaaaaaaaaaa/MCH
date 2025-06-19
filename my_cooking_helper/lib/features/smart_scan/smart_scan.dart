@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '/utils/colors.dart';
-import '/widgets/appbar.dart';
+import '/widgets/navigation/appbar.dart';
 import '/widgets/scan_action_button.dart';
-import '/widgets/drawer.dart';
-import '/widgets/nav.dart';
+import '/widgets/navigation/drawer.dart';
+import '/widgets/navigation/nav.dart';
 
 class SmartScan extends StatelessWidget {
   const SmartScan({super.key});
@@ -21,14 +22,14 @@ class SmartScan extends StatelessWidget {
       bottomNavigationBar: CustomNavBar(currentIndex: 1),
       appBar: CustomAppBar(
         title: "Smart Scan",
-        height: 100,
-        borderRadius: 26,
-        topPadding: 60,
+        height: 70.h,
+        borderRadius: 26.r,
+        topPadding: 40.h,
       ),
       backgroundColor: bgColor(context),
       body: Stack(
         children: [
-          // -------- BACKGROUND IMAGES --------
+          // BACKGROUND IMAGES 
           Positioned(
             top: 110,
             left: 30,
@@ -68,65 +69,65 @@ class SmartScan extends StatelessWidget {
               ),
             ),
           ),
-          // --- GLASS CARD CONTENT ---
+          // GLASS CARD CONTENT
           Center(
             child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 50),
+                padding: EdgeInsets.only(right: 50.0.w, left: 50.w),
                 child: Container(
-                  width: 250, // Set width as you like, or use constraints
-                  padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+                  width: 300.w, 
+                  padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 20.w),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(30.r),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.camera_alt_rounded,
-                        size: 50,
-                        color: Theme.of(context).colorScheme.primary,
+                        size: 50.sp,
+                        color: Colors.white,
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 15.h),
                       Text(
                         "How would you like to add items?",
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w900,
                           color: textColor(context),
-                          letterSpacing: 0.2,
+                          letterSpacing: 0.5,
+                          fontSize: 20.sp,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 32),
+                      SizedBox(height: 40.h),
                       ScanActionButton(
                         label: "Scan Food",
-                        icon: Icons.fastfood,
+                        icon: Icons.fastfood_rounded,
                         color: Colors.green,
                         onPressed: () => context.push('/scanFood'),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20.h),
                       ScanActionButton(
                         label: "Scan Receipt",
-                        icon: Icons.receipt_long,
-                        color: Colors.deepOrange,
+                        icon: Icons.receipt_long_rounded,
+                        color: Colors.orange,
                         onPressed: () => context.push('/scanReceipt'),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20.h),
                       ScanActionButton(
                         label: "Manual Input",
-                        icon: Icons.edit_note_rounded,
-                        color: Colors.amber[700],
+                        icon: Icons.edit_note,
+                        color: Colors.amber,
                         onPressed: () => context.push('/manualInput'),
                       ),
                     ],
                   ),
                 )
-                // --- Apply the glass effect here ---
                 .asGlass(
-                  blurX: 5,
-                  blurY: 5,
-                  //tintColor: theme.colorScheme.background.withOpacity(0.26),
-                  clipBorderRadius: BorderRadius.circular(30),
+                  blurX: 10,
+                  blurY: 10,
+                  tintColor: Colors.blueGrey,
+                  clipBorderRadius: BorderRadius.circular(30.r),
                   frosted: true,
                 ),
               ),

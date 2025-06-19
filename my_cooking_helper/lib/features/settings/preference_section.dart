@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart'; 
-
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '/utils/preference_utils.dart';
 
 class PreferenceSection extends StatelessWidget {
@@ -31,9 +31,9 @@ class PreferenceSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
+      padding: EdgeInsets.symmetric(horizontal: 22.w),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 20.h),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -41,10 +41,10 @@ class PreferenceSection extends StatelessWidget {
               "Your Preferences", 
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w900,
-                fontSize: 25,
+                fontSize: 20.sp,
               )
             )),
-            const SizedBox(height: 16),
+            SizedBox(height: 20.h),
             AnimatedPreferenceTile<PreferenceOption>(
               title: "Gender",
               value: PreferenceUtils.genders.firstWhere(
@@ -66,7 +66,7 @@ class PreferenceSection extends StatelessWidget {
               onChanged: (newVal) => onUpdatePref(PreferenceKeys.cookingTime, newVal.label),
             ),
             AnimatedPreferenceTile<PreferenceOption>(
-              title: "Allergies / Intolerances",
+              title: "Allergies",
               value: mapLabelsToOptions(PreferenceUtils.allergies, allergies),
               options: PreferenceUtils.allergies,
               multiSelect: true,
@@ -107,10 +107,10 @@ class PreferenceSection extends StatelessWidget {
         ),
       )
       .asGlass(
-        blurX: 15,
-        blurY: 15,
-        //tintColor: Colors.white,
-        clipBorderRadius: BorderRadius.circular(30),
+        blurX: 20,
+        blurY: 20,
+        tintColor: Colors.blueGrey,
+        clipBorderRadius: BorderRadius.circular(20.r),
         frosted: true,
       ),
     );
@@ -158,7 +158,7 @@ class AnimatedPreferenceTile<T extends PreferenceOption> extends StatelessWidget
       }
       return Center(
         child: Wrap(
-          spacing: 5,
+          spacing: 5.w,
           alignment: WrapAlignment.center,
           children: chips,
         ),
@@ -166,56 +166,69 @@ class AnimatedPreferenceTile<T extends PreferenceOption> extends StatelessWidget
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsets.symmetric(vertical: 6.h),
+      child: Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+        color: Colors.grey,
+        width: 2,
+        ),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
       child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         tileColor: theme.colorScheme.primary.withOpacity(0.045),
-        title: Center(child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+        title: Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 5.h, horizontal: 5.w),
           child: Text(
-            title, 
-            style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
+          title,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.w900,
+            fontSize: 20.sp,
           ),
-        )),
+          ),
+        ),
+        ),
         subtitle: multiSelect
-            ? multiDisplay()
-            : value != null
-                ? Center(
-                    child: Text(
-                      "${value.emoji} ${value.label}",
-                      style: theme.textTheme.titleMedium,
-                    ),
-                  )
-                : const Center(child: Text("None")),
+          ? multiDisplay()
+          : value != null
+            ? Center(
+              child: Text(
+              "${value.emoji} ${value.label}",
+              style: theme.textTheme.titleMedium,
+              ),
+            )
+            : const Center(child: Text("None")),
         trailing: Icon(Icons.edit, color: theme.colorScheme.primary),
         onTap: () async {
-          final result = await showModalBottomSheet(
-            context: context,
-            backgroundColor: theme.scaffoldBackgroundColor,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-            ),
-            isScrollControlled: true,
-            builder: (ctx) => PreferenceEditModal<T>(
-              title: title,
-              options: options,
-              currentValue: value,
-              multiSelect: multiSelect,
-            ),
-          );
-          if (result != null) {
-            await onChanged(result);
-          }
+        final result = await showModalBottomSheet(
+          context: context,
+          backgroundColor: theme.scaffoldBackgroundColor,
+          shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
+          ),
+          isScrollControlled: true,
+          builder: (ctx) => PreferenceEditModal<T>(
+          title: title,
+          options: options,
+          currentValue: value,
+          multiSelect: multiSelect,
+          ),
+        );
+        if (result != null) {
+          await onChanged(result);
+        }
         },
       ).asGlass(
-        blurX: 10,
-        blurY: 10,
-        //tintColor: Colors.white,
-        clipBorderRadius: BorderRadius.circular(18),
-        frosted: false,
-      )
+        blurX: 15,
+        blurY: 15,
+        tintColor: Colors.blueAccent,
+        clipBorderRadius: BorderRadius.circular(20.r),
+        frosted: true,
+      ),
+      ),
     );
-  }
+    }
 }
 
 class PreferenceEditModal<T extends PreferenceOption> extends StatefulWidget {
@@ -271,19 +284,19 @@ class _PreferenceEditModalState<T extends PreferenceOption>
       curve: Curves.easeOut,
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-        left: 20, right: 20, top: 20,
+        left: 20.w, right: 20.w, top: 20.h,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(widget.title, style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold)),
-          const SizedBox(height: 22),
+          SizedBox(height: 22.h),
           if (widget.multiSelect)
             Center(
               child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: 8.w,
+                runSpacing: 8.h,
                 alignment: WrapAlignment.center,
                 children: widget.options.map((option) {
                   final selected = selectedValues.contains(option);
@@ -328,7 +341,7 @@ class _PreferenceEditModalState<T extends PreferenceOption>
                 }).toList(),
               ),
             ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
           Row(
             children: [
               Expanded(
@@ -337,7 +350,7 @@ class _PreferenceEditModalState<T extends PreferenceOption>
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: ElevatedButton.icon(
                     icon: const Icon(Icons.check_circle_outline, color: Colors.white),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -13,9 +14,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   int _currentIndex = 0;
 
   final List<List<Color>> _gradients = [
-    [Color(0xFFB8E1FC), Color(0xFFE5F1FA)],   // Blue
-    [Color(0xFFD0F2C7), Color(0xFFE5F1FA)],   // Light green
-    [Color(0xFFF9D4C1), Color(0xFFE5F1FA)],   // Light orange/pink
+    [Color(0xFFB8E1FC), Color(0xFFE5F1FA)],   
+    [Color(0xFFD0F2C7), Color(0xFFE5F1FA)],   
+    [Color(0xFFF9D4C1), Color(0xFFE5F1FA)],  
   ];
 
   final List<Map<String, String>> _pages = [
@@ -76,7 +77,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 80), // Top space
+                SizedBox(height: 25.h), // Top space
                 Expanded(
                   child: PageView.builder(
                     controller: _controller,
@@ -86,26 +87,26 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     itemBuilder: (context, index) {
                       final page = _pages[index];
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 0),
+                        padding: EdgeInsets.symmetric(vertical: 12.0.h, horizontal: 0.w),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             Container(
                               key: ValueKey(page["image"]),
-                              width: imgWidth,
-                              height: imgHeight > 340 ? 340 : imgHeight,
+                              width: imgWidth.w,
+                              height: imgHeight > 300.h ? 300.h : imgHeight,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(32),
+                                borderRadius: BorderRadius.circular(32.r),
                               ),
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(32),
+                                borderRadius: BorderRadius.circular(32.r),
                                 child: Image.asset(
                                   page["image"]!,
                                   fit: BoxFit.contain,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 48),
+                            SizedBox(height: 48.h),
                             Text(
                               page["title"]!,
                               style: Theme.of(context)
@@ -117,9 +118,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                   ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 24),
+                            SizedBox(height: 24.h),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                              padding: EdgeInsets.symmetric(horizontal: 32.0.w),
                               child: Text(
                                 page["desc"]!,
                                 style: Theme.of(context)
@@ -143,21 +144,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     _pages.length,
                     (i) => AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      width: _currentIndex == i ? 24 : 8,
-                      height: 8,
+                      margin: EdgeInsets.symmetric(horizontal: 6.w),
+                      width: _currentIndex == i ? 24.w : 8.w,
+                      height: 8.h,
                       decoration: BoxDecoration(
                         color: _currentIndex == i
                             ? Colors.blueAccent
                             : Colors.blueGrey.shade200,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: 32.h),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                  padding: EdgeInsets.symmetric(horizontal: 32.0.w),
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -165,16 +166,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(16.r),
                         ),
-                        minimumSize: const Size(double.infinity, 54),
+                        minimumSize: Size(double.infinity, 54.h),
                       ),
                       child: Text(
                         _currentIndex == _pages.length - 1
                             ? "Get Started"
                             : "Next",
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: 18.sp,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
@@ -182,7 +183,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: 32.h),
               ],
             ),
           ),
