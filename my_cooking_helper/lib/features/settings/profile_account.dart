@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ProfileAccountSection extends StatelessWidget {
   final dynamic user;
@@ -17,63 +18,71 @@ class ProfileAccountSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 0),
+      padding: EdgeInsets.symmetric(horizontal: 25.w, vertical: 0),
       child: Hero(
         tag: "profile-icon",
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 18),
-          child: Row(
+          padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 20.w),
+          width: double.infinity,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              CircleAvatar(
-                radius: 36,
-                backgroundImage: avatar as ImageProvider,
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.09),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user?.displayName ?? "User",
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 20,
-                      ),
-                    ),
-                    Text(
-                      user?.email ?? "",
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.switch_account),
-                label: const Text("Switch"),
-                onPressed: onSwitchAccount,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary.withOpacity(0.86),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+              // Row with avatar and button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  CircleAvatar(
+                    radius: 35.r,
+                    backgroundImage: avatar as ImageProvider,
+                    backgroundColor: Colors.transparent,
                   ),
-                  elevation: 2,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  SizedBox(width: 20.w),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.switch_account),
+                    label: const Text("Switch"),
+                    onPressed: onSwitchAccount,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      elevation: 2,
+                      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 10.h),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20.h),
+              // Name (centered)
+              Text(
+                user?.displayName ?? "User",
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16.sp,
+                  color: Colors.orange,
                 ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 5.h),
+              // Email (centered)
+              Text(
+                user?.email ?? "",
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14.sp,
+                ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
-        )
-        .asGlass(
-          blurX: 15,
-          blurY: 15,
-          tintColor: Colors.blue,
+        ).asGlass(
+          blurX: 25,
+          blurY: 25,
+          tintColor: Colors.black,
           frosted: true,
-          clipBorderRadius: BorderRadius.circular(30),
+          clipBorderRadius: BorderRadius.circular(30.r),
         ),
       ),
     );

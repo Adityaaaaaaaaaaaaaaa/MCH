@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:glass/glass.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/services/inventory_service.dart';
+import '/utils/snackbar.dart';
+import '/widgets/edit_add_item_dialog.dart';
 import '/models/item.dart';
 import '/utils/colors.dart';
 import 'item_controller.dart';
-import '/widgets/appbar.dart';
+import '/widgets/navigation/appbar.dart';
 
 class ReviewScreen extends ConsumerWidget {
   const ReviewScreen({Key? key}) : super(key: key);
@@ -15,6 +20,7 @@ class ReviewScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final scannedItems = ref.watch(smartScanControllerProvider);
     final scanController = ref.read(smartScanControllerProvider.notifier);
+    final InventoryService _inventoryService = InventoryService();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -22,37 +28,37 @@ class ReviewScreen extends ConsumerWidget {
       appBar: CustomAppBar(
         title: "Review Items",
         showMenu: false,
-        height: 90,
-        borderRadius: 22,
-        topPadding: 48,
+        height: 90.h,
+        borderRadius: 22.r,
+        topPadding: 48.h,
       ),
       backgroundColor: bgColor(context),
       body: Stack(
         children: [
-          // You can add your background images here, below the content.
+          //image la dan downloads.
           Positioned(
-            top: 110,
-            left: 30,
+            top: 110.h,
+            left: 30.w,
             child: Transform.rotate(
               angle: -0.15, //radians
               child: Image.asset(
                 'assets/images/smartScan/scanFood.png',
-                width: 210,
-                height: 210,
+                width: 210.w,
+                height: 210.h,
                 fit: BoxFit.contain,
               ),
             ),
           ),
           Column(
             children: [
-              const SizedBox(height: 120),
+              SizedBox(height: 120.h),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
+                padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 2.h),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                  padding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 20.w),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20.r),
                     color: theme.cardColor.withOpacity(0.60),
                   ),
                   child: Text(
@@ -68,19 +74,19 @@ class ReviewScreen extends ConsumerWidget {
                   blurX: 3,
                   blurY: 3,
                   frosted: true,
-                  clipBorderRadius: BorderRadius.circular(20),
+                  clipBorderRadius: BorderRadius.circular(20.r),
                 ),
               ),
               // Swipe hint
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 5.h),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                  padding: EdgeInsets.symmetric(horizontal: 30.w, vertical: 10.h),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.swipe_left_rounded, color: Colors.white),
-                      const SizedBox(width: 7),
+                      SizedBox(width: 7.w),
                       Text(
                         "Swipe left to delete an item",
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -95,10 +101,10 @@ class ReviewScreen extends ConsumerWidget {
                   blurY: 20,
                   frosted: true,
                   tintColor: Colors.white,
-                  clipBorderRadius: BorderRadius.circular(12),
+                  clipBorderRadius: BorderRadius.circular(12.r),
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10.h),
               Expanded(
                 child: scannedItems.isEmpty
                     ? Center(
@@ -111,12 +117,12 @@ class ReviewScreen extends ConsumerWidget {
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                        padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
                         itemCount: scannedItems.length,
                         itemBuilder: (context, index) {
                           final item = scannedItems[index];
                           return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 2),
+                            padding: EdgeInsets.symmetric(vertical: 9.h, horizontal: 2.w),
                             child: Slidable(
                               key: ValueKey(item.itemName + index.toString()),
                               endActionPane: ActionPane(
@@ -129,16 +135,16 @@ class ReviewScreen extends ConsumerWidget {
                                     foregroundColor: Colors.white,
                                     icon: Icons.delete_forever_rounded,
                                     label: 'Delete',
-                                    borderRadius: BorderRadius.circular(18),
+                                    borderRadius: BorderRadius.circular(18.r),
                                   ),
                                 ],
                               ),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(20.r),
                                   border: Border.all(
                                     color: theme.primaryColor.withOpacity(0.11),
-                                    width: 1.2,
+                                    width: 1.2.w,
                                   ),
                                   gradient: LinearGradient(
                                     colors: [
@@ -153,7 +159,7 @@ class ReviewScreen extends ConsumerWidget {
                                   leading: Icon(
                                     Icons.fastfood_rounded,
                                     color: theme.primaryColor,
-                                    size: 32,
+                                    size: 32.sp,
                                   ),
                                   title: Text(
                                     item.itemName,
@@ -175,7 +181,7 @@ class ReviewScreen extends ConsumerWidget {
                                     onPressed: () async {
                                       final edited = await showDialog<ScannedItem>(
                                         context: context,
-                                        builder: (_) => EditItemDialog(item: item),
+                                        builder: (_) => EditOrAddItemDialog(item: item),
                                       );
                                       if (edited != null) {
                                         scanController.editItem(index, edited);
@@ -185,9 +191,9 @@ class ReviewScreen extends ConsumerWidget {
                                 ).asGlass(
                                   blurX: 15,
                                   blurY: 15,
-                                  tintColor: Colors.cyanAccent,
+                                  tintColor: Colors.white,
                                   frosted: true,
-                                  clipBorderRadius: BorderRadius.circular(15),
+                                  clipBorderRadius: BorderRadius.circular(15.r),
                                 ),
                               ),
                             ),
@@ -197,217 +203,96 @@ class ReviewScreen extends ConsumerWidget {
               ),
               if (scannedItems.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 30, top: 18, left: 18, right: 18),
+                  padding: EdgeInsets.only(bottom: 30.h, top: 18.h, left: 18.w, right: 18.w),
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      icon: const Icon(Icons.done_rounded, size: 26, color: Colors.white),
+                      icon: Icon(Icons.done_rounded, size: 26.sp, color: Colors.white),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 19, horizontal: 16),
+                        padding: EdgeInsets.symmetric(vertical: 19.h, horizontal: 16.w),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(26),
+                          borderRadius: BorderRadius.circular(26.r),
                         ),
                         elevation: 9,
-                        textStyle: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+                        textStyle: TextStyle(
+                          fontSize: 18.sp, fontWeight: FontWeight.w600, color: Colors.white),
                       ),
                       label: const Text(
                         'Confirm All',
                         style: TextStyle(color: Colors.white),
                       ),
-                      onPressed: () {
-                        // TODO: Firestore integration
-                        showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            title: const Text('Confirm'),
-                            content: const Text('Items confirmed! (Later this will save to Firebase.)'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          ),
-                        );
+                      onPressed: () async {
+                        try {
+                          // Convert model list to a list of map
+                          final itemsToSave = scannedItems.map((item) => item.toJson()).toList();
+
+                          // Save to Firestore using your service
+                          await _inventoryService.addItemsToInventory(itemsToSave);
+
+                          scanController.clearItems();
+
+                          SnackbarUtils.show(
+                            context, 
+                            "Items Added!",
+                            duration: 500, 
+                            behavior: SnackBarBehavior.floating,
+                            icon: Icons.check,
+                            iconColor: Colors.lightGreenAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+                            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                          );
+                          context.go('/home');
+                        } catch (e) {
+                          SnackbarUtils.show(
+                            context, 
+                            "Error adding items !",
+                            duration: 500, 
+                            behavior: SnackBarBehavior.floating,
+                            icon: Icons.warning_amber_rounded,
+                            iconColor: Colors.redAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+                            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                          );
+                        }
                       },
                     ),
                   ),
                 ),
             ],
           ),
+          Positioned(
+            bottom: 110.h,
+            right: 25.w,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.primaryColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.r)),
+                elevation: 13,
+                padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 18.w),
+              ),
+              icon: Icon(Icons.add_circle_rounded, color: Colors.white, size: 28.sp),
+              label: Text(
+                'Add Item',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17.sp,
+                ),
+              ),
+              onPressed: () async {
+                final added = await showDialog<ScannedItem>(
+                  context: context,
+                  builder: (_) => EditOrAddItemDialog(),
+                );
+                if (added != null) {
+                  scanController.addItem(added);
+                }
+              },
+            ),
+          ),
+
         ],
-      ),
-    );
-  }
-}
-
-class EditItemDialog extends StatefulWidget {
-  final ScannedItem item;
-  const EditItemDialog({super.key, required this.item});
-
-  @override
-  State<EditItemDialog> createState() => _EditItemDialogState();
-}
-
-class _EditItemDialogState extends State<EditItemDialog> {
-  late TextEditingController nameController;
-  late TextEditingController unitController;
-  late double quantity;
-
-  @override
-  void initState() {
-    super.initState();
-    nameController = TextEditingController(text: widget.item.itemName);
-    quantity = widget.item.quantity;
-    unitController = TextEditingController(text: widget.item.unit ?? "");
-  }
-
-  @override
-  void dispose() {
-    nameController.dispose();
-    unitController.dispose();
-    super.dispose();
-  }
-
-  void _incrementQty() {
-    setState(() {
-      quantity += 1;
-    });
-  }
-
-  void _decrementQty() {
-    setState(() {
-      if (quantity > 1) {
-        quantity -= 1;
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26),
-          color: theme.cardColor.withOpacity(0.61),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "Edit Item",
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.primaryColor,
-                letterSpacing: 0.1,
-              ),
-            ),
-            const SizedBox(height: 18),
-            TextField(
-              controller: nameController,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                labelText: "Item Name",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.remove_circle, color: theme.colorScheme.error, size: 30),
-                  onPressed: _decrementQty,
-                ),
-                Expanded(
-                  child: TextField(
-                    textAlign: TextAlign.center,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    controller: TextEditingController(text: quantity.toStringAsFixed(quantity.truncateToDouble() == quantity ? 0 : 2)),
-                    onChanged: (val) {
-                      final parsed = double.tryParse(val);
-                      if (parsed != null && parsed > 0) {
-                        setState(() {
-                          quantity = parsed;
-                        });
-                      }
-                    },
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    decoration: InputDecoration(
-                      labelText: "Quantity",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.add_circle, color: Colors.green, size: 30),
-                  onPressed: _incrementQty,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: unitController,
-              decoration: InputDecoration(
-                labelText: "Unit",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
-            const SizedBox(height: 26),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primaryColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  onPressed: () {
-                    final name = nameController.text.trim();
-                    final unit = unitController.text.trim().isEmpty
-                        ? null
-                        : unitController.text.trim();
-                    final editedItem = widget.item.copyWith(
-                      itemName: name,
-                      quantity: quantity,
-                      unit: unit,
-                      isEdited: true,
-                      isReviewed: true,
-                    );
-                    Navigator.pop(context, editedItem);
-                  },
-                  child: const Text('Save'),
-                ),
-              ],
-            ),
-          ],
-        ).asGlass(
-          blurX: 10,
-          blurY: 10,
-          frosted: true,
-          //tintColor: theme.primaryColor.withOpacity(0.13),
-          clipBorderRadius: BorderRadius.circular(15),
-        ),
       ),
     );
   }
