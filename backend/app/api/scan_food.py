@@ -9,29 +9,46 @@ from app.utils.utils import detect_mime_type, build_food_ingredient_prompt, gemi
 
 router = APIRouter()
 
-def parse_gemini_food_response(response_json):
+def parse_gemini_ingredient_response(response_json):
     try:
-        text = response_json["candidates"][0]["content"]["parts"][0]["text"]
+        text = response_json["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+        if text.lower() == "no ingredients detected.":
+            return []
+
         items = []
-        for pair in text.split(","):
+        # Split by semicolon, since we used ";" as the separator
+        for pair in text.split(";"):
             pair = pair.strip()
             if not pair:
                 continue
-            if ":" in pair:
-                label, count = pair.split(":", 1)
-                label = label.strip()
-                count_str = count.strip()
-                # Try to extract number (float or int)
-                num_match = re.match(r"^([0-9]+(?:\.[0-9]+)?)", count_str)
-                if num_match:
-                    count_value = float(num_match.group(1))
-                    items.append({"item": label, "count": count_value})
-                else:
-                    items.append({"item": label, "count": None})
+            if ":" in pair and "," in pair:
+                # Expected format: itemName: count, category
+                name_part, rest = pair.split(":", 1)
+                item_name = name_part.strip()
+                rest_parts = rest.split(",")
+                # Get count and category, allowing for missing category
+                count_str = rest_parts[0].strip() if len(rest_parts) > 0 else ""
+                category = rest_parts[1].strip().lower() if len(rest_parts) > 1 else "uncategorized"
+                # Parse count (float or int), fallback to 1 if not a number
+                try:
+                    count_value = float(count_str)
+                except Exception:
+                    count_value = 1
+                items.append({
+                    "itemName": item_name,
+                    "count": count_value,
+                    "category": category if category else "uncategorized"
+                })
             else:
-                label = pair.strip()
-                items.append({"item": label, "count": None})
-        print(f"[DEBUG] Parsed food items: {items}")
+                # If format is unexpected, treat as uncategorized with count 1
+                item_name = pair.replace(":", "").replace(",", "").strip()
+                items.append({
+                    "itemName": item_name,
+                    "count": 1,
+                    "category": "uncategorized"
+                })
+        print(f"[DEBUG] Parsed items: {items}")
         return items
     except Exception as e:
         print(f"[ERROR] Failed to parse Gemini response: {e}")
@@ -78,7 +95,7 @@ async def analyze_food_image(file: UploadFile = File(...)):
         print(f"[DEBUG] Gemini API status: {resp.status_code}")
         print(f"[DEBUG] Gemini API raw response: {resp.text}")
         if resp.status_code == 200:
-            detected_items = parse_gemini_food_response(resp.json())
+            detected_items = parse_gemini_ingredient_response(resp.json())
             return JSONResponse(status_code=200, content={"detected_items": detected_items})
         else:
             return JSONResponse(status_code=resp.status_code, content={"error": resp.text})
