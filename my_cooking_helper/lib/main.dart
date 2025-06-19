@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive/hive.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'core/firebase_options.dart';
 import 'features/inventory/inventory.dart';
 import 'features/smart_scan/manual_input.dart';
@@ -21,6 +24,8 @@ import 'features/settings/settings.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  final appDocDir = await getApplicationDocumentsDirectory();
+  Hive.init(appDocDir.path);
   debugPrint = (String? message, {int? wrapWidth}) {};
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -86,13 +91,20 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
 
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      title: 'My Cooking Helper',
-      theme: AppThemes.lightTheme,
-      darkTheme: AppThemes.darkTheme,
-      themeMode: themeMode,
-      routerConfig: _router,
+    return ScreenUtilInit(
+      designSize: const Size(360, 690),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          title: 'My Cooking Helper',
+          theme: AppThemes.lightTheme,
+          darkTheme: AppThemes.darkTheme,
+          themeMode: themeMode,
+          routerConfig: _router,
+        );
+      },
     );
   }
 }

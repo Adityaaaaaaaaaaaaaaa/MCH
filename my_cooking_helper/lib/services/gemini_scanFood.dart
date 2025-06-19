@@ -29,11 +29,10 @@ class GeminiService {
         final jsonResp = jsonDecode(responseBody);
 
         if (jsonResp is Map && jsonResp.containsKey('detected_items')) {
-          final List<dynamic> rawItems = jsonResp['detected_items'];
+          final List<dynamic> gemItems = jsonResp['detected_items'];
 
           // Each item should now have itemName, count, and category
-          return rawItems.map<Map<String, dynamic>>((item) {
-            // Defensive: handle missing or old fields gracefully
+          return gemItems.map<Map<String, dynamic>>((item) {
             String name = item['itemName'] ?? item['item'] ?? '';
             double? count;
             if (item['count'] != null) {

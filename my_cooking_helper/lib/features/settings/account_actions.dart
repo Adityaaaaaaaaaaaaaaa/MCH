@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AccountActionsSection extends StatelessWidget {
   final VoidCallback onSignOut;
@@ -17,11 +18,11 @@ class AccountActionsSection extends StatelessWidget {
 
     return Column(
       children: [
-        // --------- SIGN OUT CARD ----------
+        //SIGN OUT
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22),
+          padding: EdgeInsets.symmetric(horizontal: 22.w),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -30,7 +31,7 @@ class AccountActionsSection extends StatelessWidget {
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
-                    fontSize: 20
+                    fontSize: 17.sp
                   )),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.logout),
@@ -39,14 +40,14 @@ class AccountActionsSection extends StatelessWidget {
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w900,
-                      fontSize: 18,
+                      fontSize: 16.sp,
                     )),
                   onPressed: onSignOut,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent.withOpacity(0.93),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(14.r),
                     ),
                     elevation: 1,
                   ),
@@ -55,19 +56,19 @@ class AccountActionsSection extends StatelessWidget {
             ),
           )
           .asGlass(
-            blurX: 10,
-            blurY: 10,
-            tintColor: Colors.blue,
-            frosted: false,
-            clipBorderRadius: BorderRadius.circular(20),
+            blurX: 15,
+            blurY: 15,
+            tintColor: Colors.black,
+            frosted: true,
+            clipBorderRadius: BorderRadius.circular(20.r),
           ),
         ),
-        const SizedBox(height: 12),
-        // --------- DELETE CARD ----------
+        SizedBox(height: 12.h),
+        // DELETE CARD 
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22),
+          padding: EdgeInsets.symmetric(horizontal: 22.w),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -80,7 +81,7 @@ class AccountActionsSection extends StatelessWidget {
                         style: theme.textTheme.titleLarge?.copyWith(
                           color: Colors.red,
                           fontWeight: FontWeight.w900,
-                          fontSize: 20,
+                          fontSize: 17.sp,
                         ),
                       ),
                       Text(
@@ -88,7 +89,7 @@ class AccountActionsSection extends StatelessWidget {
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: Colors.red,
                           fontWeight: FontWeight.w900,
-                          fontSize: 17,
+                          fontSize: 15.sp,
                         )),
                     ],
                   ),
@@ -99,14 +100,14 @@ class AccountActionsSection extends StatelessWidget {
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w900,
-                      fontSize: 18,
+                      fontSize: 15.sp,
                     ),),
                   onPressed: () => onDelete(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(10.r),
                     ),
                   ),
                 ),
@@ -114,11 +115,11 @@ class AccountActionsSection extends StatelessWidget {
             ),
           )
           .asGlass(
-            blurX: 10,
-            blurY: 10,
+            blurX: 15,
+            blurY: 15,
             tintColor: Colors.red,
             frosted: true,
-            clipBorderRadius: BorderRadius.circular(16),
+            clipBorderRadius: BorderRadius.circular(16.r),
           ),
         ),
       ],
