@@ -55,7 +55,7 @@ class SnackbarUtils {
     TypeInfo typeInfo = TypeInfo.info,
     MessagePosition position = MessagePosition.top,
     double padding = 30.0,
-    int duration = 3, // in seconds (not ms)
+    int duration = 3, //seconds
     Color? iconColor,
     Color? actionColor,
     String? action,
