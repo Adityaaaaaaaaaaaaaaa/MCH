@@ -28,9 +28,9 @@ class ReviewScreen extends ConsumerWidget {
       appBar: CustomAppBar(
         title: "Review Items",
         showMenu: false,
-        height: 90.h,
-        borderRadius: 22.r,
-        topPadding: 48.h,
+        height: 70.h,
+        borderRadius: 26.r,
+        topPadding: 40.h,
       ),
       backgroundColor: bgColor(context),
       body: Stack(
@@ -90,7 +90,7 @@ class ReviewScreen extends ConsumerWidget {
                       Text(
                         "Swipe left to delete an item",
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white,
+                          color: textColor(context),
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -168,12 +168,24 @@ class ReviewScreen extends ConsumerWidget {
                                       letterSpacing: 0.1,
                                     ),
                                   ),
-                                  subtitle: Text(
-                                    'Quantity: ${item.quantity} ${item.unit ?? ""}',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.hintColor,
-                                      fontWeight: FontWeight.w400,
-                                    ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Quantity: ${item.quantity} ${item.unit ?? ""}',
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          color: theme.hintColor,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Category: ${item.category}',
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          color: theme.hintColor,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   trailing: IconButton(
                                     icon: const Icon(Icons.edit_rounded, color: Colors.blueAccent),
@@ -191,7 +203,7 @@ class ReviewScreen extends ConsumerWidget {
                                 ).asGlass(
                                   blurX: 15,
                                   blurY: 15,
-                                  tintColor: Colors.white,
+                                  tintColor: Colors.blueGrey,
                                   frosted: true,
                                   clipBorderRadius: BorderRadius.circular(15.r),
                                 ),
@@ -203,14 +215,15 @@ class ReviewScreen extends ConsumerWidget {
               ),
               if (scannedItems.isNotEmpty)
                 Padding(
-                  padding: EdgeInsets.only(bottom: 30.h, top: 18.h, left: 18.w, right: 18.w),
+                  padding: EdgeInsets.only(bottom: 15.h, top: 0, left: 15.w, right: 15.w),
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      icon: Icon(Icons.done_rounded, size: 26.sp, color: Colors.white),
+                      icon: Icon(Icons.done_rounded, size: 25.sp, color: Colors.white),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.primaryColor,
-                        padding: EdgeInsets.symmetric(vertical: 19.h, horizontal: 16.w),
+                        shadowColor: Colors.transparent,
+                        padding: EdgeInsets.symmetric(vertical: 15.h, horizontal: 20.w),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(26.r),
                         ),
@@ -262,16 +275,16 @@ class ReviewScreen extends ConsumerWidget {
             ],
           ),
           Positioned(
-            bottom: 110.h,
+            bottom: 90.h,
             right: 25.w,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
+                backgroundColor: Colors.blueGrey,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.r)),
                 elevation: 13,
-                padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 18.w),
+                padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 15.w),
               ),
-              icon: Icon(Icons.add_circle_rounded, color: Colors.white, size: 28.sp),
+              icon: Icon(Icons.add_circle_rounded, color: Colors.white, size: 25.sp),
               label: Text(
                 'Add Item',
                 style: TextStyle(
@@ -291,7 +304,6 @@ class ReviewScreen extends ConsumerWidget {
               },
             ),
           ),
-
         ],
       ),
     );

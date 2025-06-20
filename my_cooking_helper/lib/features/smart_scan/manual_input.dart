@@ -39,12 +39,12 @@ class ManualInputScreen extends ConsumerWidget {
         children: [
           Column(
             children: [
-              SizedBox(height: 120.h),
+              SizedBox(height: 110.h),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
                 child: Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 20.w),
+                  width: 300.w,
+                  padding: EdgeInsets.symmetric(vertical: 15.h, horizontal: 20.w),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20.r),
                     color: theme.cardColor.withOpacity(0.60),
@@ -55,7 +55,7 @@ class ManualInputScreen extends ConsumerWidget {
                     style: theme.textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w500,
                       fontSize: 10.sp,
-                      color: theme.textTheme.bodyLarge?.color?.withOpacity(1),
+                      color: textColor(context),
                     ),
                   ),
                 ).asGlass(
@@ -83,7 +83,7 @@ class ManualInputScreen extends ConsumerWidget {
                         itemBuilder: (context, index) {
                           final item = manualItems[index];
                           return Padding(
-                            padding: EdgeInsets.symmetric(vertical: 9.h, horizontal: 2.w),
+                            padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 2.w),
                             child: Slidable(
                               key: ValueKey(item.itemName + index.toString()),
                               endActionPane: ActionPane(
@@ -93,7 +93,7 @@ class ManualInputScreen extends ConsumerWidget {
                                   SlidableAction(
                                     onPressed: (context) => controller.removeItem(
                                         ref.read(smartScanControllerProvider)
-                                          .indexOf(item)), // Remove using global index
+                                           .indexOf(item)), // Remove using global index
                                     backgroundColor: Colors.red[400]!,
                                     foregroundColor: Colors.white,
                                     icon: Icons.delete_forever_rounded,
@@ -121,8 +121,8 @@ class ManualInputScreen extends ConsumerWidget {
                                 child: ListTile(
                                   leading: Icon(
                                     Icons.edit_note_rounded,
-                                    color: theme.primaryColor,
-                                    size: 32.sp,
+                                    color: Colors.white,
+                                    size: 30.sp,
                                   ),
                                   title: Text(
                                     item.itemName,
@@ -131,12 +131,24 @@ class ManualInputScreen extends ConsumerWidget {
                                       letterSpacing: 0.1,
                                     ),
                                   ),
-                                  subtitle: Text(
-                                    'Quantity: ${item.quantity} ${item.unit ?? ""}',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.hintColor,
-                                      fontWeight: FontWeight.w400,
-                                    ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Quantity: ${item.quantity} ${item.unit ?? ""}',
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          color: theme.hintColor,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Category: ${item.category}',
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          color: theme.hintColor,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   trailing: IconButton(
                                     icon: const Icon(Icons.edit_rounded, color: Colors.blueAccent),
@@ -168,23 +180,21 @@ class ManualInputScreen extends ConsumerWidget {
               ),
               if (manualItems.isNotEmpty)
                 Padding(
-                  padding: EdgeInsets.only(bottom: 30.h, top: 18.h, left: 18.w, right: 18.w),
+                  padding: EdgeInsets.only(bottom: 15.h, top: 0, left: 15.w, right: 15.w),
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      icon: Icon(Icons.done_rounded, size: 26.sp, color: Colors.white),
+                      icon: Icon(Icons.done_rounded, size: 25.sp, color: Colors.white),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.primaryColor,
-                        padding: EdgeInsets.symmetric(vertical: 19.h, horizontal: 16.w),
+                        shadowColor: Colors.transparent,
+                        padding: EdgeInsets.symmetric(vertical: 15.h, horizontal: 20.w),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(26.r),
                         ),
                         elevation: 9,
                         textStyle: TextStyle(
-                          fontSize: 18.sp, 
-                          fontWeight: FontWeight.w600, 
-                          color: Colors.white
-                        ),
+                          fontSize: 18.sp, fontWeight: FontWeight.w600, color: Colors.white),
                       ),
                       label: const Text(
                         'Confirm All',
