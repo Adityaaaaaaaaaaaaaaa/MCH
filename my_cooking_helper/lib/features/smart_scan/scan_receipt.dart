@@ -219,29 +219,22 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
 
   Widget _buildTipBanner(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(bottom: 10.h, top: 16.h),
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+      margin: EdgeInsets.only(bottom: 20.h, top: 20.h),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.85),
+        color: Colors.blueGrey.shade200,
         borderRadius: BorderRadius.circular(18.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 6.r,
-            offset: const Offset(0, 2),
-          )
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.lightbulb, color: Colors.amber, size: 22.sp),
+          Icon(Icons.lightbulb, color: Colors.amber.shade300, size: 20.sp),
           SizedBox(width: 8.w),
           Flexible(
             child: Text(
               _randomTip,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSecondaryContainer,
+                color: textColor(context),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -262,7 +255,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
               icon: Icon(
                 _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
                 color: _isFlashOn ? Colors.green : Colors.orange,
-                size: 28.sp,
+                size: 30.sp,
               ),
               onPressed: _toggleFlash,
               tooltip: _isFlashOn ? 'Turn off flash' : 'Turn on flash',
@@ -272,7 +265,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
               icon: Icon(
                 _isAutoFocus ? Icons.center_focus_strong : Icons.center_focus_weak,
                 color: _isAutoFocus ? Colors.green : Colors.orange,
-                size: 28.sp,
+                size: 30.sp,
               ),
               onPressed: _toggleFocusMode,
               tooltip: _isAutoFocus ? 'Auto Focus' : 'Focus Locked',
@@ -288,8 +281,8 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        width: enabled ? 76.w : 68.w,
-        height: enabled ? 76.h : 68.h,
+        width: enabled ? 70.w : 55.w,
+        height: enabled ? 70.h : 55.h,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
@@ -299,8 +292,8 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
           boxShadow: [
             BoxShadow(
               color: Colors.black26,
-              blurRadius: 12.r,
-              spreadRadius: 1,
+              blurRadius: 10.r,
+              spreadRadius: 3,
               offset: const Offset(0, 5),
             )
           ],
@@ -329,10 +322,13 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
       mini: true,
       onPressed: _pickFromGallery,
       tooltip: "Select from Gallery",
-      child: Icon(
-        Icons.photo_library_rounded,
-        color: Theme.of(context).primaryColor,
-        size: 28.sp,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        child: Icon(
+          Icons.photo_library_rounded,
+          color: Theme.of(context).primaryColor,
+          size: 30.sp,
+        ),
       ),
     );
   }
@@ -345,12 +341,12 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
       width: maxWidth,
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(25.r),
         border: Border.all(width: 1.5.w),
         boxShadow: [
           BoxShadow(
             color: Colors.lightBlueAccent,
-            blurRadius: 16.r,
+            blurRadius: 20.r,
             offset: Offset(1, 1),
           ),
         ],
@@ -445,9 +441,9 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
     final PreferredSizeWidget appBarWidget = CustomAppBar(
       title: "Scan Receipt",
       showMenu: false,
-      height: 90.h,
+      height: 70.h,
       borderRadius: 26.r,
-      topPadding: 48.h,
+      topPadding: 40.h,
     );
 
     return Scaffold(
@@ -477,8 +473,8 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                 padding: EdgeInsets.only(
                   top: 20.h,
                   bottom: 20.h,
-                  left: 14.w,
-                  right: 14.w,
+                  left: 15.w,
+                  right: 15.w,
                 ),
                 child: Center(
                   child: Column(
@@ -522,7 +518,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                                     fontSize: 20.sp,
                                   ),
                                 ),
-                                SizedBox(height: 8.h),
+                                SizedBox(height: 5.h),
                                 ..._buildGroupedGeminiResults(_geminiResult!, theme),
                               ],
                             ),
@@ -530,7 +526,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                         )
                       else if (!_isLoading && (_geminiResult == null || _geminiResult!.isEmpty))
                         Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16.0.h),
+                          padding: EdgeInsets.symmetric(vertical: 15.h),
                           child: Text("No result yet.", style: theme.textTheme.labelLarge),
                         ),
                       SizedBox(height: 22.h),
@@ -592,8 +588,8 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                       FilledButton.icon(
                         icon: Icon(
                           Icons.reviews_outlined,
-                          size: 22.sp,
-                          color: Theme.of(context).colorScheme.primary,
+                          size: 20.sp,
+                          color: textColor(context),
                         ),
                         label: Text(
                           "Go to Review Screen",
@@ -606,25 +602,25 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                         style: ButtonStyle(
                           backgroundColor: WidgetStateProperty.all(theme.colorScheme.secondaryContainer),
                           foregroundColor: WidgetStateProperty.all(theme.colorScheme.onSecondaryContainer),
-                          padding: WidgetStateProperty.all(EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h)),
+                          padding: WidgetStateProperty.all(EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h)),
                           shape: WidgetStateProperty.all(
                             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
                           ),
                         ),
                       ),
-                      SizedBox(height: 22.h),
+                      SizedBox(height: 25.h),
                       Text("Scan another receipt:", style: theme.textTheme.titleSmall),
                       SizedBox(height: 10.h),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           OutlinedButton.icon(
-                            icon: const Icon(Icons.camera_enhance_outlined),
+                            icon: Icon(Icons.camera_enhance_rounded, size: 20.sp),
                             label: const Text("New Scan"),
                             onPressed: _retakeOrNewScan,
                             style: OutlinedButton.styleFrom(
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                              padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
+                              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
                             ),
                           ),
                         ],
@@ -674,7 +670,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
               ),
               _buildCameraControls(context),
               Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 30.h),
+                padding: EdgeInsets.fromLTRB(20.w, 15.h, 20.w, 30.h),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
