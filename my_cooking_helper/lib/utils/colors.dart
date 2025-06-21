@@ -11,7 +11,8 @@ class AppColors {
   static const Color lightSubtleText = Color(0xFF858585);
 
   // Dark Theme Colors
-  static const Color darkBackground = Color.fromARGB(255, 31, 41, 48);
+  // static const Color darkBackground = Color.fromARGB(255, 31, 41, 48); //old colour
+  static const Color darkBackground = Color(0xFF303537); //#303537
   static const Color darkCard = Color(0xFF232526);
   static const Color darkPrimary = Color(0xFF189AB4);
   static const Color darkSecondary = Color(0xFF05445E);

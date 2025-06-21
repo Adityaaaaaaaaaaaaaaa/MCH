@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/utils/lottie_animation.dart';
 import '/utils/colors.dart';
 import '/utils/loader.dart';
 import '/utils/snackbar.dart';
@@ -20,7 +21,7 @@ class ScanReceipt extends ConsumerStatefulWidget {
   ConsumerState<ScanReceipt> createState() => _ScanReceiptState();
 }
 
-class _ScanReceiptState extends ConsumerState<ScanReceipt> {
+class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderStateMixin {
   CameraController? _cameraController;
   late Future<void> _initFuture;
   bool _isCameraReady = false;
@@ -33,6 +34,8 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
   Size? _imageSizeForDrawing;
   List<Map<String, dynamic>>? _geminiResult;
   int _lastTipIdx = -1;
+
+  final lottieController = LottieAnimationController();
 
   final List<String> _scanTips = [
     "Tip: Capture the receipt under good lighting!",
@@ -199,6 +202,13 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
   }
 
   Future<void> _analyzeWithGemini(File imageFile) async {
+    lottieController.show(
+      context: context,
+      assetPath: 'assets/animations/Animation_scanReceipt.json',
+      backgroundColor: bgColor(context),
+      repeat: true,
+      barrierDismissible: false,
+    );
     setState(() {
       _geminiResult = null;
       _isLoading = true;
@@ -215,6 +225,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
       print('\x1B[34m[DEBUG] Failed to extract items from response: $e\x1B[0m');
       setState(() => _isLoading = false);
     }
+    lottieController.hide();
   }
 
   Widget _buildTipBanner(BuildContext context) {
@@ -319,7 +330,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
       heroTag: 'galleryBtn',
       backgroundColor: Colors.white,
       elevation: 4,
-      mini: true,
+      mini: false,
       onPressed: _pickFromGallery,
       tooltip: "Select from Gallery",
       child: Padding(
@@ -484,19 +495,6 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                         alignment: Alignment.center,
                         children: [
                           _buildImageWithPreview(context),
-                        if (_isLoading)
-                          Container(
-                            color: Colors.transparent,
-                            child: Center(
-                              child: loader(
-                                Colors.lightBlueAccent,
-                                70,
-                                5,
-                                10,
-                                500,
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                       SizedBox(height: 20.h),
@@ -530,8 +528,121 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                           child: Text("No result yet.", style: theme.textTheme.labelLarge),
                         ),
                       SizedBox(height: 22.h),
+                      // --- ACTION BUTTONS LOGIC ---
+                      if (_isLoading)
+                        // While loading, only show "Try Manual Input"
+                        FilledButton.icon(
+                          icon: const Icon(Icons.edit_note_rounded, size: 22),
+                          label: const Text("Try Manual Input"),
+                          onPressed: () {
+                            context.push('/manualInput');
+                          },
+                          style: ButtonStyle(
+                            padding: WidgetStateProperty.all(EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h)),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                            ),
+                          ),
+                        )
+                      else ...[
+                        // When NOT loading, show all the review/new scan buttons (unchanged)
+                        FilledButton.icon(
+                          icon: Icon(Icons.check_circle_outline_rounded, size: 22.sp),
+                          label: const Text("Add Item(s) to Review"),
+                          onPressed: (_geminiResult == null || _geminiResult!.isEmpty)
+                              ? null
+                              : () {
+                                  int countAdded = 0;
+                                  for (var item in _geminiResult!) {
+                                    String name = item['itemName'] ?? item['item'] ?? '';
+                                    double quantity = 1.0;
+                                    if (item['count'] != null) {
+                                      if (item['count'] is int) {
+                                        quantity = (item['count'] as int).toDouble();
+                                      } else if (item['count'] is double) {
+                                        quantity = item['count'];
+                                      } else if (item['count'] is String) {
+                                        final parsed = double.tryParse(item['count']);
+                                        if (parsed != null) quantity = parsed;
+                                      }
+                                    }
+                                    scanController.addItem(
+                                      ScannedItem(
+                                        itemName: name,
+                                        quantity: quantity,
+                                        unit: null,
+                                        source: "gemini_receipt",
+                                        category: item['category'] ?? 'Uncategorized',
+                                        isReviewed: false,
+                                        isEdited: false,
+                                      ),
+                                    );
+                                    countAdded++;
+                                  }
+                                  if (mounted) {
+                                    SnackbarUtils.show(
+                                      context,
+                                      "$countAdded item(s) added to review!",
+                                      duration: 1500,
+                                      behavior: SnackBarBehavior.floating,
+                                      icon: Icons.add,
+                                      iconColor: Colors.deepPurple,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+                                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                                    );
+                                  }
+                                },
+                          style: ButtonStyle(
+                            padding: WidgetStateProperty.all(EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h)),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 10.h),
+                        FilledButton.icon(
+                          icon: Icon(
+                            Icons.reviews_outlined, 
+                            size: 20.sp,
+                            color: textColor(context),
+                          ),
+                          label: Text(
+                            "Go to Review Screen",
+                            style: theme.textTheme.labelMedium,
+                          ),
+                          onPressed: () {
+                            print('\x1B[34m[DEBUG] Navigating to /reviewScreen\x1B[0m');
+                            context.push('/reviewScreen');
+                          },
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStateProperty.all(theme.colorScheme.secondaryContainer),
+                            foregroundColor: WidgetStateProperty.all(theme.colorScheme.onSecondaryContainer),
+                            padding: WidgetStateProperty.all(EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h)),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 25.h),
+                        Text("Scan another item:", style: theme.textTheme.titleSmall),
+                        SizedBox(height: 10.h),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            OutlinedButton.icon(
+                              icon: Icon(Icons.camera_enhance_rounded, size: 20.sp),
+                              label: const Text("New Scan"),
+                              onPressed: _retakeOrNewScan,
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.r),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                       // --- Add Items to Review Button
-                      FilledButton.icon(
+                      /*FilledButton.icon(
                         icon: Icon(Icons.check_circle_outline_rounded, size: 22.sp),
                         label: const Text("Add Item(s) to Review"),
                         onPressed: (_geminiResult == null || _geminiResult!.isEmpty)
@@ -624,7 +735,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> {
                             ),
                           ),
                         ],
-                      ),
+                      ),*/
                     ],
                   ),
                 ),
