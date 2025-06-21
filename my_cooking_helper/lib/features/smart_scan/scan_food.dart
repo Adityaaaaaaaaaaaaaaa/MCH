@@ -9,6 +9,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '/utils/loader.dart';
 import '/utils/snackbar.dart';
 import '/utils/colors.dart';
+import '/utils/lottie_animation.dart';
 import '/widgets/navigation/appbar.dart';
 import '/models/item.dart';
 import '/services/gemini_scanFood.dart';
@@ -20,7 +21,7 @@ class ScanFood extends ConsumerStatefulWidget {
   ConsumerState<ScanFood> createState() => _ScanFoodState();
 }
 
-class _ScanFoodState extends ConsumerState<ScanFood> {
+class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMixin {
   CameraController? _cameraController;
   late Future<void> _initFuture;
   bool _isCameraReady = false;
@@ -33,6 +34,8 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   Size? _imageSizeForDrawing;
   List<Map<String, dynamic>>? _geminiResult;
   int _lastTipIdx = -1;
+
+  final lottieController = LottieAnimationController();
 
   final List<String> _scanTips = [
     "Tip: Good lighting helps recognize food better!",
@@ -198,6 +201,13 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
   }
 
   Future<void> _analyzeWithGemini(File imageFile) async {
+    lottieController.show(
+      context: context,
+      assetPath: 'assets/animations/Animation_scanFood.json',
+      backgroundColor: bgColor(context),
+      repeat: true,
+      barrierDismissible: false,
+    );
     setState(() {
       _geminiResult = null;
       _isLoading = true;
@@ -209,6 +219,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
       _isLoading = false;
     });
     print('\x1B[34m[DEBUG] Gemini result: $result\x1B[0m');
+    lottieController.hide();
   }
 
   Widget _buildTipBanner(BuildContext context) {
@@ -351,6 +362,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting || (_isLoading && _pickedImage == null)) {
             return Center(child: 
+            // not this one , we need this one, we keep it
               loader(
                 Colors.tealAccent,
                 70,
@@ -378,20 +390,8 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                         Stack(
                         alignment: Alignment.center,
                         children: [
+                          // lottie animation happens in this 
                           _buildImageWithPreview(context),
-                          if (_isLoading)
-                            Container(
-                              color: Colors.transparent,
-                              child: Center(
-                                child: loader(
-                                  Colors.lightGreen,
-                                  70,
-                                  5,
-                                  10,
-                                  500,
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                         SizedBox(height: 20.h),
@@ -422,8 +422,113 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                           child: Text("No result yet.", style: theme.textTheme.labelLarge),
                         ),
                       SizedBox(height: 22.h),
+
+                      // --- ACTION BUTTONS LOGIC ---
+                      if (_isLoading)
+                        // While loading, only show "Try Manual Input"
+                        FilledButton.icon(
+                          icon: Icon(Icons.edit_note_rounded, size: 22.sp),
+                          label: Text(
+                            "Try Manual Input",
+                            style: theme.textTheme.labelLarge,
+                          ),
+                          onPressed: () {
+                            context.push('/manualInput');
+                          },
+                          style: ButtonStyle(
+                            padding: WidgetStateProperty.all(EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h)),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                            ),
+                          ),
+                        )
+                      else ...[
+                        // When NOT loading, show all the review/new scan buttons (unchanged)
+                        FilledButton.icon(
+                          icon: Icon(Icons.check_circle_outline_rounded, size: 22.sp),
+                          label: const Text("Add Item(s) to Review"),
+                          onPressed: (_geminiResult == null || _geminiResult!.isEmpty)
+                              ? null
+                              : () {
+                                  int count = 0;
+                                  for (var item in _geminiResult!) {
+                                    scanController.addItem(
+                                      ScannedItem(
+                                        itemName: item['itemName'] ?? item['item'] ?? '',
+                                        quantity: (item['count'] as num?)?.toDouble() ?? 1.0,
+                                        unit: null,
+                                        source: "gemini_vision",
+                                        category: item['category'] ?? 'Uncategorized', 
+                                        isReviewed: false,
+                                        isEdited: false,
+                                      ),
+                                    );
+                                    count++;
+                                  }
+                                  if (mounted) {
+                                    SnackbarUtils.show(
+                                      context, 
+                                      "$count item(s) added to review!",
+                                      duration: 1500, 
+                                      behavior: SnackBarBehavior.floating,
+                                      icon: Icons.add,
+                                      iconColor: Colors.deepPurple,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+                                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                                    );
+                                  }
+                                },
+                          style: ButtonStyle(
+                            padding: WidgetStateProperty.all(EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h)),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 10.h),
+                        FilledButton.icon(
+                          icon: Icon(
+                            Icons.reviews_outlined, 
+                            size: 20.sp,
+                            color: textColor(context),
+                          ),
+                          label: Text(
+                            "Go to Review Screen",
+                            style: theme.textTheme.labelMedium,
+                          ),
+                          onPressed: () {
+                            print('\x1B[34m[DEBUG] Navigating to /reviewScreen\x1B[0m');
+                            context.push('/reviewScreen');
+                          },
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStateProperty.all(theme.colorScheme.secondaryContainer),
+                            foregroundColor: WidgetStateProperty.all(theme.colorScheme.onSecondaryContainer),
+                            padding: WidgetStateProperty.all(EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h)),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 25.h),
+                        Text("Scan another item:", style: theme.textTheme.titleSmall),
+                        SizedBox(height: 10.h),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            OutlinedButton.icon(
+                              icon: Icon(Icons.camera_enhance_rounded, size: 20.sp),
+                              label: const Text("New Scan"),
+                              onPressed: _retakeOrNewScan,
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.r),
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
                       // --- Add Items to Review Button
-                      FilledButton.icon(
+                      /*FilledButton.icon(
                         icon: Icon(Icons.check_circle_outline_rounded, size: 22.sp),
                         label: const Text("Add Item(s) to Review"),
                         onPressed: (_geminiResult == null || _geminiResult!.isEmpty)
@@ -504,7 +609,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> {
                             ),
                           ),
                         ],
-                      ),
+                      ),*/
                     ],
                   ),
                 ),

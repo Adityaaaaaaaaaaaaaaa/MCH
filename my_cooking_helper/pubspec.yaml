@@ -35,13 +35,13 @@ dependencies:
   permission_handler: ^12.0.0+1
   image_picker: ^1.1.2
   http: ^1.4.0
-  blurrycontainer: ^2.1.0
   glass: ^2.0.0+2
   hive: ^2.2.3
   connectivity_plus: ^6.1.4
   path_provider: ^2.1.5
   flutter_screenutil: ^5.9.3
   step_progress_indicator: ^1.0.2
+  lottie: ^3.3.1
 
 dev_dependencies:
   flutter_test:
@@ -60,6 +60,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/animations/
     - assets/images/
     - assets/images/onboarding/
     - assets/images/loginSignup/
