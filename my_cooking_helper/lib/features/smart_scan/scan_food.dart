@@ -10,6 +10,7 @@ import '/utils/loader.dart';
 import '/utils/snackbar.dart';
 import '/utils/colors.dart';
 import '/utils/lottie_animation.dart';
+import '/widgets/camera_commons.dart';
 import '/widgets/navigation/appbar.dart';
 import '/models/item.dart';
 import '/services/gemini_scanFood.dart';
@@ -57,7 +58,24 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    _initFuture = _requestPermissionAndInitCamera();
+    _initFuture = _initCamera();
+  }
+
+  Future<void> _initCamera() async {
+    setState(() => _isLoading = true);
+    final result = await requestPermissionAndInitCamera(
+      setLoading: (val) => setState(() => _isLoading = val),
+      setCameraReady: (val) => setState(() => _isCameraReady = val),
+      setHasPermission: (val) => setState(() => _hasPermission = val),
+      setCameraController: (ctrl) => setState(() => _cameraController = ctrl),
+    );
+    // Result is a map: { 'controller': ..., 'isReady': ..., 'hasPerm': ... }
+    setState(() {
+      _cameraController = result['controller'];
+      _isCameraReady = result['isReady'] ?? false;
+      _hasPermission = result['hasPerm'] ?? false;
+      _isLoading = false;
+    });
   }
 
   Future<void> _requestPermissionAndInitCamera() async {
@@ -84,6 +102,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
           imageFormatGroup: Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888,
         );
         await _cameraController!.initialize();
+        if (!mounted) return;
         setState(() => _isCameraReady = true);
         print('\x1B[34m[DEBUG] Camera initialized and ready\x1B[0m');
       } catch (e) {
@@ -101,20 +120,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
   void dispose() {
     _cameraController?.dispose();
     super.dispose();
-  }
-
-  Future<void> _toggleFlash() async {
-    if (_cameraController == null) return;
-    try {
-      _isFlashOn = !_isFlashOn;
-      await _cameraController!.setFlashMode(
-        _isFlashOn ? FlashMode.torch : FlashMode.off,
-      );
-      setState(() {});
-      print('\x1B[34m[DEBUG] Flash toggled: $_isFlashOn\x1B[0m');
-    } catch (e) {
-      print('\x1B[34m[DEBUG] Toggling flash: $e\x1B[0m');
-    }
   }
 
   Future<void> _toggleFocusMode() async {
@@ -168,6 +173,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
       return;
     }
     await _resetStateForNewImage();
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final XFile image = await _cameraController!.takePicture();
@@ -176,18 +182,21 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
       await _analyzeWithGemini(_pickedImage!);
     } catch (e) {
       print('\x1B[34m[DEBUG] Error taking photo: $e\x1B[0m');
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
 
   Future<void> _pickFromGallery() async {
     await _resetStateForNewImage();
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
       if (pickedFile == null) {
         print('\x1B[34m[DEBUG] No gallery image picked\x1B[0m');
+        if (!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
@@ -196,6 +205,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
       await _analyzeWithGemini(_pickedImage!);
     } catch (e) {
       print('\x1B[34m[DEBUG] Error picking gallery image: $e\x1B[0m');
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
@@ -214,6 +224,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
     });
     final geminiService = ref.read(geminiProvider);
     final result = await geminiService.analyzeFoodImage(imageFile);
+    if (!mounted) return;
     setState(() {
       _geminiResult = result;
       _isLoading = false;
@@ -222,121 +233,47 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
     lottieController.hide();
   }
 
-  Widget _buildTipBanner(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 20.h, top: 20.h),
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: Colors.blueGrey.shade200,
-        borderRadius: BorderRadius.circular(20.r),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.lightbulb, color: Colors.amber.shade300, size: 20.sp),
-          SizedBox(width: 8.w),
-          Flexible(
+  List<Widget> _buildGroupedGeminiResults(List<Map<String, dynamic>> items, ThemeData theme) {
+    // Group items by category (default to 'Uncategorized')
+    final Map<String, List<Map<String, dynamic>>> grouped = {};
+    for (var item in items) {
+      final String cat = (item['category'] ?? 'Uncategorized').toString().capitalize();
+      grouped.putIfAbsent(cat, () => []).add(item);
+    }
+    // Sort categories: "Uncategorized" always last
+    final sortedCats = grouped.keys.toList()
+      ..sort((a, b) {
+        if (a == 'Uncategorized') return 1;
+        if (b == 'Uncategorized') return -1;
+        return a.compareTo(b);
+      });
+
+    return [
+      for (final cat in sortedCats) ...[
+        Padding(
+          padding: EdgeInsets.only(top: 12.h, bottom: 4.h),
+          child: Text(
+            cat,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.primaryColor,
+              fontSize: 17.sp,
+            ),
+          ),
+        ),
+        ...grouped[cat]!.map((item) {
+          final String name = item['itemName'] ?? item['item'] ?? '';
+          final count = item['count'] ?? 1;
+          return Padding(
+            padding: EdgeInsets.only(left: 16.0.w, bottom: 2.h),
             child: Text(
-              _randomTip,
-              style: TextStyle(
-                color: textColor(context),
-                fontWeight: FontWeight.w600,
-              ),
+              "$name: $count",
+              style: theme.textTheme.bodyMedium,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCameraControls(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Flash
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: Icon(
-                _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-                color: _isFlashOn ? Colors.green :  Colors.orange,
-                size: 30.sp,
-              ),
-              onPressed: _toggleFlash,
-              tooltip: _isFlashOn ? 'Turn off flash' : 'Turn on flash',
-            ),
-            SizedBox(width: 10.w),
-            IconButton(
-              icon: Icon(
-                _isAutoFocus ? Icons.center_focus_strong : Icons.center_focus_weak,
-                color: _isAutoFocus ? Colors.green : Colors.orange,
-                size: 30.sp,
-              ),
-              onPressed: _toggleFocusMode,
-              tooltip: _isAutoFocus ? 'Auto Focus' : 'Focus Locked',
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildShutterButton({required VoidCallback onTap, bool enabled = true}) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        width: enabled ? 70.w : 55.w,
-        height: enabled ? 70.h : 55.h,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: enabled ? Colors.white : Colors.grey[400]!,
-            width: 7.w,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10.r,
-              spreadRadius: 3,
-              offset: const Offset(0, 5),
-            )
-          ],
-          color: enabled ? Colors.white : Colors.grey[200],
-        ),
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            width: enabled ? 40.w : 34.w,
-            height: enabled ? 40.h : 34.h,
-            decoration: BoxDecoration(
-              color: enabled ? Colors.redAccent : Colors.grey[400],
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGalleryButton(BuildContext context) {
-    return FloatingActionButton(
-      heroTag: 'galleryBtn',
-      backgroundColor: Colors.white,
-      elevation: 4,
-      mini: false,
-      onPressed: _pickFromGallery,
-      tooltip: "Select from Gallery",
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-        child: Icon(
-          Icons.photo_library_rounded,
-          color: Theme.of(context).primaryColor,
-          size: 30.sp,
-        ),
-      ),
-    );
+          );
+        }),
+      ]
+    ];
   }
 
   @override
@@ -362,7 +299,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting || (_isLoading && _pickedImage == null)) {
             return Center(child: 
-            // not this one , we need this one, we keep it
               loader(
                 Colors.tealAccent,
                 70,
@@ -371,27 +307,21 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
                 500,
             ));
           }
-          if (!_hasPermission) return _buildNoPermissionUI(context);
+          if (!_hasPermission) return buildNoPermissionUI(context, 'food items', _requestPermissionAndInitCamera);
 
           // --- If image has been picked/captured
           if (_pickedImage != null) {
             return SafeArea(
               child: SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  top: 20.h,
-                  bottom: 20.h, 
-                  left: 15.w, 
-                  right: 15.w,
-                ),
+                padding: EdgeInsets.only( top: 20.h, bottom: 20.h, left: 15.w, right: 15.w ),
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                         Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // lottie animation happens in this 
-                          _buildImageWithPreview(context),
+                          alignment: Alignment.center,
+                          children: [ 
+                            buildImageWithPreview(context: context, pickedImage: _pickedImage) 
                           ],
                         ),
                         SizedBox(height: 20.h),
@@ -527,89 +457,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
                           ],
                         )
                       ],
-                      // --- Add Items to Review Button
-                      /*FilledButton.icon(
-                        icon: Icon(Icons.check_circle_outline_rounded, size: 22.sp),
-                        label: const Text("Add Item(s) to Review"),
-                        onPressed: (_geminiResult == null || _geminiResult!.isEmpty)
-                            ? null
-                            : () {
-                                int count = 0;
-                                for (var item in _geminiResult!) {
-                                  scanController.addItem(
-                                    ScannedItem(
-                                      itemName: item['itemName'] ?? item['item'] ?? '',
-                                      quantity: (item['count'] as num?)?.toDouble() ?? 1.0,
-                                      unit: null,
-                                      source: "gemini_vision",
-                                      category: item['category'] ?? 'Uncategorized', 
-                                      isReviewed: false,
-                                      isEdited: false,
-                                    ),
-                                  );
-                                  count++;
-                                }
-                                if (mounted) {
-                                  SnackbarUtils.show(
-                                    context, 
-                                    "$count item(s) added to review!",
-                                    duration: 1500, 
-                                    behavior: SnackBarBehavior.floating,
-                                    icon: Icons.add,
-                                    iconColor: Colors.deepPurple,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
-                                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
-                                  );
-                                }
-                              },
-                        style: ButtonStyle(
-                          padding: WidgetStateProperty.all(EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h)),
-                          shape: WidgetStateProperty.all(
-                            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 10.h),
-                      FilledButton.icon(
-                        icon: Icon(
-                          Icons.reviews_outlined, 
-                          size: 20.sp,
-                          color: textColor(context),
-                        ),
-                        label: Text(
-                          "Go to Review Screen",
-                          style: theme.textTheme.labelMedium,
-                        ),
-                        onPressed: () {
-                          print('\x1B[34m[DEBUG] Navigating to /reviewScreen\x1B[0m');
-                          context.push('/reviewScreen');
-                        },
-                        style: ButtonStyle(
-                          backgroundColor: WidgetStateProperty.all(theme.colorScheme.secondaryContainer),
-                          foregroundColor: WidgetStateProperty.all(theme.colorScheme.onSecondaryContainer),
-                          padding: WidgetStateProperty.all(EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h)),
-                          shape: WidgetStateProperty.all(
-                            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 25.h),
-                      Text("Scan another item:", style: theme.textTheme.titleSmall),
-                      SizedBox(height: 10.h),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          OutlinedButton.icon(
-                            icon: Icon(Icons.camera_enhance_rounded, size: 20.sp),
-                            label: const Text("New Scan"),
-                            onPressed: _retakeOrNewScan,
-                            style: OutlinedButton.styleFrom(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.r),
-                            ),
-                          ),
-                        ],
-                      ),*/
                     ],
                   ),
                 ),
@@ -626,7 +473,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
           return Column(
             children: [
               SizedBox(height: 120.h),
-              _buildTipBanner(context), // Tips above
+              buildTipBanner(context, _randomTip), //tips above
               Expanded(
                 child: LayoutBuilder(
                   builder: (ctx, constraints) => GestureDetector(
@@ -653,17 +500,26 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
                   ),
                 ),
               ),
-              _buildCameraControls(context), // Controls below preview
+              buildCameraControls( //flash and focus under live preview
+                context: context,
+                isFlashOn: _isFlashOn,
+                isAutoFocus: _isAutoFocus,
+                onToggleFlash: () async {
+                  await toggleFlash(
+                    controller: _cameraController!,
+                    isFlashOn: !_isFlashOn,
+                    setFlashState: (val) => setState(() => _isFlashOn = val),
+                  );
+                },
+                onToggleFocusMode: _toggleFocusMode,
+              ),
               Padding(
                 padding: EdgeInsets.fromLTRB(20.w, 15.h, 20.w, 30.h),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildGalleryButton(context),
-                    _buildShutterButton(
-                      onTap: _isLoading ? () {} : _takePicture,
-                      enabled: !_isLoading,
-                    ),
+                    buildGalleryButton(context, _pickFromGallery),
+                    buildShutterButton(onTap: _takePicture, enabled: !_isLoading),
                   ],
                 ),
               ),
@@ -673,111 +529,8 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
       ),
     );
   }
-
-  Widget _buildImageWithPreview(BuildContext context) {
-    if (_pickedImage == null) return const SizedBox.shrink();
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double maxWidth = screenWidth * 0.92;
-
-    return Container(
-      width: maxWidth.w,
-      clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(25.r),
-        border: Border.all(width: 1.5.w),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.lightBlueAccent,
-            blurRadius: 20.r,
-            offset: Offset(1, 1),
-          ),
-        ]
-      ),
-      child: Image.file(
-        _pickedImage!,
-        width: maxWidth,
-        fit: BoxFit.contain,
-      ),
-    );
-  }
-
-  Widget _buildNoPermissionUI(BuildContext context) {
-    print('\x1B[34m[DEBUG] No camera permission, showing dialog\x1B[0m');
-    return Center(
-      child: AlertDialog(
-        title: const Text('Camera Permission Needed'),
-        content: const Text(
-            'Camera access is required to scan food items. Please grant permission to use this feature.'),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await _requestPermissionAndInitCamera();
-            },
-            child: const Text('Try Again'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.push('/manualInput');
-            },
-            child: const Text('Manual Input'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await openAppSettings();
-            },
-            child: const Text('Settings'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _buildGroupedGeminiResults(List<Map<String, dynamic>> items, ThemeData theme) {
-    // Group items by category (default to 'Uncategorized')
-    final Map<String, List<Map<String, dynamic>>> grouped = {};
-    for (var item in items) {
-      final String cat = (item['category'] ?? 'Uncategorized').toString().capitalize();
-      grouped.putIfAbsent(cat, () => []).add(item);
-    }
-    // Sort categories: "Uncategorized" always last
-    final sortedCats = grouped.keys.toList()
-      ..sort((a, b) {
-        if (a == 'Uncategorized') return 1;
-        if (b == 'Uncategorized') return -1;
-        return a.compareTo(b);
-      });
-
-    return [
-      for (final cat in sortedCats) ...[
-        Padding(
-          padding: EdgeInsets.only(top: 12.h, bottom: 4.h),
-          child: Text(
-            cat,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.primaryColor,
-              fontSize: 17.sp,
-            ),
-          ),
-        ),
-        ...grouped[cat]!.map((item) {
-          final String name = item['itemName'] ?? item['item'] ?? '';
-          final count = item['count'] ?? 1;
-          return Padding(
-            padding: EdgeInsets.only(left: 16.0.w, bottom: 2.h),
-            child: Text(
-              "$name: $count",
-              style: theme.textTheme.bodyMedium,
-            ),
-          );
-        }),
-      ]
-    ];
-  }
 }
+
 extension StringCapitalize on String {
   String capitalize() => isEmpty ? this : '${this[0].toUpperCase()}${substring(1).toLowerCase()}';
 }
