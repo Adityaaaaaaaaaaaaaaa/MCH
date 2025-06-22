@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
-//import 'package:cloud_firestore/cloud_firestore.dart';
-//import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-//import 'package:glass/glass.dart';
-//import '/utils/loader.dart';
+import 'package:glass/glass.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/models/item.dart';
+import '/widgets/edit_add_item_dialog.dart';
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
-//import '/theme/app_theme.dart';
-//import '/utils/loader.dart';
 import '/widgets/navigation/drawer.dart';
 import '/widgets/navigation/nav.dart';
 import '/widgets/inventory_tile.dart';
 import 'inventory_controller.dart';
-import '/widgets/inventory_edit_modal.dart';
 import 'inventory_sort.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class InventoryPage extends ConsumerStatefulWidget {
   const InventoryPage({super.key});
@@ -41,6 +37,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
   Widget build(BuildContext context) {
     final items = ref.watch(inventoryControllerProvider);
     final sortedItems = sortInventory(List<Map<String, dynamic>>.from(items));
+    
     return Scaffold(
       backgroundColor: bgColor(context),
       extendBodyBehindAppBar: true,
@@ -50,18 +47,30 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
       appBar: CustomAppBar(
         title: "Inventory",
         showMenu: true,
-        height: 100.h,
+        height: 70.h,
         borderRadius: 26.r,
-        topPadding: 60.h,
+        topPadding: 40.h,
       ),
       body: Column(
         children: [
           Padding(
-            padding: EdgeInsets.only(top: 140.h),
+            padding: EdgeInsets.only(top: 120.h, right: 15.w,),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                InventorySortBar(sortBy: sortBy, onSort: (s) => setState(() => sortBy = s)),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                  child: InventorySortBar(
+                    sortBy: sortBy,
+                    onSort: (s) => setState(() => sortBy = s),
+                  ),
+                ).asGlass(
+                  blurX: 15,
+                  blurY: 15,
+                  frosted: true,
+                  tintColor: Colors.red,
+                  clipBorderRadius: BorderRadius.circular(12.r),
+                ),
               ],
             ),
           ),
@@ -86,23 +95,18 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                     category: item["category"] ?? "",
                     isSelected: deleteMode && selectedIds.contains(item["id"]),
                     isOffline: item["offline"] ?? false,
+                    //edit ingredient
                     onTap: () async {
-                      if (deleteMode) {
-                        setState(() {
-                          if (selectedIds.contains(item["id"])) {
-                            selectedIds.remove(item["id"]);
-                          } else {
-                            selectedIds.add(item["id"]);
-                          }
-                        });
-                      } else {
-                        await showDialog(
-                          context: context,
-                          builder: (_) => InventoryEditModal(
-                            item: item,
-                            onSave: (data) => ref.read(inventoryControllerProvider.notifier).addOrUpdateItem(data),
-                          ),
-                        );
+                      final itemObj = ScannedItem.fromJson(item);
+                      final edited = await showDialog<ScannedItem>(
+                        context: context,
+                        builder: (_) => EditOrAddItemDialog(item: itemObj, title: "Ingredient"),
+                      );
+                      if (edited != null) {
+                        final map = edited.toJson();
+                        map['id'] = item['id']; // keep firestore document id so it updates!
+                        map['dateAdded'] = item['dateAdded']; // preserve date if you want
+                        await ref.read(inventoryControllerProvider.notifier).addOrUpdateItem(map);
                       }
                     },
                     onLongPress: () {
@@ -146,14 +150,19 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                 ),
               ],
             )
+            //add ingredient
           : FloatingActionButton.extended(
               onPressed: () async {
-                await showDialog(
+                final added = await showDialog<ScannedItem>(
                   context: context,
-                  builder: (_) => InventoryEditModal(
-                    onSave: (data) => ref.read(inventoryControllerProvider.notifier).addOrUpdateItem(data),
-                  ),
+                  builder: (_) => EditOrAddItemDialog(title: "Ingredient"),
                 );
+                if (added != null) {
+                  // Convert to Map and save using your controller
+                  final map = added.toJson();
+                  map['source'] = 'manual_ingreident_input'; // add a source if you want to track origin
+                  await ref.read(inventoryControllerProvider.notifier).addOrUpdateItem(map);
+                }
               },
               backgroundColor: Colors.deepPurple,
               icon: const Icon(Icons.add),

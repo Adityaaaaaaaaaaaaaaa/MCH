@@ -6,8 +6,9 @@ import '/models/item.dart';
 class EditOrAddItemDialog extends StatefulWidget {
   final ScannedItem? item; // null for add, not null for edit
   final bool isEdit;
+  final String title; // <-- ADD THIS
 
-  const EditOrAddItemDialog({Key? key, this.item})
+  const EditOrAddItemDialog({Key? key, this.item, this.title = "Item"})
       : isEdit = item != null,
         super(key: key);
 
@@ -67,7 +68,7 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              widget.isEdit ? "< Edit Item >" : "< Add Item >",
+              widget.isEdit ? "< Edit ${widget.title} >" : "< Add ${widget.title} >",
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w900,
                 fontSize: 27.sp,
