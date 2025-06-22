@@ -97,7 +97,8 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
     return result != ConnectivityResult.none;
   }
 
-  Future<void> addOrUpdateItem(Map<String, dynamic> item) async {
+  // Accepts an extra previousId parameter for renames
+  Future<void> addOrUpdateItem(Map<String, dynamic> item, {String? previousId}) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       print('\x1B[34m[DEBUG] Cannot add/update item: not logged in\x1B[0m');
@@ -107,16 +108,30 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
     final ref = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('inventory');
 
     // Use the itemName as document ID, safely formatted
-    String safeName = (item['itemName'] ?? '').replaceAll(RegExp(r'[\/\\.#\$\\[\\]]'), '_');
-    if (safeName.isEmpty) {
+    String newId = (item['itemName'] ?? '').replaceAll(RegExp(r'[\/\\.#\$\\[\\]]'), '_');
+    if (newId.isEmpty) {
       // fallback: use id or timestamp
-      safeName = item['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+      newId = item['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
     }
 
     if (await _isOnline()) {
-      await ref.doc(safeName).set(item, SetOptions(merge: true));
-      item['id'] = safeName; // Make sure local item has the right ID
+      // If renaming, delete old doc
+      if (previousId != null && previousId != newId) {
+        try {
+          await ref.doc(previousId).delete();
+          await inventoryBox.delete(previousId);
+          print('\x1B[34m[DEBUG] Deleted old item: $previousId\x1B[0m');
+        } catch (e) {
+          print('\x1B[34m[DEBUG] Error deleting old item: $e\x1B[0m');
+        }
+      }
+
+      // Save the new/updated item
+      await ref.doc(newId).set(item, SetOptions(merge: true));
+      item['id'] = newId;
       item['offline'] = false;
+      await inventoryBox.put(newId, item);
+      print('\x1B[34m[DEBUG] Saved/Updated item online: $newId\x1B[0m');
     } else {
       // Add to Hive and mark as offline
       final id = item['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();

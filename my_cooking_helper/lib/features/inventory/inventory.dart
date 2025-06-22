@@ -113,9 +113,10 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                         );
                         if (edited != null) {
                           final map = edited.toJson();
-                          map['id'] = item['id'];
-                          map['dateAdded'] = item['dateAdded'];
-                          await ref.read(inventoryControllerProvider.notifier).addOrUpdateItem(map);
+                          map['dateAdded'] = item['dateAdded']; // preserve date if you want
+                          // Pass both the new data (map) and the old ID (item['id'])
+                          await ref.read(inventoryControllerProvider.notifier)
+                            .addOrUpdateItem(map, previousId: item['id']);
                         }
                       }
                     },
@@ -172,8 +173,9 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                 if (added != null) {
                   // Convert to Map and save using your controller
                   final map = added.toJson();
-                  map['source'] = 'manual_ingreident_input'; // add a source if you want to track origin
-                  await ref.read(inventoryControllerProvider.notifier).addOrUpdateItem(map);
+                  map['source'] = 'manual_ingreident_input';
+                  await ref.read(inventoryControllerProvider.notifier)
+                    .addOrUpdateItem(map); // No previousId for a new item
                 }
               },
               backgroundColor: Colors.deepPurple,
