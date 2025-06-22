@@ -103,16 +103,19 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
       print('\x1B[34m[DEBUG] Cannot add/update item: not logged in\x1B[0m');
       return;
     }
+
+    final ref = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('inventory');
+
+    // Use the itemName as document ID, safely formatted
+    String safeName = (item['itemName'] ?? '').replaceAll(RegExp(r'[\/\\.#\$\\[\\]]'), '_');
+    if (safeName.isEmpty) {
+      // fallback: use id or timestamp
+      safeName = item['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+    }
+
     if (await _isOnline()) {
-      final ref = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('inventory');
-      if (item['id'] != null) {
-        await ref.doc(item['id']).set(item);
-        print('\x1B[34m[DEBUG] Updated item online: ${item['id']}\x1B[0m');
-      } else {
-        final doc = await ref.add(item);
-        item['id'] = doc.id;
-        print('\x1B[34m[DEBUG] Added new item online: ${doc.id}\x1B[0m');
-      }
+      await ref.doc(safeName).set(item, SetOptions(merge: true));
+      item['id'] = safeName; // Make sure local item has the right ID
       item['offline'] = false;
     } else {
       // Add to Hive and mark as offline
@@ -134,8 +137,8 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
       print('\x1B[34m[DEBUG] Cannot delete items: not logged in\x1B[0m');
       return;
     }
+    final ref = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('inventory');
     if (await _isOnline()) {
-      final ref = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('inventory');
       for (var id in ids) {
         await ref.doc(id).delete();
         print('\x1B[34m[DEBUG] Deleted item online: $id\x1B[0m');
@@ -162,15 +165,14 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
     for (var item in inventoryBox.values) {
       final m = Map<String, dynamic>.from(item);
       if (m['offline'] == true) {
-        if (m['id'] != null) {
-          await ref.doc(m['id']).set(m);
-        } else {
-          final doc = await ref.add(m);
-          m['id'] = doc.id;
+        String safeName = (m['itemName'] ?? '').replaceAll(RegExp(r'[\/\\.#\$\\[\\]]'), '_');
+        if (safeName.isEmpty) {
+          safeName = m['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
         }
-        m['offline'] = false;
-        await inventoryBox.put(m['id'], m);
-        print('\x1B[34m[DEBUG] Synced item online: ${m['id']}\x1B[0m');
+        await ref.doc(safeName).set(m, SetOptions(merge: true));
+        m['id'] = safeName;
+        await inventoryBox.put(safeName, m);
+        print('\x1B[34m[DEBUG] Synced item online: $safeName\x1B[0m');
       }
     }
     _loadLocal();

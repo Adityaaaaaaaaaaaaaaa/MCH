@@ -97,22 +97,34 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                     isOffline: item["offline"] ?? false,
                     //edit ingredient
                     onTap: () async {
-                      final itemObj = ScannedItem.fromJson(item);
-                      final edited = await showDialog<ScannedItem>(
-                        context: context,
-                        builder: (_) => EditOrAddItemDialog(item: itemObj, title: "Ingredient"),
-                      );
-                      if (edited != null) {
-                        final map = edited.toJson();
-                        map['id'] = item['id']; // keep firestore document id so it updates!
-                        map['dateAdded'] = item['dateAdded']; // preserve date if you want
-                        await ref.read(inventoryControllerProvider.notifier).addOrUpdateItem(map);
+                      if (deleteMode) {
+                        setState(() {
+                          if (selectedIds.contains(item["id"])) {
+                            selectedIds.remove(item["id"]);
+                          } else {
+                            selectedIds.add(item["id"]);
+                          }
+                        });
+                      } else {
+                        final itemObj = ScannedItem.fromJson(item);
+                        final edited = await showDialog<ScannedItem>(
+                          context: context,
+                          builder: (_) => EditOrAddItemDialog(item: itemObj, title: "Ingredient"),
+                        );
+                        if (edited != null) {
+                          final map = edited.toJson();
+                          map['id'] = item['id'];
+                          map['dateAdded'] = item['dateAdded'];
+                          await ref.read(inventoryControllerProvider.notifier).addOrUpdateItem(map);
+                        }
                       }
                     },
                     onLongPress: () {
                       setState(() {
                         deleteMode = true;
-                        selectedIds = [item["id"]];
+                        if (!selectedIds.contains(item["id"])) {
+                          selectedIds.add(item["id"]);
+                        }
                       });
                     },
                   );
