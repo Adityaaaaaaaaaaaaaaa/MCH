@@ -45,6 +45,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
     "Tip: Remove any covers or folds from the receipt.",
     "Tip: Tap to focus on the receipt for sharpness.",
     "Tip: Avoid glare for the best scan.",
+    "Tip: Avoid torn or unreadble receipts"
   ];
 
   String get _randomTip {

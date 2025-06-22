@@ -44,8 +44,8 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
     "Tip: Keep the camera steady for a clearer scan.",
     "Tip: Avoid blurry images for best results.",
     "Tip: Remove packaging for more accurate recognition.",
-    "Tip: Place only one food item at a time for better scanning.",
-    "Tip: Tap to focus on the food for sharper results.",
+    "Tip: Try one food item at a time for better scanning.",
+    "Tip: Tap to focus for sharper results.",
   ];
 
   String get _randomTip {
