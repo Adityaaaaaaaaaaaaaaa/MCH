@@ -10,8 +10,14 @@ class InventorySortBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Text("Sort by:", style: TextStyle(fontWeight: FontWeight.w600)),
-        SizedBox(width: 8.w),
+        Text(
+          "Sort by:", 
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 11.sp,
+          )
+        ),
+        SizedBox(width: 10.w),
         DropdownButton<String>(
           value: sortBy,
           onChanged: (value) {
@@ -19,11 +25,11 @@ class InventorySortBar extends StatelessWidget {
               onSort(value);
             }
           },
-          items: const [
-            DropdownMenuItem(value: "default", child: Text("Default")),
-            DropdownMenuItem(value: "name", child: Text("Name")),
-            DropdownMenuItem(value: "quantity", child: Text("Quantity")),
-            DropdownMenuItem(value: "category", child: Text("Category")),
+          items: [
+            DropdownMenuItem(value: "default", child: Text("Default",style: TextStyle(fontWeight: FontWeight.w600,fontSize: 11.sp,))),
+            DropdownMenuItem(value: "name", child: Text("Name", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 11.sp,))),
+            DropdownMenuItem(value: "quantity", child: Text("Quantity", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 11.sp,))),
+            DropdownMenuItem(value: "category", child: Text("Category", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 11.sp,))),
           ],
         ),
       ],
