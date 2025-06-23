@@ -153,7 +153,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                       unit: item["unit"] ?? "",
                       category: item["category"] ?? "",
                       isSelected: deleteMode && selectedIds.contains(item["id"]),
-                      isOffline: item["offline"] ?? false,
+                      isOnline: isOnline,
                       //edit ingredient
                       onTap: () async {
                         if (deleteMode) {
