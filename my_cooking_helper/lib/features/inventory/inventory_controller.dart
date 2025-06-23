@@ -200,4 +200,25 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
     print('\x1B[34m[DEBUG] InventoryController disposed\x1B[0m');
     super.dispose();
   }
+
+  Future<void> refreshFromFirestore() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final ref = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('inventory');
+    final snapshot = await ref.get();
+    final newState = snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      data['offline'] = false;
+      if (data.containsKey('dateAdded') && data['dateAdded'] is Timestamp) {
+        data['dateAdded'] = (data['dateAdded'] as Timestamp).millisecondsSinceEpoch;
+      }
+      return data;
+    }).toList();
+    state = newState;
+    // Save to Hive as well
+    for (var item in state) {
+      inventoryBox.put(item['id'], item);
+    }
+  }
 }
