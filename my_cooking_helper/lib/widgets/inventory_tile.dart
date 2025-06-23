@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:my_cooking_helper/utils/colors.dart';
 
 class InventoryTile extends StatelessWidget {
   final String imageUrl;
@@ -9,7 +10,7 @@ class InventoryTile extends StatelessWidget {
   final String unit;
   final String category;
   final bool isSelected;
-  final bool isOffline;
+  final bool isOnline;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
@@ -21,7 +22,7 @@ class InventoryTile extends StatelessWidget {
     required this.unit,
     required this.category,
     this.isSelected = false,
-    this.isOffline = false,
+    this.isOnline = false,
     required this.onTap,
     this.onLongPress,
   });
@@ -37,7 +38,7 @@ class InventoryTile extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18.r),
               border: Border.all(
-                color: isSelected ? Colors.redAccent : Colors.black26,
+                color: isSelected ? Colors.redAccent : Colors.grey,
                 width: 2.w,
               ),
             ),
@@ -58,22 +59,31 @@ class InventoryTile extends StatelessWidget {
                             errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported)
                           ),
                         )
-                      : Icon(Icons.image, size: 38.sp, color: Colors.grey[400]),
+                      : Icon(Icons.image, size: 35.sp, color: Colors.grey[500]),
                 ),
                 SizedBox(height: 10.h),
                 Text(
                   itemName,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 17.sp,
+                    color: textColor(context),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   '$quantity $unit',
-                  style: TextStyle(fontSize: 13.sp, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 13.sp, 
+                    color: textColor(context),
+                  ),
                 ),
                 Text(
                   category,
                   style: TextStyle(
-                    fontSize: 11.sp,
-                    color: Colors.deepPurple,
+                    fontSize: 12.sp,
+                    color: textColor(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -81,19 +91,19 @@ class InventoryTile extends StatelessWidget {
               ],
             ),
           ).asGlass(
-            tintColor: Colors.white.withOpacity(0.18),
+            tintColor: Colors.white,
             blurX: 7,
             blurY: 7,
             frosted: true,
             clipBorderRadius: BorderRadius.circular(18.r),
           ),
-          if (isOffline)
+          if (isOnline)
             Positioned(
-              top: 7.h,
-              right: 9.w,
+              top: 5.h,
+              right: 10.w,
               child: Tooltip(
                 message: "Not synced",
-                child: Icon(Icons.cloud_off, color: Colors.redAccent, size: 21.sp),
+                child: Icon(Icons.cloud_off_outlined, color: Colors.redAccent, size: 15.sp),
               ),
             ),
           if (isSelected)
