@@ -6,8 +6,9 @@ import '/utils/colors.dart';
 class ScanActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Color? color;
+  final bool enabled;
 
   const ScanActionButton({
     Key? key,
@@ -15,19 +16,20 @@ class ScanActionButton extends StatelessWidget {
     required this.icon,
     required this.onPressed,
     this.color,
+    this.enabled = true,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final baseColor = color ?? Theme.of(context).primaryColor;
+    final activeColor = enabled ? baseColor.withOpacity(0.6) : baseColor.withOpacity(0.15);
+
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
         padding: EdgeInsets.symmetric(horizontal: 25.w, vertical: 15.h),
         elevation: 0,
-        backgroundColor: (color ?? Theme.of(context).primaryColor).withOpacity(0.45), // Add tint with opacity
+        backgroundColor: activeColor,
         shadowColor: Colors.transparent,
-        /*shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30.r),
-        ),*/
       ),
       onPressed: onPressed,
       icon: Icon(
@@ -46,7 +48,7 @@ class ScanActionButton extends StatelessWidget {
     ).asGlass(
       blurX: 10,
       blurY: 10,
-      tintColor: (color ?? Theme.of(context).primaryColor).withOpacity(0.30), // Stronger tint
+      tintColor: (color ?? Theme.of(context).primaryColor), 
       clipBorderRadius: BorderRadius.circular(30.r),
       frosted: true,
     );

@@ -1,19 +1,65 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../utils/snackbar.dart';
+import '/utils/connectivity_provider.dart';
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/scan_action_button.dart';
 import '/widgets/navigation/drawer.dart';
 import '/widgets/navigation/nav.dart';
 
-class SmartScan extends StatelessWidget {
+class SmartScan extends ConsumerStatefulWidget {
   const SmartScan({super.key});
+
+  @override
+  ConsumerState<SmartScan> createState() => _SmartScanState();
+}
+
+class _SmartScanState extends ConsumerState<SmartScan> {
+  bool isOnline = true;
+  StreamSubscription<bool>? _statusSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final service = ref.read(connectivityServiceProvider);
+
+      _statusSubscription = service.onStatusChange.listen((status) {
+        SnackbarUtils.alert(
+          context,
+          status ? "You're online" : "You're offline",
+          icon: status ? Icons.wifi : Icons.wifi_off,
+          iconColor: status ? Colors.greenAccent : Colors.redAccent,
+          typeInfo: status ? TypeInfo.success : TypeInfo.error,
+          position: MessagePosition.top,
+          duration: 3,
+        );
+
+        setState(() => isOnline = status);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isOnline = ref.watch(isOnlineProvider).maybeWhen(
+      data: (val) => val,
+      orElse: () => true,
+    );
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -104,14 +150,52 @@ class SmartScan extends StatelessWidget {
                         label: "Scan Food",
                         icon: Icons.fastfood_rounded,
                         color: Colors.green,
-                        onPressed: () => context.push('/scanFood'),
+                        enabled: isOnline,
+                        onPressed: () {
+                          if (isOnline) {
+                            context.push('/scanFood');
+                          } else {
+                            SnackbarUtils.show(
+                              context, 
+                              "You are offline, try Manual input !",
+                              textStyle: TextStyle(
+                                fontWeight: FontWeight.w900
+                              ),
+                              duration: 750, 
+                              behavior: SnackBarBehavior.floating,
+                              icon: Icons.wifi_off,
+                              iconColor: Colors.redAccent,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+                              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                            );
+                          }
+                        },
                       ),
                       SizedBox(height: 20.h),
                       ScanActionButton(
                         label: "Scan Receipt",
                         icon: Icons.receipt_long_rounded,
                         color: Colors.orange,
-                        onPressed: () => context.push('/scanReceipt'),
+                        enabled: isOnline,
+                        onPressed: () {
+                          if (isOnline) {
+                            context.push('/scanFood');
+                          } else {
+                            SnackbarUtils.show(
+                              context, 
+                              textStyle: TextStyle(
+                                fontWeight: FontWeight.w900
+                              ),
+                              "You are offline, try Manual input !",
+                              duration: 750, 
+                              behavior: SnackBarBehavior.floating,
+                              icon: Icons.wifi_off,
+                              iconColor: Colors.redAccent,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+                              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                            );
+                          }
+                        },
                       ),
                       SizedBox(height: 20.h),
                       ScanActionButton(
@@ -122,8 +206,7 @@ class SmartScan extends StatelessWidget {
                       ),
                     ],
                   ),
-                )
-                .asGlass(
+                ).asGlass(
                   blurX: 10,
                   blurY: 10,
                   tintColor: Colors.blueGrey,

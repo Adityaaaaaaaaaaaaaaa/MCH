@@ -50,7 +50,7 @@ class InventoryTile extends StatelessWidget {
                   height: 70.h,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.grey[900],
+                    color: Colors.grey,
                   ),
                   child: imageUrl.isNotEmpty
                       ? ClipRRect(
@@ -61,7 +61,7 @@ class InventoryTile extends StatelessWidget {
                             errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported),
                           ),
                         )
-                      : Icon(Icons.image, size: 35.sp, color: Colors.grey[500]),
+                      : Icon(Icons.image, size: 35.sp, color: Colors.grey[100]),
                 ),
                 // TEXT CONTAINER
                 Container(
