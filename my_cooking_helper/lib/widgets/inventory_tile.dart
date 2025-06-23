@@ -43,61 +43,71 @@ class InventoryTile extends StatelessWidget {
               ),
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // IMAGE CONTAINER
                 Container(
                   height: 70.h,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+                    color: Colors.grey[900],
                   ),
                   child: imageUrl.isNotEmpty
                       ? ClipRRect(
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(15.r)),
                           child: Image.network(
-                            imageUrl, fit: BoxFit.cover, 
-                            errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported)
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported),
                           ),
                         )
                       : Icon(Icons.image, size: 35.sp, color: Colors.grey[500]),
                 ),
-                SizedBox(height: 10.h),
-                Text(
-                  itemName,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold, 
-                    fontSize: 17.sp,
-                    color: textColor(context),
+                // TEXT CONTAINER
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 5.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        itemName,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 17.sp,
+                          color: textColor(context),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        '$quantity $unit',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: textColor(context),
+                        ),
+                      ),
+                      Text(
+                        category,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: textColor(context),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                Text(
-                  '$quantity $unit',
-                  style: TextStyle(
-                    fontSize: 13.sp, 
-                    color: textColor(context),
-                  ),
-                ),
-                Text(
-                  category,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: textColor(context),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 8.h),
               ],
             ),
           ).asGlass(
-            tintColor: Colors.white,
+            tintColor: Colors.blueGrey,
             blurX: 7,
             blurY: 7,
             frosted: true,
             clipBorderRadius: BorderRadius.circular(18.r),
           ),
-          if (isOnline)
+          if (!isOnline)
             Positioned(
               top: 5.h,
               right: 10.w,
@@ -109,8 +119,8 @@ class InventoryTile extends StatelessWidget {
           if (isSelected)
             Positioned(
               top: 7.h,
-              left: 9.w,
-              child: Icon(Icons.check_circle, color: Colors.redAccent, size: 21.sp),
+              left: 10.w,
+              child: Icon(Icons.check_circle, color: Colors.redAccent, size: 20.sp),
             ),
         ],
       ),
