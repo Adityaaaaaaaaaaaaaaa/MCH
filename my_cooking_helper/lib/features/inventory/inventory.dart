@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:glass/glass.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
+import '../../utils/snackbar.dart';
+import '/utils/connectivity_provider.dart';
 import '/models/item.dart';
 import '/widgets/edit_add_item_dialog.dart';
 import '/utils/colors.dart';
@@ -26,7 +27,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
   bool deleteMode = false;
   String sortBy = "default";
   bool isOnline = true; 
-  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+  StreamSubscription<bool>? _statusSubscription;
 
   List<Map<String, dynamic>> sortInventory(List<Map<String, dynamic>> items) {
     switch (sortBy) {
@@ -41,29 +42,28 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
   @override
   void initState() {
     super.initState();
-    _checkConnectivity();
-    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
-      // results is List<ConnectivityResult>
-      final online = results.any((r) => r != ConnectivityResult.none);
-      print('\x1B[34m[DEBUG] Connectivity changed: $results (online=$online)\x1B[0m');
-      setState(() {
-        isOnline = online;
-      });
-    });
-  }
 
-  Future<void> _checkConnectivity() async {
-    final result = await Connectivity().checkConnectivity();
-    final online = result != ConnectivityResult.none;
-    print('\x1B[34m[DEBUG] Initial Connectivity: $result (online=$online)\x1B[0m');
-    setState(() {
-      isOnline = online;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final service = ref.read(connectivityServiceProvider);
+
+      _statusSubscription = service.onStatusChange.listen((isOnline) {
+        SnackbarUtils.alert(
+          context,
+          isOnline ? "You're online" : "You're offline",
+          icon: isOnline ? Icons.wifi : Icons.wifi_off,
+          iconColor: isOnline ? Colors.greenAccent : Colors.redAccent,
+          typeInfo: isOnline ? TypeInfo.success : TypeInfo.error,
+          position: MessagePosition.top,
+          duration: 3,
+        );
+        setState(() => this.isOnline = isOnline);
+      });
     });
   }
 
   @override
   void dispose() {
-    _connectivitySub?.cancel();
+    _statusSubscription?.cancel();
     super.dispose();
   }
 
@@ -76,6 +76,11 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
   Widget build(BuildContext context) {
     final items = ref.watch(inventoryControllerProvider);
     final sortedItems = sortInventory(List<Map<String, dynamic>>.from(items));
+
+    final isOnline = ref.watch(isOnlineProvider).maybeWhen(
+      data: (val) => val,
+      orElse: () => true,
+    );
     
     return Scaffold(
       backgroundColor: bgColor(context),
@@ -126,13 +131,6 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
               ),
               Container(
                 margin: EdgeInsets.only(top: 5.w, bottom: 90.h),
-                decoration: BoxDecoration( //remove whole decoration , keep margin in container
-                    border: Border.all(
-                    color: Colors.red, //remove apres, just for gap testing sa
-                    width: 2.0,
-                  ),
-                  borderRadius: BorderRadius.circular(16.r),
-                ),
                 child: GridView.builder(
                   shrinkWrap: true,
                   padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
