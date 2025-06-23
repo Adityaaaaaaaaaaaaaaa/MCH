@@ -4,6 +4,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/utils/lottie_animation.dart';
 import '/services/inventory_service.dart';
 import '/utils/snackbar.dart';
 import '/widgets/edit_add_item_dialog.dart';
@@ -23,6 +24,8 @@ class ManualInputScreen extends ConsumerWidget {
       .toList();
     final controller = ref.read(smartScanControllerProvider.notifier);
     final InventoryService inventoryService = InventoryService();
+    
+    final lottieController = LottieAnimationController();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -202,6 +205,14 @@ class ManualInputScreen extends ConsumerWidget {
                       ),
                       onPressed: () async {
                         try {
+                          lottieController.show(
+                            context: context,
+                            assetPath: 'assets/animations/Animation_upload_cloud.json',
+                            backgroundColor: bgColor(context),
+                            repeat: true,
+                            barrierDismissible: false,
+                          );
+
                           // Convert to list of maps
                           final itemsToSave = manualItems.map((item) => item.toJson()).toList();
 
@@ -210,6 +221,8 @@ class ManualInputScreen extends ConsumerWidget {
 
                           // Clear only manual input items
                           controller.clearItems();
+
+                          lottieController.hide();
 
                           SnackbarUtils.show(
                             context, 

@@ -4,6 +4,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/utils/lottie_animation.dart';
 import '/services/inventory_service.dart';
 import '/utils/snackbar.dart';
 import '/widgets/edit_add_item_dialog.dart';
@@ -21,6 +22,8 @@ class ReviewScreen extends ConsumerWidget {
     final scannedItems = ref.watch(smartScanControllerProvider);
     final scanController = ref.read(smartScanControllerProvider.notifier);
     final InventoryService _inventoryService = InventoryService();
+
+    final lottieController = LottieAnimationController();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -237,6 +240,14 @@ class ReviewScreen extends ConsumerWidget {
                       ),
                       onPressed: () async {
                         try {
+                          lottieController.show(
+                            context: context,
+                            assetPath: 'assets/animations/Animation_upload_cloud.json',
+                            backgroundColor: bgColor(context),
+                            repeat: true,
+                            barrierDismissible: false,
+                          );
+
                           // Convert model list to a list of map
                           final itemsToSave = scannedItems.map((item) => item.toJson()).toList();
 
@@ -244,6 +255,8 @@ class ReviewScreen extends ConsumerWidget {
                           await _inventoryService.addItemsToInventory(itemsToSave);
 
                           scanController.clearItems();
+
+                          lottieController.hide();
 
                           SnackbarUtils.show(
                             context, 
