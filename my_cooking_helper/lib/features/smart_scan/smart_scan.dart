@@ -5,7 +5,7 @@ import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../utils/snackbar.dart';
+import '/utils/snackbar.dart';
 import '/utils/connectivity_provider.dart';
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
@@ -181,7 +181,7 @@ class _SmartScanState extends ConsumerState<SmartScan> {
                         enabled: isOnline,
                         onPressed: () {
                           if (isOnline) {
-                            context.push('/scanFood');
+                            context.push('/scanReceipt');
                           } else {
                             SnackbarUtils.show(
                               context, 
