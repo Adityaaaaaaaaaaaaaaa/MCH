@@ -35,6 +35,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
   Size? _imageSizeForDrawing;
   List<Map<String, dynamic>>? _geminiResult;
   int _lastTipIdx = -1;
+  String? _geminiError;
 
   final lottieController = LottieAnimationController();
 
@@ -181,6 +182,10 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
       final XFile image = await _cameraController!.takePicture();
       _pickedImage = File(image.path);
       print('\x1B[34m[DEBUG] Photo captured: ${image.path}\x1B[0m');
+      // After taking picture
+      await _cameraController?.dispose();
+      // Then, when ready to scan again, re-initialize
+      await _initCamera();
       await _analyzeWithGemini(_pickedImage!);
     } catch (e) {
       print('\x1B[34m[DEBUG] Error taking photo: $e\x1B[0m');
@@ -223,15 +228,26 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
     setState(() {
       _geminiResult = null;
       _isLoading = true;
+     _geminiResult = null;
     });
     final geminiReceiptService = ref.read(geminiReceiptProvider);
     final result = await geminiReceiptService.analyzeReceiptImage(imageFile); // result is now List<Map<String, dynamic>>
     if (!mounted) return;
     try {
       setState(() {
-        _geminiResult = result;
         _isLoading = false;
+        if (result.error != null) {
+          _geminiError = "Error: ${result.error}"; // Could also display error code if desired
+          _geminiResult = null;
+        } else if (result.items.isEmpty) {
+          _geminiError = "No ingredients detected.";
+          _geminiResult = null;
+        } else {
+          _geminiResult = result.items;
+          _geminiError = null;
+        }
       });
+
       print('\x1B[34m[DEBUG] Gemini receipt result: $result\x1B[0m');
     } catch (e) {
       print('\x1B[34m[DEBUG] Failed to extract items from response: $e\x1B[0m');
@@ -241,17 +257,32 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
   }
 
   List<Widget> _buildGroupedGeminiResults(List<Map<String, dynamic>> items, ThemeData theme) {
+    // Strict mapping to standardize headings
+    const strictCategories = {
+      "fruits": "Fruits",
+      "vegetables": "Vegetables",
+      "grains": "Grains",
+      "dairy": "Dairy",
+      "protein": "Protein",
+      "uncategorized": "Uncategorized",
+    };
+
+    // Group by strict category names
     final Map<String, List<Map<String, dynamic>>> grouped = {};
     for (var item in items) {
-      final String cat = (item['category'] ?? 'Uncategorized').toString().capitalize();
+      final String rawCat = (item['category'] ?? 'uncategorized').toString().toLowerCase();
+      final String cat = strictCategories[rawCat] ?? "Uncategorized";
       grouped.putIfAbsent(cat, () => []).add(item);
     }
+
+    // Sort categories so 'Uncategorized' is last
     final sortedCats = grouped.keys.toList()
       ..sort((a, b) {
         if (a == 'Uncategorized') return 1;
         if (b == 'Uncategorized') return -1;
         return a.compareTo(b);
       });
+
     return [
       for (final cat in sortedCats) ...[
         Padding(
@@ -266,8 +297,8 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
           ),
         ),
         ...grouped[cat]!.map((item) {
-          final String name = item['itemName'] ?? item['item'] ?? '';
-          final count = item['count'] ?? 1;
+          final String name = (item['itemName'] ?? item['item'] ?? '');
+          final count = item['count'];
           return Padding(
             padding: EdgeInsets.only(left: 16.0.w, bottom: 2.h),
             child: Text(
@@ -358,10 +389,10 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
                             ),
                           ),
                         )
-                      else if (!_isLoading && (_geminiResult == null || _geminiResult!.isEmpty))
+                      else if (!_isLoading && _geminiError != null)
                         Padding(
                           padding: EdgeInsets.symmetric(vertical: 15.h),
-                          child: Text("No result yet.", style: theme.textTheme.labelLarge),
+                          child: Text(_geminiError!, style: theme.textTheme.labelLarge?.copyWith(color: Colors.red)),
                         ),
                       SizedBox(height: 22.h),
                       // --- ACTION BUTTONS LOGIC ---
@@ -422,14 +453,15 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
                                       duration: 1500,
                                       behavior: SnackBarBehavior.floating,
                                       icon: Icons.add,
-                                      iconColor: Colors.green,
+                                      iconColor: Colors.yellowAccent,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
                                       textStyle: TextStyle(
-                                        fontWeight: FontWeight.w900
+                                        fontWeight: FontWeight.w900,
+                                        color: textColor(context),
                                       ),
                                       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
                                       backgroundColor: Colors.grey,
-                                      width: 250.w,
+                                      width: 200.w,
                                     );
                                   }
                                 },
@@ -554,8 +586,4 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
       ),
     );
   }
-}
-
-extension StringCapitalize on String {
-  String capitalize() => isEmpty ? this : '${this[0].toUpperCase()}${substring(1).toLowerCase()}';
 }
