@@ -1,20 +1,20 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-//import 'package:cloud_firestore/cloud_firestore.dart';
-//import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-//import 'package:glass/glass.dart';
-//import '/utils/loader.dart';
+import 'package:glass/glass.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
+import '../../utils/snackbar.dart';
+import '/utils/connectivity_provider.dart';
+import '/models/item.dart';
+import '/widgets/edit_add_item_dialog.dart';
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
-//import '/theme/app_theme.dart';
-//import '/utils/loader.dart';
 import '/widgets/navigation/drawer.dart';
 import '/widgets/navigation/nav.dart';
 import '/widgets/inventory_tile.dart';
 import 'inventory_controller.dart';
-import '/widgets/inventory_edit_modal.dart';
 import 'inventory_sort.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class InventoryPage extends ConsumerStatefulWidget {
   const InventoryPage({super.key});
@@ -26,6 +26,8 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
   List<String> selectedIds = [];
   bool deleteMode = false;
   String sortBy = "default";
+  bool isOnline = true; 
+  StreamSubscription<bool>? _statusSubscription;
 
   List<Map<String, dynamic>> sortInventory(List<Map<String, dynamic>> items) {
     switch (sortBy) {
@@ -38,9 +40,48 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final service = ref.read(connectivityServiceProvider);
+
+      _statusSubscription = service.onStatusChange.listen((isOnline) {
+        SnackbarUtils.alert(
+          context,
+          isOnline ? "You're online" : "You're offline",
+          icon: isOnline ? Icons.wifi : Icons.wifi_off,
+          iconColor: isOnline ? Colors.greenAccent : Colors.redAccent,
+          typeInfo: isOnline ? TypeInfo.success : TypeInfo.error,
+          position: MessagePosition.top,
+          duration: 3,
+        );
+        setState(() => this.isOnline = isOnline);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshInventory() async {
+    // This should trigger a Firestore sync on pull-down
+    await ref.read(inventoryControllerProvider.notifier).refreshFromFirestore();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final items = ref.watch(inventoryControllerProvider);
     final sortedItems = sortInventory(List<Map<String, dynamic>>.from(items));
+
+    final isOnline = ref.watch(isOnlineProvider).maybeWhen(
+      data: (val) => val,
+      orElse: () => true,
+    );
+    
     return Scaffold(
       backgroundColor: bgColor(context),
       extendBodyBehindAppBar: true,
@@ -50,73 +91,107 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
       appBar: CustomAppBar(
         title: "Inventory",
         showMenu: true,
-        height: 100.h,
+        height: 70.h,
         borderRadius: 26.r,
-        topPadding: 60.h,
+        topPadding: 40.h,
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.only(top: 140.h),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                InventorySortBar(sortBy: sortBy, onSort: (s) => setState(() => sortBy = s)),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(20.0.w),
-              child: GridView.builder(
-                itemCount: sortedItems.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 0.62,
-                  crossAxisSpacing: 10.w,
-                  mainAxisSpacing: 10.h,
+      body: LiquidPullToRefresh(
+        showChildOpacityTransition: false,
+        onRefresh: _refreshInventory,
+        springAnimationDurationInMilliseconds: isOnline ? 1000 : 500,
+        animSpeedFactor: 1,
+        borderWidth: 3.w,
+        color: isOnline ? Colors.lightGreen : Colors.redAccent,
+        backgroundColor: bgColor(context),
+        height: 300.h,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.only(top: 120.h, right: 15.w,),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                      child: InventorySortBar(
+                        sortBy: sortBy,
+                        onSort: (s) => setState(() => sortBy = s),
+                      ),
+                    ).asGlass(
+                      blurX: 15,
+                      blurY: 15,
+                      frosted: true,
+                      tintColor: Colors.red,
+                      clipBorderRadius: BorderRadius.circular(12.r),
+                    ),
+                  ],
                 ),
-                itemBuilder: (context, idx) {
-                  final item = sortedItems[idx];
-                  return InventoryTile(
-                    imageUrl: item["imageUrl"] ?? "",
-                    itemName: item["itemName"] ?? "",
-                    quantity: item["quantity"]?.toString() ?? "1",
-                    unit: item["unit"] ?? "",
-                    category: item["category"] ?? "",
-                    isSelected: deleteMode && selectedIds.contains(item["id"]),
-                    isOffline: item["offline"] ?? false,
-                    onTap: () async {
-                      if (deleteMode) {
+              ),
+              Container(
+                margin: EdgeInsets.only(top: 5.w, bottom: 90.h),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
+                  physics: const NeverScrollableScrollPhysics(), // Avoid nested scroll
+                  itemCount: sortedItems.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 0.62,
+                    crossAxisSpacing: 10.w,
+                    mainAxisSpacing: 10.h,
+                  ),
+                  itemBuilder: (context, idx) {
+                    final item = sortedItems[idx];
+                    return InventoryTile(
+                      imageUrl: item["imageUrl"] ?? "",
+                      itemName: item["itemName"] ?? "",
+                      quantity: item["quantity"]?.toString() ?? "1",
+                      unit: item["unit"] ?? "",
+                      category: item["category"] ?? "",
+                      isSelected: deleteMode && selectedIds.contains(item["id"]),
+                      isOnline: isOnline,
+                      //edit ingredient
+                      onTap: () async {
+                        if (deleteMode) {
+                          setState(() {
+                            if (selectedIds.contains(item["id"])) {
+                              selectedIds.remove(item["id"]);
+                            } else {
+                              selectedIds.add(item["id"]);
+                            }
+                          });
+                        } else {
+                          final itemObj = ScannedItem.fromJson(item);
+                          final edited = await showDialog<ScannedItem>(
+                            context: context,
+                            builder: (_) => EditOrAddItemDialog(item: itemObj, title: "Ingredient"),
+                          );
+                          if (edited != null) {
+                            final map = edited.toJson();
+                          map['dateAdded'] = item['dateAdded']; // preserve date if you want
+                          // Pass both the new data (map) and the old ID (item['id'])
+                            await ref.read(inventoryControllerProvider.notifier)
+                              .addOrUpdateItem(map, previousId: item['id']);
+                          }
+                        }
+                      },
+                      onLongPress: () {
                         setState(() {
-                          if (selectedIds.contains(item["id"])) {
-                            selectedIds.remove(item["id"]);
-                          } else {
+                          deleteMode = true;
+                          if (!selectedIds.contains(item["id"])) {
                             selectedIds.add(item["id"]);
                           }
                         });
-                      } else {
-                        await showDialog(
-                          context: context,
-                          builder: (_) => InventoryEditModal(
-                            item: item,
-                            onSave: (data) => ref.read(inventoryControllerProvider.notifier).addOrUpdateItem(data),
-                          ),
-                        );
-                      }
-                    },
-                    onLongPress: () {
-                      setState(() {
-                        deleteMode = true;
-                        selectedIds = [item["id"]];
-                      });
-                    },
-                  );
-                },
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
       floatingActionButton: deleteMode
           ? Row(
@@ -146,14 +221,20 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                 ),
               ],
             )
+            //add ingredient
           : FloatingActionButton.extended(
               onPressed: () async {
-                await showDialog(
+                final added = await showDialog<ScannedItem>(
                   context: context,
-                  builder: (_) => InventoryEditModal(
-                    onSave: (data) => ref.read(inventoryControllerProvider.notifier).addOrUpdateItem(data),
-                  ),
+                  builder: (_) => EditOrAddItemDialog(title: "Ingredient"),
                 );
+                if (added != null) {
+                  // Convert to Map and save using your controller
+                  final map = added.toJson();
+                  map['source'] = 'manual_ingreident_input';
+                  await ref.read(inventoryControllerProvider.notifier)
+                    .addOrUpdateItem(map); // No previousId for a new item
+                }
               },
               backgroundColor: Colors.deepPurple,
               icon: const Icon(Icons.add),

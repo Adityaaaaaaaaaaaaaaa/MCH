@@ -18,7 +18,9 @@ class InventoryService {
     final batch = _db.batch();
 
     for (final item in items) {
-      final doc = inventoryRef.doc();
+      // Clean the name (optional: e.g., replace spaces with underscores)
+      String safeName = (item['itemName'] ?? '').replaceAll(RegExp(r'[\/\\]'), '_');
+      final doc = inventoryRef.doc(safeName);
       batch.set(doc, {
         'itemName': item['itemName'] ?? '',           
         'quantity': item['quantity'] ?? 1.0,
