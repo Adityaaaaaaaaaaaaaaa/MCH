@@ -55,7 +55,6 @@ class ProfileAccountSection extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 20.h),
-              // Name (centered)
               Text(
                 user?.displayName ?? "User",
                 style: theme.textTheme.bodyLarge?.copyWith(
@@ -64,9 +63,10 @@ class ProfileAccountSection extends StatelessWidget {
                   color: Colors.orange,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               SizedBox(height: 5.h),
-              // Email (centered)
               Text(
                 user?.email ?? "",
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -74,6 +74,8 @@ class ProfileAccountSection extends StatelessWidget {
                   fontSize: 14.sp,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
-import '/utils/loader.dart';
+import '/utils/colors.dart';
+import '/utils/lottie_animation.dart';
 import '/utils/snackbar.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -11,7 +12,7 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
@@ -50,21 +51,17 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isLight = theme.brightness == Brightness.light;
 
     return Scaffold(
-      backgroundColor: isLight
-          ? const Color(0xfff8fafc)
-          : const Color(0xff232526),
+      backgroundColor: bgColor(context),
       body: Center(
-        child: loader(
-          Colors.deepOrangeAccent, // color
-          100, // size
-          5, // lineWidth
-          10, // itemCount
-          1500, // duration (ms)
-        ),
+        child: 
+          LottieOverlay(
+            assetPath: 'assets/animations/Animation_fire.json',
+            width: 300,
+            height: 300,
+            backgroundColor: Colors.transparent,
+          ),
       ),
     );
   }

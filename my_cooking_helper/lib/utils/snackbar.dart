@@ -16,6 +16,7 @@ class SnackbarUtils {
     EdgeInsetsGeometry? padding,
     TextStyle? textStyle,
     SnackBarBehavior? behavior,
+    Color? backgroundColor,
     double? width,
     DismissDirection dismissDirection = DismissDirection.down,
   }) {
@@ -36,7 +37,7 @@ class SnackbarUtils {
           ],
         ),
         duration: Duration(milliseconds: duration),
-        backgroundColor: theme.snackBarTheme.backgroundColor ?? theme.colorScheme.primary,
+        backgroundColor: backgroundColor ??  theme.snackBarTheme.backgroundColor,
         shape: shape,
         action: action,
         elevation: elevation,
