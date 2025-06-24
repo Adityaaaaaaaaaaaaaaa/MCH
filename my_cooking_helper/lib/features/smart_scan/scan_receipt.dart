@@ -234,17 +234,6 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
     final result = await geminiReceiptService.analyzeReceiptImage(imageFile); // result is now List<Map<String, dynamic>>
     if (!mounted) return;
     try {
-      /*setState(() {
-        _isLoading = false;
-        if (result.isEmpty) {
-          // You could pass error messages from your service, or just show a default one
-          _geminiError = "No ingredients detected.";  // Or set to error string from backend if available
-          _geminiResult = null;
-        } else {
-          _geminiResult = result;
-          _geminiError = null;
-        }
-      });*/
       setState(() {
         _isLoading = false;
         if (result.error != null) {

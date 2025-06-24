@@ -145,6 +145,7 @@ async def analyze_food_image(file: UploadFile = File(...)):
             }
         ]
     }
+    
     headers = {"Content-Type": "application/json"}
     try:
         resp = requests.post(url, headers=headers, json=payload)
