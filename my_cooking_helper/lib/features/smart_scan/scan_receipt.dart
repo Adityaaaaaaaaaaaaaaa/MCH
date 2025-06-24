@@ -422,9 +422,14 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
                                       duration: 1500,
                                       behavior: SnackBarBehavior.floating,
                                       icon: Icons.add,
-                                      iconColor: Colors.deepPurple,
+                                      iconColor: Colors.green,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
-                                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                                      textStyle: TextStyle(
+                                        fontWeight: FontWeight.w900
+                                      ),
+                                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+                                      backgroundColor: Colors.grey,
+                                      width: 250.w,
                                     );
                                   }
                                 },

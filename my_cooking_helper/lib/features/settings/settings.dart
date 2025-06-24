@@ -104,12 +104,17 @@ class _SettingsScreenState extends ConsumerState<Settings>
     SnackbarUtils.show(
       context, 
       "Preference updated!",
-      duration: 500, 
+      duration: 750, 
       behavior: SnackBarBehavior.floating,
       icon: Icons.check_circle_sharp,
       iconColor: Colors.lightGreenAccent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+      textStyle: TextStyle(
+        fontWeight: FontWeight.w900
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+      backgroundColor: Colors.grey,
+      width: 250.w,
     );
   }
 
@@ -157,8 +162,12 @@ class _SettingsScreenState extends ConsumerState<Settings>
         behavior: SnackBarBehavior.floating,
         icon: Icons.logout_outlined,
         iconColor: Colors.amber[200],
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+        textStyle: TextStyle(
+          fontWeight: FontWeight.w900
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        backgroundColor: Colors.grey,
+        width: 250.w,
       );
       await Future.delayed(const Duration(milliseconds: 1000));
       context.go('/');
@@ -212,7 +221,12 @@ class _SettingsScreenState extends ConsumerState<Settings>
             icon: Icons.check_circle_sharp,
             iconColor: Colors.lightGreen,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+            textStyle: TextStyle(
+              fontWeight: FontWeight.w900
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+            backgroundColor: Colors.grey,
+            width: 250.w,
           );
         } else {
           // Not registered, send to signin/onboarding
