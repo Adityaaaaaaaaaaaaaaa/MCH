@@ -232,7 +232,12 @@ class ManualInputScreen extends ConsumerWidget {
                             icon: Icons.check,
                             iconColor: Colors.lightGreenAccent,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
-                            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                            textStyle: TextStyle(
+                              fontWeight: FontWeight.w900
+                            ),
+                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+                            backgroundColor: Colors.grey,
+                            width: 200.w,
                           );
                           context.go('/home');
                         } catch (e) {
@@ -244,7 +249,12 @@ class ManualInputScreen extends ConsumerWidget {
                             icon: Icons.warning_amber_rounded,
                             iconColor: Colors.redAccent,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
-                            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.r),
+                            textStyle: TextStyle(
+                              fontWeight: FontWeight.w900
+                            ),
+                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+                            backgroundColor: Colors.grey,
+                            width: 250.w,
                           );
                         }
                       },

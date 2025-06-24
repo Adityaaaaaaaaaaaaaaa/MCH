@@ -157,16 +157,18 @@ class _SmartScanState extends ConsumerState<SmartScan> {
                           } else {
                             SnackbarUtils.show(
                               context, 
-                              "You are offline, try Manual input !",
                               textStyle: TextStyle(
                                 fontWeight: FontWeight.w900
                               ),
-                              duration: 750, 
+                              "You are offline, try Manual input !",
+                              duration: 1000, 
                               behavior: SnackBarBehavior.floating,
                               icon: Icons.wifi_off,
                               iconColor: Colors.redAccent,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
-                              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+                              backgroundColor: Colors.grey,
+                              width: 250.w,
                             );
                           }
                         },
@@ -187,12 +189,14 @@ class _SmartScanState extends ConsumerState<SmartScan> {
                                 fontWeight: FontWeight.w900
                               ),
                               "You are offline, try Manual input !",
-                              duration: 750, 
+                              duration: 1000, 
                               behavior: SnackBarBehavior.floating,
                               icon: Icons.wifi_off,
                               iconColor: Colors.redAccent,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
-                              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+                              backgroundColor: Colors.grey,
+                              width: 250.w,
                             );
                           }
                         },
