@@ -232,24 +232,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
     final result = await geminiService.analyzeFoodImage(imageFile);
     if (!mounted) return;
 
-    /*setState(() {
-      _geminiResult = result;
-      _isLoading = false;
-    });*/
-
-    /* Here, add logic to check for error conditions
-    setState(() {
-      _isLoading = false;
-      if (result.isEmpty) {
-        // You could pass error messages from your service, or just show a default one
-        _geminiError = "No ingredients detected.";  // Or set to error string from backend if available
-        _geminiResult = null;
-      } else {
-        _geminiResult = result;
-        _geminiError = null;
-      }
-    });*/
-
     setState(() {
       _isLoading = false;
       if (result.error != null) {

@@ -9,51 +9,6 @@ from app.utils.utils import detect_mime_type, build_receipt_ingredient_prompt, g
 
 router = APIRouter()
 
-""" def parse_gemini_ingredient_response(response_json):
-    try:
-        text = response_json["candidates"][0]["content"]["parts"][0]["text"].strip()
-
-        if text.lower() == "no ingredients detected.":
-            return []
-
-        items = []
-        # Split by semicolon, since we used ";" as the separator
-        for pair in text.split(";"):
-            pair = pair.strip()
-            if not pair:
-                continue
-            if ":" in pair and "," in pair:
-                # Expected format: itemName: count, category
-                name_part, rest = pair.split(":", 1)
-                item_name = name_part.strip()
-                rest_parts = rest.split(",")
-                # Get count and category, allowing for missing category
-                count_str = rest_parts[0].strip() if len(rest_parts) > 0 else ""
-                category = rest_parts[1].strip().lower() if len(rest_parts) > 1 else "uncategorized"
-                # Parse count (float or int), fallback to 1 if not a number
-                try:
-                    count_value = float(count_str)
-                except Exception:
-                    count_value = 1
-                items.append({
-                    "itemName": item_name,
-                    "count": count_value,
-                    "category": category if category else "uncategorized"
-                })
-            else:
-                # If format is unexpected, treat as uncategorized with count 1
-                item_name = pair.replace(":", "").replace(",", "").strip()
-                items.append({
-                    "itemName": item_name,
-                    "count": 1,
-                    "category": "uncategorized"
-                })
-        print(f"[DEBUG] Parsed items: {items}")
-        return items
-    except Exception as e:
-        print(f"[ERROR] Failed to parse Gemini response: {e}")
-        return []
- """
 def parse_gemini_ingredient_response(response_json):
     try:
         text = response_json["candidates"][0]["content"]["parts"][0]["text"].strip()
@@ -142,6 +97,7 @@ async def analyze_receipt_image(file: UploadFile = File(...)):
             }
         ]
     }
+    
     headers = {"Content-Type": "application/json"}
     try:
         resp = requests.post(url, headers=headers, json=payload)
