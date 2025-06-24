@@ -9,7 +9,7 @@ from app.utils.utils import detect_mime_type, build_receipt_ingredient_prompt, g
 
 router = APIRouter()
 
-def parse_gemini_ingredient_response(response_json):
+""" def parse_gemini_ingredient_response(response_json):
     try:
         text = response_json["candidates"][0]["content"]["parts"][0]["text"].strip()
 
@@ -53,14 +53,66 @@ def parse_gemini_ingredient_response(response_json):
     except Exception as e:
         print(f"[ERROR] Failed to parse Gemini response: {e}")
         return []
+ """
+def parse_gemini_ingredient_response(response_json):
+    try:
+        text = response_json["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+        # Error check for exact error formats
+        if text.strip().lower() in ["{ no ingredients detected }", "{ errormessage }"]:
+            return []
+
+
+        # Parse all {itemName, count, category}
+        pattern = r"\{([^}]+)\}"
+        matches = re.findall(pattern, text)
+
+        items = []
+        for match in matches:
+            fields = [x.strip() for x in match.split(",")]
+            if len(fields) == 3:
+                item_name, count_str, category = fields
+                try:
+                    count_value = int(count_str)
+                except Exception:
+                    count_value = 1
+                items.append({
+                    "itemName": item_name,
+                    "count": count_value,
+                    "category": category
+                })
+            elif len(fields) == 2:
+                item_name, category = fields
+                items.append({
+                    "itemName": item_name,
+                    "count": 1,
+                    "category": category
+                })
+            elif len(fields) == 1:
+                item_name = fields[0]
+                items.append({
+                    "itemName": item_name,
+                    "count": 1,
+                    "category": "uncategorized"
+                })
+        print(f"[DEBUG] Parsed items: {items}")
+        return items
+    except Exception as e:
+        print(f"[ERROR] Failed to parse Gemini response: {e}")
+        return []
+
 
 @router.post("/scanReceipt")
 async def analyze_receipt_image(file: UploadFile = File(...)):
     print("[DEBUG] Received file for receipt analysis.")
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")    
+
     if not GEMINI_API_KEY:
         print("[ERROR] Gemini API key not set.")
-        return JSONResponse(status_code=500, content={"error": "Gemini API key not set"})
+        return JSONResponse(status_code=500, content={
+            "error": "Gemini API key not set",
+            "error_code": 500
+        })
 
     prompt = build_receipt_ingredient_prompt()
     url = gemini_model_url(api_key=GEMINI_API_KEY)
@@ -99,7 +151,28 @@ async def analyze_receipt_image(file: UploadFile = File(...)):
             detected_items = parse_gemini_ingredient_response(resp.json())
             return JSONResponse(status_code=200, content={"detected_items": detected_items})
         else:
-            return JSONResponse(status_code=resp.status_code, content={"error": resp.text})
+            # Try to extract a meaningful error message from Gemini's response
+            try:
+                err_json = resp.json()
+                err_message = err_json.get("error", {}).get("message", resp.text)
+                err_code = err_json.get("error", {}).get("code", resp.status_code)
+            except Exception:
+                err_message = resp.text
+                err_code = resp.status_code
+            return JSONResponse(
+                status_code=resp.status_code,
+                content={
+                    "error": err_message,
+                    "error_code": err_code
+                }
+            )
     except Exception as e:
         print(f"[ERROR] Gemini API call failed: {e}")
-        return JSONResponse(status_code=500, content={"error": "Failed to process Gemini API response."})
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Failed to process Gemini API response.",
+                "error_code": 500
+            }
+        )
+
