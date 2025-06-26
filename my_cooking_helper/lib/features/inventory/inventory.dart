@@ -104,93 +104,89 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
         color: isOnline ? Colors.lightGreen : Colors.redAccent,
         backgroundColor: bgColor(context),
         height: 300.h,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.only(top: 120.h, right: 15.w,),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                      child: InventorySortBar(
-                        sortBy: sortBy,
-                        onSort: (s) => setState(() => sortBy = s),
-                      ),
-                    ).asGlass(
-                      blurX: 15,
-                      blurY: 15,
-                      frosted: true,
-                      tintColor: Colors.red,
-                      clipBorderRadius: BorderRadius.circular(12.r),
+        child: Column(
+          children: [
+            // Sort Bar at the top
+            Padding(
+              padding: EdgeInsets.only(top: 120.h, right: 15.w, bottom: 10.h),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                    child: InventorySortBar(
+                      sortBy: sortBy,
+                      onSort: (s) => setState(() => sortBy = s),
                     ),
-                  ],
-                ),
-              ),
-              Container(
-                margin: EdgeInsets.only(top: 5.w, bottom: 90.h),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
-                  physics: const NeverScrollableScrollPhysics(), // Avoid nested scroll
-                  itemCount: sortedItems.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    childAspectRatio: 0.62,
-                    crossAxisSpacing: 10.w,
-                    mainAxisSpacing: 10.h,
+                  ).asGlass(
+                    blurX: 15,
+                    blurY: 15,
+                    frosted: true,
+                    tintColor: Colors.red,
+                    clipBorderRadius: BorderRadius.circular(12.r),
                   ),
-                  itemBuilder: (context, idx) {
-                    final item = sortedItems[idx];
-                    return InventoryTile(
-                      imageUrl: item["imageUrl"] ?? "",
-                      itemName: item["itemName"] ?? "",
-                      quantity: item["quantity"]?.toString() ?? "1",
-                      unit: item["unit"] ?? "",
-                      category: item["category"] ?? "",
-                      isSelected: deleteMode && selectedIds.contains(item["id"]),
-                      isOnline: isOnline,
+                ],
+              ),
+            ),
+            // GridView fills remaining space
+            Expanded(
+              child: GridView.builder(
+                padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
+                itemCount: sortedItems.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 0.62,
+                  crossAxisSpacing: 10.w,
+                  mainAxisSpacing: 10.h,
+                ),
+                itemBuilder: (context, idx) {
+                  final item = sortedItems[idx];
+                  return InventoryTile(
+                    imageUrl: item["imageUrl"] ?? "",
+                    itemName: item["itemName"] ?? "",
+                    quantity: item["quantity"]?.toString() ?? "1",
+                    unit: item["unit"] ?? "",
+                    category: item["category"] ?? "",
+                    isSelected: deleteMode && selectedIds.contains(item["id"]),
+                    isOnline: isOnline,
                       //edit ingredient
-                      onTap: () async {
-                        if (deleteMode) {
-                          setState(() {
-                            if (selectedIds.contains(item["id"])) {
-                              selectedIds.remove(item["id"]);
-                            } else {
-                              selectedIds.add(item["id"]);
-                            }
-                          });
-                        } else {
-                          final itemObj = ScannedItem.fromJson(item);
-                          final edited = await showDialog<ScannedItem>(
-                            context: context,
-                            builder: (_) => EditOrAddItemDialog(item: itemObj, title: "Ingredient"),
-                          );
-                          if (edited != null) {
-                            final map = edited.toJson();
-                          map['dateAdded'] = item['dateAdded']; // preserve date if you want
-                          // Pass both the new data (map) and the old ID (item['id'])
-                            await ref.read(inventoryControllerProvider.notifier)
-                              .addOrUpdateItem(map, previousId: item['id']);
-                          }
-                        }
-                      },
-                      onLongPress: () {
+                    onTap: () async {
+                      if (deleteMode) {
                         setState(() {
-                          deleteMode = true;
-                          if (!selectedIds.contains(item["id"])) {
+                          if (selectedIds.contains(item["id"])) {
+                            selectedIds.remove(item["id"]);
+                          } else {
                             selectedIds.add(item["id"]);
                           }
                         });
-                      },
-                    );
-                  },
-                ),
+                      } else {
+                        final itemObj = ScannedItem.fromJson(item);
+                        final edited = await showDialog<ScannedItem>(
+                          context: context,
+                          builder: (_) => EditOrAddItemDialog(item: itemObj, title: "Ingredient"),
+                        );
+                        if (edited != null) {
+                          final map = edited.toJson();
+                          map['dateAdded'] = item['dateAdded']; // preserve date if you want
+                          // Pass both the new data (map) and the old ID (item['id'])
+                          await ref.read(inventoryControllerProvider.notifier)
+                            .addOrUpdateItem(map, previousId: item['id']);
+                        }
+                      }
+                    },
+                    onLongPress: () {
+                      setState(() {
+                        deleteMode = true;
+                        if (!selectedIds.contains(item["id"])) {
+                          selectedIds.add(item["id"]);
+                        }
+                      });
+                    },
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: deleteMode
