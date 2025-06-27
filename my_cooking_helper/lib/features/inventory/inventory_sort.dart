@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:my_cooking_helper/utils/colors.dart';
 
 class InventorySortBar extends StatelessWidget {
   final String sortBy;
@@ -26,18 +27,27 @@ class InventorySortBar extends StatelessWidget {
               onSort(value);
             }
           },
-          dropdownColor: Colors.black.withOpacity(0.60),
-          icon: Icon(Icons.arrow_drop_down, color: Colors.white70,),
-          style: TextStyle(color: Colors.white, fontSize: 16.sp),
+          dropdownColor: Colors.blueGrey,
+          icon: Icon(Icons.arrow_drop_down, color: Colors.grey,),
           iconSize: 25.0.sp,
           menuWidth: 100.w,
           borderRadius: BorderRadius.circular(15.r),
           items: [
-            DropdownMenuItem(value: "default", child: Text("Default", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 11.sp,))),
-            DropdownMenuItem(value: "name", child: Text("Name", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 11.sp,))),
-            DropdownMenuItem(value: "quantity", child: Text("Quantity", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 11.sp,))),
-            DropdownMenuItem(value: "category", child: Text("Category", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 11.sp,))),
-          ],
+            {"value": "default", "text": "Default"},
+            {"value": "name", "text": "Name"},
+            {"value": "quantity", "text": "Quantity"},
+            {"value": "category", "text": "Category"},
+          ].map((item) => DropdownMenuItem(
+            value: item["value"]!,
+            child: Text(
+              item["text"]!,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 11.sp,
+                color: textColor(context),
+              ),
+            ),
+          )).toList(),
         ),
       ],
     );
