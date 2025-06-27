@@ -5,34 +5,68 @@ class InventoryService {
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
 
-  /// Saves a list of items to the user's inventory.
-  /// Each item should be a map with keys matching ScannedItem fields.
+  /// Saves or updates items in the user's inventory.
+  /// For existing items, only the quantity is updated; other fields remain unchanged.
+  /// For new items, all fields are set.
   Future<void> addItemsToInventory(List<Map<String, dynamic>> items) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception("No user logged in");
 
-    final inventoryRef = _db.collection('users')
-                            .doc(user.uid)
-                            .collection('inventory');
-                            
-    final batch = _db.batch();
+    final inventoryRef = _db
+        .collection('users')
+        .doc(user.uid)
+        .collection('inventory');
 
+    // Prepare map of item names to item data
+    final Map<String, Map<String, dynamic>> itemsByName = {};
     for (final item in items) {
-      // Clean the name (optional: e.g., replace spaces with underscores)
       String safeName = (item['itemName'] ?? '').replaceAll(RegExp(r'[\/\\]'), '_');
-      final doc = inventoryRef.doc(safeName);
-      batch.set(doc, {
-        'itemName': item['itemName'] ?? '',           
-        'quantity': item['quantity'] ?? 1.0,
-        'unit': item['unit'] ?? '',              
-        'category': item['category'] ?? '',      
-        'source': item['source'] ?? '',          
-        'nutritionId': item['nutritionId'] ?? '',
-        'imageUrl': item['imageUrl'] ?? '',      
-        'dateAdded': FieldValue.serverTimestamp(),
-      });
+      itemsByName[safeName] = item;
     }
 
+    // Fetch existing documents (those with the same documentId)
+    final existingDocs = await inventoryRef
+        .where(FieldPath.documentId, whereIn: itemsByName.keys.toList())
+        .get();
+
+    final Set<String> existingIds = existingDocs.docs.map((doc) => doc.id).toSet();
+    final Map<String, double> existingQuantities = {
+      for (final doc in existingDocs.docs)
+        doc.id: (doc.data()['quantity'] ?? 0.0) is int
+            ? (doc.data()['quantity'] as int).toDouble()
+            : (doc.data()['quantity'] ?? 0.0) as double
+    };
+
+    // Prepare the batch operation
+    final batch = _db.batch();
+    for (final entry in itemsByName.entries) {
+      final docRef = inventoryRef.doc(entry.key);
+      final item = entry.value;
+      final addQuantity = (item['quantity'] ?? 1.0) is int
+          ? (item['quantity'] as int).toDouble()
+          : (item['quantity'] ?? 1.0) as double;
+
+      if (existingIds.contains(entry.key)) {
+        // Existing item: Only update quantity (and optionally dateAdded)
+        final double newQuantity = existingQuantities[entry.key]! + addQuantity;
+        batch.update(docRef, {
+          'quantity': newQuantity,
+          'dateAdded': FieldValue.serverTimestamp(), // Optional: update date
+        });
+      } else {
+        // New item: Set all fields
+        batch.set(docRef, {
+          'itemName': item['itemName'] ?? '',
+          'quantity': addQuantity,
+          'unit': item['unit'] ?? '',
+          'category': item['category'] ?? '',
+          'source': item['source'] ?? '',
+          'nutritionId': item['nutritionId'] ?? '',
+          'imageUrl': item['imageUrl'] ?? '',
+          'dateAdded': FieldValue.serverTimestamp(),
+        });
+      }
+    }
     await batch.commit();
   }
 }

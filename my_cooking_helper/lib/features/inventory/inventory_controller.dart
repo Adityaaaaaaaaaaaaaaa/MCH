@@ -111,7 +111,7 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
     String newId = (item['itemName'] ?? '').replaceAll(RegExp(r'[\/\\.#\$\\[\\]]'), '_');
     if (newId.isEmpty) {
       // fallback: use id or timestamp
-      newId = item['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+      newId = item['id'] ?? DateTime.now();
     }
 
     if (await _isOnline()) {
@@ -120,9 +120,9 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
         try {
           await ref.doc(previousId).delete();
           await inventoryBox.delete(previousId);
-          print('\x1B[34m[DEBUG] Deleted old item: $previousId\x1B[0m');
+          print('\x1B[34m[DEBUG] Hive - Deleted old item: $previousId\x1B[0m');
         } catch (e) {
-          print('\x1B[34m[DEBUG] Error deleting old item: $e\x1B[0m');
+          print('\x1B[34m[DEBUG] Hive - Error deleting old item: $e\x1B[0m');
         }
       }
 
@@ -137,9 +137,9 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
       final id = item['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
       item['id'] = id;
       item['offline'] = true;
-      if (item['dateAdded'] is int) {
-        item['dateAdded'] = Timestamp.fromMillisecondsSinceEpoch(item['dateAdded']);
-      }
+      item['source'] = 'Manual_edit';
+      item['dateAdded'] = DateTime.now().toIso8601String();
+      await inventoryBox.put(id, item);
       await inventoryBox.put(id, item);
       print('\x1B[34m[DEBUG] Saved item offline: $id\x1B[0m');
     }
