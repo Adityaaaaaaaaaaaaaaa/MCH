@@ -1,6 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+String toTitleCase(String input) {
+  if (input.isEmpty) return input;
+  return input
+      .split(' ')
+      .map((word) => word.isNotEmpty
+          ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
+          : '')
+      .join(' ');
+}
+
 class InventoryService {
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
@@ -20,7 +30,10 @@ class InventoryService {
     // Prepare map of item names to item data
     final Map<String, Map<String, dynamic>> itemsByName = {};
     for (final item in items) {
-      String safeName = (item['itemName'] ?? '').replaceAll(RegExp(r'[\/\\]'), '_');
+      String rawName = item['itemName'] ?? '';
+      String capName = toTitleCase(rawName);
+      String safeName = capName.replaceAll(RegExp(r'[\/\\]'), '_');
+      item['itemName'] = capName;
       itemsByName[safeName] = item;
     }
 
