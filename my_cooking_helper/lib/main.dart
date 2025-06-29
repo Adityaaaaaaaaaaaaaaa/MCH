@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import 'package:my_cooking_helper/features/cook/cook.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'core/firebase_options.dart';
@@ -80,7 +81,11 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/inventory', 
       builder: (context, state) => const InventoryPage()
-    )
+    ),
+    GoRoute(
+      path: '/cook',
+      builder: (context, state) => const CookScreen()
+    ),
   ],
 );
 
