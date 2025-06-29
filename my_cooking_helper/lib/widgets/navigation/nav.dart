@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:my_cooking_helper/utils/colors.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'glassmorphic_card.dart';
@@ -31,15 +32,18 @@ class CustomNavBar extends StatelessWidget {
           onTap: (index) {
             final targetPath = _navItems[index].route;
             if (GoRouterState.of(context).uri.toString() != targetPath) {
-              context.go(targetPath);
+              context.push(targetPath);
             }
           },
           items: _navItems
               .map(
                 (item) => SalomonBottomBarItem(
                   icon: Icon(item.icon, size: 20.sp),
-                  title: Text(item.title),
-                  selectedColor: theme.colorScheme.primary,
+                  title: Text(
+                    item.title,
+                    style: TextStyle(color: textColor(context))
+                  ),
+                  selectedColor: textColor(context), 
                   unselectedColor: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
               )

@@ -26,8 +26,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _FeatureCardData('Meal Planner', Icons.calendar_month_rounded, Colors.indigo, '/planner'),
     _FeatureCardData('My Inventory', Icons.kitchen_rounded, Colors.teal, '/inventory'),
     _FeatureCardData('My Cravings', Icons.fastfood_rounded, Colors.purple, '/cravings'),
-    _FeatureCardData('Past Meals', Icons.history_rounded, Colors.grey, '/history'),
-    _FeatureCardData('My Shopping List', Icons.shopping_cart_rounded, Colors.cyan, '/shopping'),
+    _FeatureCardData('Cook Something', Icons.history_rounded, Colors.tealAccent, '/cook'),
+    _FeatureCardData('My Shopping List', Icons.shopping_cart_rounded, Colors.amberAccent, '/shopping'),
   ];
 
   @override
@@ -71,7 +71,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     //width/height of all feature cards!
     double cardWidth = 150.w; 
-    double cardHeight = 125.h; 
+    double cardHeight = 125.h;
+    double imgOpacity = 0.85; 
 
     return Scaffold(
       backgroundColor: bgColor(context),
@@ -95,12 +96,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             top: 40,
             left: 90,
             child: Transform.rotate(
-              angle: -0.6, //radians
-              child: Image.asset(
-                'assets/images/home/salad.png',
-                width: 300,
-                height: 300,
-                fit: BoxFit.contain,
+              angle: -0.6, // radians
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  'assets/images/home/salad.png',
+                  width: 300,
+                  height: 300,
+                  fit: BoxFit.contain,
+                )
               ),
             ),
           ),
@@ -109,11 +113,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             left: 40,
             child: Transform.rotate(
               angle: 0.9, 
-              child: Image.asset(
-                'assets/images/home/curry.png',
-                width: 300,
-                height: 300,
-                fit: BoxFit.contain,
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  'assets/images/home/curry.png',
+                  width: 300,
+                  height: 300,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -122,11 +129,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             right: 55,
             child: Transform.rotate(
               angle: 0.1, 
-              child: Image.asset(
-                'assets/images/home/burger.png',
-                width: 150,
-                height: 150,
-                fit: BoxFit.contain,
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  'assets/images/home/burger.png',
+                  width: 150,
+                  height: 150,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -135,11 +145,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             left: 15,
             child: Transform.rotate(
               angle: -0.4, 
-              child: Image.asset(
-                'assets/images/home/tenders.png',
-                width: 150,
-                height: 150,
-                fit: BoxFit.contain,
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  'assets/images/home/tenders.png',
+                  width: 150,
+                  height: 150,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -232,7 +245,7 @@ class FeatureCard extends StatelessWidget {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withOpacity(0.3),
                   shape: BoxShape.circle,
                 ),
                 padding: EdgeInsets.all(10.w),
@@ -245,6 +258,7 @@ class FeatureCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.10,
                   fontSize: 15.sp,
+                  color: textColor(context),
                 ),
                 textAlign: TextAlign.center,
               ),
