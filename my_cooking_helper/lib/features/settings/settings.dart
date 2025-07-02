@@ -319,6 +319,8 @@ class _SettingsScreenState extends ConsumerState<Settings>
         ? NetworkImage(user!.photoURL!)
         : const AssetImage("assets/app_icon.png");
 
+    double imgOpacity = 0.80;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: CustomAppBar(
@@ -338,11 +340,14 @@ class _SettingsScreenState extends ConsumerState<Settings>
             left: 100,
             child: Transform.rotate(
               angle: -1.5708, //radians
-              child: Image.asset(
-                'assets/images/settings/settings3.png',
-                width: 300,
-                height: 300,
-                fit: BoxFit.contain,
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  'assets/images/settings/settings3.png',
+                  width: 300,
+                  height: 300,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -351,11 +356,14 @@ class _SettingsScreenState extends ConsumerState<Settings>
             left: 40,
             child: Transform.rotate(
               angle: 0.3, 
-              child: Image.asset(
-                'assets/images/settings/settings1.png',
-                width: 200,
-                height: 200,
-                fit: BoxFit.contain,
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  'assets/images/settings/settings1.png',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -364,11 +372,14 @@ class _SettingsScreenState extends ConsumerState<Settings>
             right: 35,
             child: Transform.rotate(
               angle: 0.1, 
-              child: Image.asset(
-                'assets/images/settings/settings2.png',
-                width: 150,
-                height: 150,
-                fit: BoxFit.contain,
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  'assets/images/settings/settings2.png',
+                  width: 150,
+                  height: 150,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -377,11 +388,14 @@ class _SettingsScreenState extends ConsumerState<Settings>
             left: 20,
             child: Transform.rotate(
               angle: -0.4, 
-              child: Image.asset(
-                'assets/images/settings/settings3.png',
-                width: 150,
-                height: 150,
-                fit: BoxFit.contain,
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  'assets/images/settings/settings3.png',
+                  width: 150,
+                  height: 150,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -418,7 +432,10 @@ class _SettingsScreenState extends ConsumerState<Settings>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Change Theme", style: theme.textTheme.bodyLarge),
+                        Text(
+                          "Change Theme",
+                          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                        ),
                       const ThemeToggleButton(),
                     ],
                   ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:my_cooking_helper/utils/colors.dart';
 
 class ProfileAccountSection extends StatelessWidget {
   final dynamic user;
@@ -72,6 +73,7 @@ class ProfileAccountSection extends StatelessWidget {
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   fontSize: 14.sp,
+                  color: textColor(context),
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,

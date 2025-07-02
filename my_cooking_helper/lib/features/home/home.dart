@@ -26,15 +26,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _FeatureCardData('Meal Planner', Icons.calendar_month_rounded, Colors.indigo, '/planner'),
     _FeatureCardData('My Inventory', Icons.kitchen_rounded, Colors.teal, '/inventory'),
     _FeatureCardData('My Cravings', Icons.fastfood_rounded, Colors.purple, '/cravings'),
-    _FeatureCardData('Cook Something', Icons.history_rounded, Colors.tealAccent, '/cook'),
-    _FeatureCardData('My Shopping List', Icons.shopping_cart_rounded, Colors.amberAccent, '/shopping'),
+    _FeatureCardData('Cook Something', Icons.history_rounded, Colors.brown, '/cook'),
+    _FeatureCardData('My Shopping List', Icons.shopping_cart_rounded, Colors.blueGrey, '/shopping'),
   ];
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 950),
+      duration: const Duration(milliseconds: 900),
       vsync: this,
     );
     _controller.forward();
@@ -70,9 +70,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget build(BuildContext context) {
 
     //width/height of all feature cards!
-    double cardWidth = 150.w; 
-    double cardHeight = 125.h;
-    double imgOpacity = 0.85; 
+    double cardWidth = 150.w;
+    double cardHeight = 140.h;
+    double imgOpacity = 0.80;
 
     return Scaffold(
       backgroundColor: bgColor(context),
@@ -91,7 +91,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
       body: Stack(
         children: [
-          // -------- BACKGROUND IMAGES --------
+          // --- BACKGROUND IMAGES (unchanged, but nicely arranged) ---
           Positioned(
             top: 40,
             left: 90,
@@ -104,7 +104,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   width: 300,
                   height: 300,
                   fit: BoxFit.contain,
-                )
+                ),
               ),
             ),
           ),
@@ -112,7 +112,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             bottom: 250,
             left: 40,
             child: Transform.rotate(
-              angle: 0.9, 
+              angle: 0.9,
               child: Opacity(
                 opacity: imgOpacity,
                 child: Image.asset(
@@ -128,7 +128,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             bottom: 60,
             right: 55,
             child: Transform.rotate(
-              angle: 0.1, 
+              angle: 0.1,
               child: Opacity(
                 opacity: imgOpacity,
                 child: Image.asset(
@@ -144,7 +144,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             bottom: 40,
             left: 15,
             child: Transform.rotate(
-              angle: -0.4, 
+              angle: -0.4,
               child: Opacity(
                 opacity: imgOpacity,
                 child: Image.asset(
@@ -156,7 +156,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
             ),
           ),
-          // -------- FEATURE CARDS IN GLASS EFFECT --------
+          // --- FEATURE CARDS WITH IMPROVED VISUALS ---
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 20.0.w, vertical: 20.0.h),
             child: Center(
@@ -166,7 +166,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   physics: const BouncingScrollPhysics(),
                   padding: EdgeInsets.only(top: 110.h, bottom: 10.h),
                   itemCount: features.length,
-                  gridDelegate:  SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     mainAxisSpacing: 25.h,
                     crossAxisSpacing: 50.w,
@@ -188,12 +188,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           height: cardHeight,
                           onTap: () => context.push(feature.route),
                         ).asGlass(
-                            blurX: 15,
-                            blurY: 15,
-                            tintColor: Colors.black,
-                            clipBorderRadius: BorderRadius.circular(15.r),
-                            frosted: true, 
-                          ),
+                          blurX: 15,
+                          blurY: 15,
+                          //tintColor: Colors.white.withOpacity(0.12),
+                          tintColor: Colors.black,
+                          clipBorderRadius: BorderRadius.circular(20.r),
+                          frosted: true,
+                        ),
                       ),
                     );
                   },
@@ -208,12 +209,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 }
 
 // ------ Feature Card ------
-class FeatureCard extends StatelessWidget {
+class FeatureCard extends StatefulWidget {
   final IconData icon;
   final String title;
   final Color color;
-  final double width;  // << adjustable width
-  final double height; // << adjustable height
+  final double width;
+  final double height;
   final VoidCallback onTap;
   const FeatureCard({
     Key? key,
@@ -226,45 +227,118 @@ class FeatureCard extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<FeatureCard> createState() => _FeatureCardState();
+}
+
+class _FeatureCardState extends State<FeatureCard> with SingleTickerProviderStateMixin {
+  late AnimationController _hoverController;
+  // ignore: unused_field
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _hoverController = AnimationController(
+      duration: const Duration(milliseconds: 120),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _hoverController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Material(
-      color: Colors.transparent,
-      elevation: 8,
-      borderRadius: BorderRadius.circular(25.r),
-      shadowColor: color.withOpacity(0.5),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(28.r),
-        splashColor: color.withOpacity(0.18),
-        onTap: onTap,
-        child: SizedBox(
-          width: width,
-          height: height,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.3),
-                  shape: BoxShape.circle,
-                ),
-                padding: EdgeInsets.all(10.w),
-                child: Icon(icon, size: 30.sp, color: color),
+    return GestureDetector(
+      onTapDown: (_) {
+        setState(() => _isPressed = true);
+        _hoverController.forward();
+      },
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        _hoverController.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () {
+        setState(() => _isPressed = false);
+        _hoverController.reverse();
+      },
+      child: AnimatedBuilder(
+        animation: _hoverController,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: 1.0 - (0.04 * _hoverController.value),
+            child: Container(
+              width: widget.width,
+              height: widget.height,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.color.withOpacity(0.23),
+                    blurRadius: 30,
+                    offset: Offset(0, 10),
+                  ),
+                ],
               ),
-              SizedBox(height: 14.h),
-              Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.10,
-                  fontSize: 15.sp,
-                  color: textColor(context),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(25.r),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(24.r),
+                  splashColor: widget.color.withOpacity(0.14),
+                  highlightColor: widget.color.withOpacity(0.1),
+                  onTap: widget.onTap,
+                  child: Padding(
+                    padding: EdgeInsets.all(10.w),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                widget.color.withOpacity(0.8),
+                                Colors.white.withOpacity(0.05),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: widget.color.withOpacity(0.23),
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          padding: EdgeInsets.all(13.w),
+                          child: Icon(widget.icon, size: 30.sp, color: Colors.white),
+                        ),
+                        SizedBox(height: 14.h),
+                        Text(
+                          widget.title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.10,
+                            fontSize: 15.sp,
+                            color: textColor(context),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                textAlign: TextAlign.center,
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
