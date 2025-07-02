@@ -146,11 +146,15 @@ class AnimatedPreferenceTile<T extends PreferenceOption> extends StatelessWidget
       List<Widget> chips = vals
           .take(maxShow)
           .map((v) => Chip(
-              label: Text(
-                "${v.emoji} ${v.label}",
-                style: TextStyle(color: theme.colorScheme.primary),
-              )))
-          .toList();
+            label: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SmartPreferenceEmojiRow(option: v, size: 18),
+                SizedBox(width: 6),
+                Text(v.label),
+              ],
+            )
+          )).toList();
       if (vals.length > maxShow) {
         chips.add(Chip(
             label: Text("+${vals.length - maxShow} more",
@@ -181,43 +185,48 @@ class AnimatedPreferenceTile<T extends PreferenceOption> extends StatelessWidget
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 5.h, horizontal: 5.w),
           child: Text(
-          title,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.w900,
-            fontSize: 20.sp,
-          ),
+            title,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+              fontSize: 20.sp,
+            ),
           ),
         ),
         ),
         subtitle: multiSelect
           ? multiDisplay()
           : value != null
-            ? Center(
-              child: Text(
-              "${value.emoji} ${value.label}",
-              style: theme.textTheme.titleMedium,
-              ),
-            )
-            : const Center(child: Text("None")),
+              ? Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SmartPreferenceEmojiRow(option: value, size: 22),
+                      SizedBox(width: 8),
+                      Text(value.label, style: theme.textTheme.titleMedium, overflow: TextOverflow.ellipsis,),
+                    ],
+                  ),
+                )
+              : const Center(child: Text("None")),
         trailing: Icon(Icons.edit, color: theme.colorScheme.primary),
         onTap: () async {
-        final result = await showModalBottomSheet(
-          context: context,
-          backgroundColor: theme.scaffoldBackgroundColor,
-          shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
-          ),
-          isScrollControlled: true,
-          builder: (ctx) => PreferenceEditModal<T>(
-          title: title,
-          options: options,
-          currentValue: value,
-          multiSelect: multiSelect,
-          ),
-        );
-        if (result != null) {
-          await onChanged(result);
-        }
+          final result = await showModalBottomSheet(
+            context: context,
+            backgroundColor: theme.scaffoldBackgroundColor,
+            shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
+            ),
+            isScrollControlled: true,
+            builder: (ctx) => PreferenceEditModal<T>(
+            title: title,
+            options: options,
+            currentValue: value,
+            multiSelect: multiSelect,
+            ),
+          );
+          if (result != null) {
+            await onChanged(result);
+          }
         },
       ).asGlass(
         blurX: 15,
@@ -301,7 +310,14 @@ class _PreferenceEditModalState<T extends PreferenceOption>
                 children: widget.options.map((option) {
                   final selected = selectedValues.contains(option);
                   return FilterChip(
-                    label: Text("${option.emoji} ${option.label}"),
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SmartPreferenceEmojiRow(option: option, size: 18),
+                        SizedBox(width: 6),
+                        Text(option.label),
+                      ],
+                    ),
                     selected: selected,
                     onSelected: (val) {
                       setState(() {
@@ -336,7 +352,14 @@ class _PreferenceEditModalState<T extends PreferenceOption>
                       setState(() => selectedValues = [val!]);
                     },
                     activeColor: theme.colorScheme.primary,
-                    title: Text("${option.emoji} ${option.label}"),
+                    title: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SmartPreferenceEmojiRow(option: option, size: 22),
+                        SizedBox(width: 8),
+                        Text(option.label),
+                      ],
+                    ),
                   );
                 }).toList(),
               ),

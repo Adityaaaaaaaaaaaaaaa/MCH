@@ -78,21 +78,21 @@ class CookScreen extends ConsumerWidget {
             ),
           ),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.0.w, vertical: 24.0.h),
+            padding: EdgeInsets.symmetric(horizontal: 25.0.w, vertical: 25.0.h),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: 110.h),
+                SizedBox(height: 100.h),
                 Text(
-                  'Welcome to Cooking!',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  'Let\'s cook something!',
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: textColor(context),
                       ),
                 ),
                 SizedBox(height: 8.h),
                 Text(
-                  'Choose what you want to do:',
+                  'What do you want to do ?',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: textColor(context).withOpacity(0.7),
                       ),
@@ -258,7 +258,7 @@ class _CookFeatureCardState extends State<CookFeatureCard>
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
+                          color: textColor(context).withOpacity(0.2),
                           width: 1.5,
                         ),
                         borderRadius: BorderRadius.circular(24.r),
@@ -279,7 +279,7 @@ class _CookFeatureCardState extends State<CookFeatureCard>
                                 ],
                               ),
                               border: Border.all(
-                                color: widget.color.withOpacity(0.3),
+                                color: widget.color.withOpacity(1.0),
                                 width: 1,
                               ),
                               boxShadow: [
@@ -292,7 +292,7 @@ class _CookFeatureCardState extends State<CookFeatureCard>
                             ),
                             child: Icon(
                               widget.icon,
-                              size: 28.sp,
+                              size: 30.sp,
                               color: widget.color,
                             ),
                           ),
@@ -307,7 +307,7 @@ class _CookFeatureCardState extends State<CookFeatureCard>
                                     widget.title,
                                     style: theme.textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.w600,
-                                      fontSize: 16.sp,
+                                      fontSize: 17.sp,
                                       color: textColor(context),
                                       letterSpacing: 0.5,
                                     ),
@@ -326,7 +326,7 @@ class _CookFeatureCardState extends State<CookFeatureCard>
                                   ),
                                   child: Icon(
                                     Icons.arrow_forward_ios_rounded,
-                                    size: 14.sp,
+                                    size: 15.sp,
                                     color: textColor(context).withOpacity(0.7),
                                   ),
                                 ),

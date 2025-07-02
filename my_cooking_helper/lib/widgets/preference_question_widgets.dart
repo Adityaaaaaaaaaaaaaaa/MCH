@@ -66,13 +66,21 @@ class AnimatedSingleSelectBig extends StatelessWidget {
                         borderRadius: BorderRadius.circular(22.r),
                         onTap: () => onChanged(opt.label),
                         child: Center(
-                          child: Text(
-                            "${opt.emoji} ${opt.label}",
-                            style: TextStyle(
-                              color: selected ? Colors.white : Colors.black,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14.sp,
-                            ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SmartPreferenceEmojiRow(option: opt, size: 24, repeat: true,), 
+                              SizedBox(width: 8.w),
+                              Text(
+                                opt.label,
+                                style: TextStyle(
+                                  color: selected ? Colors.white : Colors.black,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14.sp,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -189,13 +197,21 @@ class AnimatedMultiSelectSmall extends StatelessWidget {
                         },
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                          child: Text(
-                            "${opt.emoji} ${opt.label}",
-                            style: TextStyle(
-                              color: selected ? Colors.white : Colors.black87,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14.sp,
-                            ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SmartPreferenceEmojiRow(option: opt, size: 24, repeat: true,), // or 22 for smaller, as you wish
+                              SizedBox(width: 8.w),
+                              Text(
+                                opt.label,
+                                style: TextStyle(
+                                  color: selected ? Colors.white : Colors.black,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14.sp,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
