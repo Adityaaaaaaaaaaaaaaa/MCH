@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
+// ignore: unused_import
 import '/widgets/navigation/nav.dart';
 
 class CookScreen extends ConsumerWidget {
@@ -34,10 +35,6 @@ class CookScreen extends ConsumerWidget {
       ),
     ];
 
-    // Card sizing
-    double cardWidth = 170.w;
-    double cardHeight = 110.h;
-
     return Scaffold(
       backgroundColor: bgColor(context),
       extendBodyBehindAppBar: true,
@@ -49,7 +46,7 @@ class CookScreen extends ConsumerWidget {
         showMenu: false,
         height: 70.h,
         borderRadius: 26.r,
-        topPadding:40.h,
+        topPadding: 40.h,
       ),
       body: Stack(
         children: [
@@ -81,7 +78,7 @@ class CookScreen extends ConsumerWidget {
             ),
           ),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 28.0.w, vertical: 24.0.h),
+            padding: EdgeInsets.symmetric(horizontal: 24.0.w, vertical: 24.0.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -100,33 +97,26 @@ class CookScreen extends ConsumerWidget {
                         color: textColor(context).withOpacity(0.7),
                       ),
                 ),
-                SizedBox(height: 35.h),
+                SizedBox(height: 40.h),
                 Expanded(
-                  child: GridView.builder(
+                  child: ListView.builder(
                     physics: const BouncingScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 1,
-                      mainAxisSpacing: 26.h,
-                      crossAxisSpacing: 0,
-                      childAspectRatio: cardWidth / cardHeight,
-                    ),
                     itemCount: features.length,
+                    padding: EdgeInsets.only(bottom: 20.h),
                     itemBuilder: (context, index) {
                       final feature = features[index];
-                      return Center(
-                        child: CookFeatureCard(
-                          icon: feature.icon,
-                          title: feature.title,
-                          color: feature.color,
-                          width: cardWidth,
-                          height: cardHeight,
-                          onTap: () => context.push(feature.route),
-                        ).asGlass(
-                          blurX: 14,
-                          blurY: 14,
-                          tintColor: Colors.black,
-                          clipBorderRadius: BorderRadius.circular(14.r),
-                          frosted: true,
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 20.h),
+                        child: AnimatedContainer(
+                          duration: Duration(milliseconds: 300 + (index * 100)),
+                          curve: Curves.easeOutBack,
+                          child: CookFeatureCard(
+                            icon: feature.icon,
+                            title: feature.title,
+                            color: feature.color,
+                            onTap: () => context.push(feature.route),
+                            index: index,
+                          ),
                         ),
                       );
                     },
@@ -141,65 +131,225 @@ class CookScreen extends ConsumerWidget {
   }
 }
 
-class CookFeatureCard extends StatelessWidget {
+class CookFeatureCard extends StatefulWidget {
   final IconData icon;
   final String title;
   final Color color;
-  final double width;
-  final double height;
   final VoidCallback onTap;
+  final int index;
+
   const CookFeatureCard({
     super.key,
     required this.icon,
     required this.title,
     required this.color,
-    required this.width,
-    required this.height,
     required this.onTap,
+    required this.index,
   });
+
+  @override
+  State<CookFeatureCard> createState() => _CookFeatureCardState();
+}
+
+class _CookFeatureCardState extends State<CookFeatureCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+  // ignore: unused_field
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+    
+    _opacityAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.8,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+    _controller.forward();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+    widget.onTap();
+  }
+
+  void _onTapCancel() {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Material(
-      color: Colors.transparent,
-      elevation: 8,
-      borderRadius: BorderRadius.circular(20.r),
-      shadowColor: color.withOpacity(0.4),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22.r),
-        splashColor: color.withOpacity(0.18),
-        onTap: onTap,
-        child: SizedBox(
-          width: width,
-          height: height,
-          child: Row(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.45),
-                  shape: BoxShape.circle,
-                ),
-                padding: EdgeInsets.all(12.w),
-                child: Icon(icon, size: 32.sp, color: color),
-              ),
-              SizedBox(width: 18.w),
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.10,
-                    fontSize: 17.sp,
-                    color: textColor(context),
+    
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Opacity(
+            opacity: _opacityAnimation.value,
+            child: Container(
+              height: 90.h,
+              margin: EdgeInsets.symmetric(horizontal: 4.w),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.color.withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                    spreadRadius: 0,
                   ),
-                  textAlign: TextAlign.left,
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                    spreadRadius: 0,
+                  ),
+                ],
+              ),
+              child: GestureDetector(
+                onTapDown: _onTapDown,
+                onTapUp: _onTapUp,
+                onTapCancel: _onTapCancel,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24.r),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withOpacity(0.25),
+                        Colors.white.withOpacity(0.10),
+                      ],
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24.r),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1.5,
+                        ),
+                        borderRadius: BorderRadius.circular(24.r),
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(width: 20.w),
+                          // Icon container with enhanced glassmorphism
+                          Container(
+                            width: 56.w,
+                            height: 56.h,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  widget.color.withOpacity(0.3),
+                                  widget.color.withOpacity(0.1),
+                                ],
+                              ),
+                              border: Border.all(
+                                color: widget.color.withOpacity(0.3),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: widget.color.withOpacity(0.2),
+                                  blurRadius: 8,
+                                  spreadRadius: 0,
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              widget.icon,
+                              size: 28.sp,
+                              color: widget.color,
+                            ),
+                          ),
+                          SizedBox(width: 20.w),
+                          // Title and arrow
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    widget.title,
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16.sp,
+                                      color: textColor(context),
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  width: 32.w,
+                                  height: 32.h,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withOpacity(0.15),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 14.sp,
+                                    color: textColor(context).withOpacity(0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 20.w),
+                        ],
+                      ),
+                    ),
+                  ).asGlass(
+                    blurX: 20,
+                    blurY: 20,
+                    tintColor: Colors.white,
+                    clipBorderRadius: BorderRadius.circular(24.r),
+                    frosted: true,
+                  ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
