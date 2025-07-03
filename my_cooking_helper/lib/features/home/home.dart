@@ -1,3 +1,5 @@
+import 'package:animated_emoji/emoji.dart';
+import 'package:animated_emoji/emojis.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:glass/glass.dart';
@@ -83,7 +85,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       appBar: CustomAppBar(
         title: "My Cooking Helper",
         themeToggleWidget: ThemeToggleButton(),
-        trailingIcon: Icons.settings_rounded,
+        trailingWidget: AnimatedEmoji(
+          AnimatedEmojis.gear,
+          size: 30,
+          repeat: true,
+        ),
         onTrailingIconTap: () => _openSettings(context),
         height: 70.h,
         borderRadius: 26.r,
