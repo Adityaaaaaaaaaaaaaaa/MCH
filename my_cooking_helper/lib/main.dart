@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
 import 'package:my_cooking_helper/features/cook/cook.dart';
 import 'package:path_provider/path_provider.dart';
@@ -25,6 +26,7 @@ import 'features/settings/settings.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await GoogleSignIn.instance.initialize();
   final appDocDir = await getApplicationDocumentsDirectory();
   Hive.init(appDocDir.path);
   debugPrint = (String? message, {int? wrapWidth}) {};
