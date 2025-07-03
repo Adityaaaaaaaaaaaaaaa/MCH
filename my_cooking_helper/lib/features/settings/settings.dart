@@ -6,6 +6,7 @@ import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/utils/emoji_animation.dart';
 import '/utils/loader.dart';
 import '/utils/snackbar.dart';
 import '/utils/preference_utils.dart';
@@ -276,7 +277,9 @@ class _SettingsScreenState extends ConsumerState<Settings>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-               Text(
+              EmojiAnimation(name: 'warning', size: 40,),
+              SizedBox(height: 10.h),
+              Text(
                 "Delete Account?",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20.sp),
               ),
