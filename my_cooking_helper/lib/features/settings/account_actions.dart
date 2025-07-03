@@ -96,7 +96,7 @@ class AccountActionsSection extends StatelessWidget {
                   ),
                 ),
                 ElevatedButton.icon(
-                  icon: EmojiAnimation(name: 'policeCarLight', size: 24,),
+                  icon: EmojiAnimation(name: 'policeCarLight', size: 20,),
                   label: Text(
                     "Delete",
                     style: theme.textTheme.titleMedium?.copyWith(
