@@ -5,6 +5,7 @@ import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '/utils/emoji_animation.dart';
 import '/utils/snackbar.dart';
 import '/utils/connectivity_provider.dart';
 import '/utils/colors.dart';
@@ -148,7 +149,7 @@ class _SmartScanState extends ConsumerState<SmartScan> {
                       SizedBox(height: 40.h),
                       ScanActionButton(
                         label: "Scan Food",
-                        icon: Icons.fastfood_rounded,
+                        icon: EmojiAnimation(name: 'cameraFlash', size: 25,),
                         color: Colors.green,
                         enabled: isOnline,
                         onPressed: () {
@@ -176,7 +177,7 @@ class _SmartScanState extends ConsumerState<SmartScan> {
                       SizedBox(height: 20.h),
                       ScanActionButton(
                         label: "Scan Receipt",
-                        icon: Icons.receipt_long_rounded,
+                        icon: EmojiAnimation(name: 'wand', size: 25,),
                         color: Colors.orange,
                         enabled: isOnline,
                         onPressed: () {
@@ -204,8 +205,8 @@ class _SmartScanState extends ConsumerState<SmartScan> {
                       SizedBox(height: 20.h),
                       ScanActionButton(
                         label: "Manual Input",
-                        icon: Icons.edit_note,
-                        color: Colors.amber,
+                        icon: EmojiAnimation(name: 'writingHand', size: 25,),
+                        color: Colors.blueGrey,
                         onPressed: () => context.push('/manualInput'),
                       ),
                     ],

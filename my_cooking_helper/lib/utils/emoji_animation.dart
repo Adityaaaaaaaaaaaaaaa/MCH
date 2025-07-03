@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lottie/lottie.dart';
 
 class EmojiAnimation extends StatelessWidget {
@@ -10,15 +11,15 @@ class EmojiAnimation extends StatelessWidget {
   const EmojiAnimation({
     this.key,
     required this.name,
-    this.size = 30,
+    this.size = 25,
     this.repeat = true,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: size,
-      height: size,
+      width: size.w,
+      height: size.h,
       child: Lottie.asset(
         'assets/animated_emojis/$name.json',
         repeat: repeat,
