@@ -1,6 +1,6 @@
-import 'package:animated_emoji/animated_emoji.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '/utils/emoji_animation.dart';
 import '/utils/colors.dart';
 import 'theme_provider.dart';
 
@@ -74,16 +74,14 @@ class ThemeToggleButton extends ConsumerWidget {
       icon: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         child: themeMode == ThemeMode.dark
-            ? const AnimatedEmoji(
-              AnimatedEmojis.moonFaceFirstQuarter,
-              size: 28,
-              key: ValueKey('dark'),
-              )
-            : const AnimatedEmoji(
-                AnimatedEmojis.sunWithFace,
-                size: 30,
-                key: ValueKey('light'),
-              )
+          ? EmojiAnimation(
+              name: 'moonFaceFirstQuarter',
+              key: const ValueKey('dark'),
+            )
+          : EmojiAnimation(
+              name: 'sunWithFace',
+              key: const ValueKey('light'),
+            ),
       ),
       tooltip: "Switch theme",
       onPressed: () => notifier.toggleTheme(),
