@@ -199,11 +199,16 @@ class AnimatedPreferenceTile<T extends PreferenceOption> extends StatelessWidget
           : value != null
               ? Center(
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       SmartPreferenceEmojiRow(option: value, size: 22),
                       SizedBox(width: 8),
-                      Text(value.label, style: theme.textTheme.titleMedium, overflow: TextOverflow.ellipsis,),
+                      Flexible(
+                        child: Text(
+                          value.label,
+                          style: theme.textTheme.titleMedium,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   ),
                 )
@@ -298,8 +303,7 @@ class _PreferenceEditModalState<T extends PreferenceOption>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(widget.title, style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold)),
+          Text(widget.title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
           SizedBox(height: 22.h),
           if (widget.multiSelect)
             Center(
@@ -315,7 +319,7 @@ class _PreferenceEditModalState<T extends PreferenceOption>
                       children: [
                         SmartPreferenceEmojiRow(option: option, size: 18),
                         SizedBox(width: 6),
-                        Text(option.label),
+                        Text(option.label, overflow: TextOverflow.ellipsis,),
                       ],
                     ),
                     selected: selected,
