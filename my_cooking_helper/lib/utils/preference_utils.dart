@@ -148,7 +148,7 @@ class PreferenceUtils {
     PreferenceOption("Gentle Warmth (Mild)", ["🙂🌶️"], [AnimatedEmojis.slightlyHappy, AnimatedEmojis.fire]),
     PreferenceOption("Balanced Kick (Medium)", ["😋🌶️🌶️"], [AnimatedEmojis.yum, AnimatedEmojis.fire, AnimatedEmojis.fire]),
     PreferenceOption("Bring the Heat (Spicy)", ["🔥🌶️🌶️🌶️"], [AnimatedEmojis.collision, AnimatedEmojis.fire, AnimatedEmojis.fire, AnimatedEmojis.fire]),
-    PreferenceOption("Daredevil (Super Spicy!)", ["🥵🔥🔥"], [AnimatedEmojis.hotFace, AnimatedEmojis.fire, AnimatedEmojis.cursing, AnimatedEmojis.impFrown]),
+    PreferenceOption("RIP (Super Spicy!)", ["🥵🔥🔥"], [AnimatedEmojis.hotFace, AnimatedEmojis.fire, AnimatedEmojis.cursing, AnimatedEmojis.impFrown]),
     PreferenceOption("Mystery Heat (Surprise me!)", ["🎲🌶️"], [AnimatedEmojis.die, AnimatedEmojis.shakingFace]),
     PreferenceOption("Spice? I'm Open!", ["❔"], [AnimatedEmojis.nerdFace, AnimatedEmojis.smirk, AnimatedEmojis.impSmile]),
   ];
