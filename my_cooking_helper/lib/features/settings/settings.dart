@@ -195,12 +195,23 @@ class _SettingsScreenState extends ConsumerState<Settings>
   
   Future<void> _switchAccount() async {
     try {
-      await GoogleSignIn().signOut();
-      final account = await GoogleSignIn().signIn();
+      await GoogleSignIn.instance.signOut();
+      GoogleSignInAccount? account;
+
+      // Authenticate in v7.x; signIn() removed
+      if (GoogleSignIn.instance.supportsAuthenticate()) {
+        account = await GoogleSignIn.instance.authenticate();
+      } else {
+        // On platforms that do not support .authenticate(), 
+        // you need to provide a platform-specific sign-in flow (e.g., use web button)
+        throw Exception("Google Sign-In not supported on this platform.");
+      }
+
+      // ignore: unnecessary_null_comparison
       if (account != null) {
-        final googleAuth = await account.authentication;
+        final googleAuth = account.authentication;
         final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
+          //accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
         );
         final authResult = await FirebaseAuth.instance.signInWithCredential(credential);
