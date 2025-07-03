@@ -165,7 +165,7 @@ class PreferenceUtils {
     PreferenceOption("No gadgets", ["🔌🍴"]),
     PreferenceOption("Groceries = \$\$\$", ["💸🥦"], [AnimatedEmojis.moneyFace, AnimatedEmojis.moneyWithWings]),
     PreferenceOption("Health probs", ["🩺🥗"], ["🩺", AnimatedEmojis.microbe, AnimatedEmojis.vomit]),
-    PreferenceOption("Takeout wins", ["📱🍔"]),
+    PreferenceOption("Takeout wins", ["📱🍔"], [AnimatedEmojis.whiteFlag, AnimatedEmojis.checkMark]),
     PreferenceOption("Recipes = scary", ["📖😵"], ["📖",AnimatedEmojis.eyes, AnimatedEmojis.xEyes]),
     PreferenceOption("Zero motivation", ["😴🥄"], [AnimatedEmojis.tired, AnimatedEmojis.sleep, "🥄"]),
     PreferenceOption("No clue!", ["🦄❓"], [AnimatedEmojis.question, "🦄", AnimatedEmojis.flyingSaucer]),

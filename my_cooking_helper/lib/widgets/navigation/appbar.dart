@@ -5,7 +5,7 @@ import 'glassmorphic_card.dart';
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final Widget? themeToggleWidget;
-  final IconData? trailingIcon;
+  final Widget? trailingWidget;
   final VoidCallback? onTrailingIconTap;
   final bool showMenu;
   final VoidCallback? onMenuTap;
@@ -18,7 +18,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     Key? key,
     required this.title,
     this.themeToggleWidget,
-    this.trailingIcon,
+    this.trailingWidget,
     this.onTrailingIconTap,
     this.showMenu = true,
     this.onMenuTap,
@@ -84,9 +84,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               Row(
                 children: [
                   if (themeToggleWidget != null) themeToggleWidget!,
-                  if (trailingIcon != null)
+                  if (trailingWidget != null)
                     IconButton(
-                      icon: Icon(trailingIcon, size: 25.sp),
+                      icon: trailingWidget!,
                       tooltip: "Action",
                       color: theme.colorScheme.primary,
                       onPressed: onTrailingIconTap ?? () {},
