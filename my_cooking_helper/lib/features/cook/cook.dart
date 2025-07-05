@@ -25,7 +25,7 @@ class CookScreen extends ConsumerWidget {
         'Cook Something New',
         Icons.restaurant_menu_rounded,
         Colors.deepOrangeAccent,
-        '/cook-now',
+        '/searchRecipe',
       ),
       _CookFeatureCardData(
         'My Favourite Recipes',
@@ -40,7 +40,6 @@ class CookScreen extends ConsumerWidget {
       extendBodyBehindAppBar: true,
       extendBody: true,
       drawer: CustomDrawer(),
-      //bottomNavigationBar: CustomNavBar(currentIndex: 4),
       appBar: CustomAppBar(
         title: "Cook",
         showMenu: false,

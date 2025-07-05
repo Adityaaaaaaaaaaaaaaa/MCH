@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
 import 'package:my_cooking_helper/features/cook/cook.dart';
+import 'package:my_cooking_helper/features/cook/search_recipe.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'core/firebase_options.dart';
@@ -87,6 +88,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/cook',
       builder: (context, state) => const CookScreen()
+    ),
+    GoRoute(
+      path: '/searchRecipe',
+      builder: (context, state) => const SearchRecipeScreen()
     ),
   ],
 );
