@@ -62,9 +62,17 @@ class ConnectivityService {
     return results.every((r) => r == ConnectivityResult.none);
   }
 
+  void blueDebugPrint(String msg) {
+    for (final line in msg.split('\n')) {
+      print('\x1B[34m[Connectivity] $line\x1B[0m');
+    }
+  }
+
   void logStatus() {
-    print('[Connectivity] isOnline: $_isOnline');
-    print('[Connectivity] Current: $_lastResults');
+    //print('[Connectivity] isOnline: $_isOnline');
+    blueDebugPrint('isOnline: $_isOnline');
+    //print('[Connectivity] Current: $_lastResults');
+    blueDebugPrint('Current: $_lastResults');
   }
 
   void dispose() {

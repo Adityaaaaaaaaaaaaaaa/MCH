@@ -67,6 +67,11 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
     unwantedIngredients = unwanted;
     final selectedIngredients = ingredientList.where((ing) => !unwanted.contains(ing)).toList();
 
+    // BLUE DEBUG PRINTS for selection values
+    print('\x1B[34m[DEBUG] Selected Time: $selectedTime\x1B[0m');
+    print('\x1B[34m[DEBUG] Selected Ingredients: $selectedIngredients\x1B[0m');
+    print('\x1B[34m[DEBUG] Unselected Ingredients: ${unwantedIngredients.toList()}\x1B[0m');
+
     // Step 4: Animation and backend call
     setState(() {
       loading = false;
