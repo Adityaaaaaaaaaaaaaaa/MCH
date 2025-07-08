@@ -8,7 +8,7 @@ class RecipeSearchService {
   RecipeSearchService({FirebaseFirestore? firestore})
       : firestore = firestore ?? FirebaseFirestore.instance;
 
-  /// Fetch ingredient names (document IDs) from user's Firestore inventory
+  /// Fetch ingredient names - Do not modify fetch ingredients 
   Future<List<String>> fetchUserIngredients(String userId) async {
     final snap = await firestore
         .collection('users')

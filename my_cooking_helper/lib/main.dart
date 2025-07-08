@@ -8,7 +8,8 @@ import 'package:my_cooking_helper/features/cook/cook.dart';
 import 'package:my_cooking_helper/features/cook/search_recipe.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'core/firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'config/firebase_options.dart';
 import 'features/inventory/inventory.dart';
 import 'features/smart_scan/manual_input.dart';
 import 'features/smart_scan/review_screen.dart';
@@ -28,6 +29,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await GoogleSignIn.instance.initialize();
+  await dotenv.load(fileName: ".env");
   final appDocDir = await getApplicationDocumentsDirectory();
   Hive.init(appDocDir.path);
   debugPrint = (String? message, {int? wrapWidth}) {};
