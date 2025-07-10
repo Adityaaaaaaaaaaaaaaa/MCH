@@ -74,21 +74,24 @@ class PreferenceUtils {
   static final allergies = [
     PreferenceOption("Dairy", ["🥛"]),
     PreferenceOption("Gluten", ["🌾"]),
+    PreferenceOption("Grain", ["🌽"]),
+    PreferenceOption("Tree Nut", ["🌰"]),
+    PreferenceOption("Wheat", ["🍞"]),
     PreferenceOption("Nuts", ["🥜"]),
     PreferenceOption("Soy", ["🌱"]),
     PreferenceOption("Shellfish", ["🦐"]),
-    PreferenceOption("Eggs", ["🥚"]),
-    PreferenceOption("Fish", ["🐟"], [{"name": "fish"}]),
+    PreferenceOption("Egg", ["🥚"]),
+    PreferenceOption("Seafood", ["🐟"], [{"name": "fish"}]),
     PreferenceOption("Sesame", ["🌻"]),
-    PreferenceOption("Corn", ["🌽"]),
     PreferenceOption("Sulphites", ["💨"]),
-    PreferenceOption("Lactose intolerance", ["🚫🥛"]),
-    PreferenceOption("Crustaceans", ["🦀"], [{"name": "crab"}]),
-    PreferenceOption("Molluscs", ["🦪"]),
-    PreferenceOption("Mustard", ["🌿"]),
-    PreferenceOption("Celery", ["🥬"]),
-    PreferenceOption("MSG", ["🍜"], [{"name": "steamingBowl"}]),
-    PreferenceOption("Red Meat", ["🥩"]),
+    // PreferenceOption("Corn", ["🌽"]), //omit
+    // PreferenceOption("Lactose intolerance", ["🚫🥛"]), //omit
+    // PreferenceOption("Crustaceans", ["🦀"], [{"name": "crab"}]), //omit
+    // PreferenceOption("Molluscs", ["🦪"]), //omit
+    // PreferenceOption("Mustard", ["🌿"]), //omit
+    // PreferenceOption("Celery", ["🥬"]), //omit
+    // PreferenceOption("MSG", ["🍜"], [{"name": "steamingBowl"}]), //omit
+    // PreferenceOption("Red Meat", ["🥩"]), //omit
     PreferenceOption("Other", ["❓"], [{"name": "question"}]),
     PreferenceOption("None", ["👍"], [{"name": "thumbsUp"}]),
   ];
@@ -97,29 +100,36 @@ class PreferenceUtils {
     PreferenceOption("Vegan", ["🌱"], [{"name": "plant"}]),
     PreferenceOption("Vegetarian (Lacto)", ["🥛"]),
     PreferenceOption("Vegetarian (Ovo)", ["🥚"]),
+    PreferenceOption("Vegetarian", ["🍠"], [{"name": "rootVegetable"}]),
     PreferenceOption("Pescatarian", ["🐟"], [{"name": "fish"}]),
-    PreferenceOption("Flexitarian", ["🍽️"]),
     PreferenceOption("Paleo", ["🥩"]),
-    PreferenceOption("Keto", ["🥓"]),
-    PreferenceOption("Low-carb", ["🥗"]),
-    PreferenceOption("High Protein", ["🍗"]),
-    // PreferenceOption("Carnivore", "🍖"),
-    // PreferenceOption("Raw Food", "🥒"),
-    PreferenceOption("Whole30", ["🧘"]),
-    PreferenceOption("Intermittent Fasting", ["⏳"]),
-    PreferenceOption("Kosher", ["✡️"]),
-    PreferenceOption("Halal", ["☪️"]),
+    PreferenceOption("Whole30", ["🧘"]),    
     PreferenceOption("Gluten-free", ["🚫🌾"]),
     PreferenceOption("Low FODMAP", ["🦠"], [{"name": "microbe"}]),
-    PreferenceOption("Diabetic-friendly", ["🍏"]),
-    PreferenceOption("Mediterranean", ["🍅"], [{"name": "tomato"}]),
-    PreferenceOption("DASH", ["💪"], [{"name": "muscle"}]),
+    PreferenceOption("Ketogenic", ["🥓"]), //omit
+    PreferenceOption("Low-carb", ["🥗"]), //omit
+    PreferenceOption("High Protein", ["🍗"]), //omit
+    PreferenceOption("Intermittent Fasting", ["⏳"]), //omit
+    PreferenceOption("Halal", ["☪️"]), //omit
+    PreferenceOption("Diabetic-friendly", ["🍏"]), //omit
+    PreferenceOption("DASH", ["💪"], [{"name": "muscle"}]), //omit
     PreferenceOption("None / Open to all", ["👌"], [{"name": "ok"}]),
     PreferenceOption("Other", ["❓"], [{"name": "question"}]),
   ];
 
   static final  cuisines = [
     PreferenceOption("Italian", ["🍝"]),
+    PreferenceOption("African", ["🪘"]),
+    PreferenceOption("Asian", ["🥢"]),
+    PreferenceOption("Cajun", ["🌶️"]),
+    PreferenceOption("Caribbean", ["🍍"]),
+    PreferenceOption("Eastern European", ["🥟"]),
+    PreferenceOption("European", ["🍽️"]),
+    PreferenceOption("Irish", ["🍀"]),
+    PreferenceOption("Jewish", ["🕎"]),
+    PreferenceOption("Latin American", ["🌯"]),
+    PreferenceOption("Nordic", ["🧊"]),
+    PreferenceOption("Southern", ["🍗"]),
     PreferenceOption("Chinese", ["🥡"]),
     PreferenceOption("Mexican", ["🌮"]),
     PreferenceOption("Indian", ["🍛"]),
@@ -128,28 +138,14 @@ class PreferenceUtils {
     PreferenceOption("Korean", ["🍲"]),
     PreferenceOption("Vietnamese", ["🥢"]),
     PreferenceOption("Spanish", ["🥘"]),
-    PreferenceOption("Brazilian", ["🥥"]),
     PreferenceOption("French", ["🥖"]),
     PreferenceOption("Middle Eastern", ["🥙"]),
-    PreferenceOption("Scandinavian", ["🥔"]),
-    PreferenceOption("Russian", ["🍲"]),
     PreferenceOption("Mediterranean", ["🥗"]),
-    PreferenceOption("South African", ["🍖"]),
     PreferenceOption("American", ["🍔"]),
     PreferenceOption("British", ["🥧"]),
     PreferenceOption("Greek", ["🥙"]),
-    PreferenceOption("Turkish", ["🍢"]),
-    PreferenceOption("Moroccan", ["🍛"]),
     PreferenceOption("German", ["🥨"]),
-    // PreferenceOption("Polish", "🥟"),
-    // PreferenceOption("Hungarian", "🍲"),
-    // PreferenceOption("Filipino", "🍗"),
-    // PreferenceOption("Indonesian", "🍜"),
-    // PreferenceOption("Malaysian", "🍛"),
-    // PreferenceOption("Australian", "🥧"),
-    // PreferenceOption("Peruvian", "🍠"),
-    // PreferenceOption("Argentinian", "🥩"),
-    PreferenceOption("Mauritian/Creole", ["🍲"]),
+    PreferenceOption("Mauritian/Creole", ["🍲"]), // omit mauritian cuisine
     PreferenceOption("Other", ["🌍"], [{"name": "globeShowingEuropeAfrica"}]),
   ];
 

@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '/config/backend_config.dart';
+import '/models/recipe.dart';
 
 class RecipeSearchService {
   final FirebaseFirestore firestore;
@@ -8,7 +10,7 @@ class RecipeSearchService {
   RecipeSearchService({FirebaseFirestore? firestore})
       : firestore = firestore ?? FirebaseFirestore.instance;
 
-  /// Fetch ingredient names - Do not modify fetch ingredients 
+  /// Fetch inventory ingredient names for the user
   Future<List<String>> fetchUserIngredients(String userId) async {
     final snap = await firestore
         .collection('users')
@@ -18,20 +20,89 @@ class RecipeSearchService {
     return snap.docs.map((doc) => doc.id).toList();
   }
 
-  /// Search for recipes using your backend, which wraps Suggestic
-  Future<List<Recipe>> searchRecipes({
-    required List<String> ingredients,
+  /// Fetch main user preferences
+  Future<Map<String, dynamic>> fetchUserPreferences(String userId) async {
+    final doc = await firestore.collection('users').doc(userId).get();
+    if (!doc.exists) {
+      throw Exception('User document not found');
+    }
+    final data = doc.data()!;
+    final prefs = data['preferences'] ?? {};
+    return {
+      'allergies': (prefs['allergies'] as List<dynamic>?)?.cast<String>() ?? [],
+      'diets': (prefs['diets'] as List<dynamic>?)?.cast<String>() ?? [],
+      'cuisines': (prefs['cuisines'] as List<dynamic>?)?.cast<String>() ?? [],
+      'spiceLevel': prefs['spiceLevel'] ?? '',
+    };
+  }
+
+  //remove apres tresting //////////////////////////////////////////////////////////////
+  void blueDebugPrint(Object msg) {
+    dynamic makeEncodable(dynamic value) {
+      if (value is Set) {
+        return value.map(makeEncodable).toList();
+      } else if (value is List) {
+        return value.map(makeEncodable).toList();
+      } else if (value is Map) {
+        return value.map((k, v) => MapEntry(k, makeEncodable(v)));
+      } else {
+        return value;
+      }
+    }
+
+    final encodable = makeEncodable(msg);
+    final str = (encodable is String)
+        ? encodable
+        : const JsonEncoder.withIndent('  ').convert(encodable);
+
+    for (final line in str.split('\n')) {
+      print('\x1B[34m[DEBUG] $line\x1B[0m');
+    }
+  }
+  /////////////////////////////////////////////////////////////////////////////////////////////
+
+  /// Main search function: fetches all data, prints debug, sends to backend
+  Future<List<Recipe>> searchRecipesWithUserPrefs({
+    required String userId,
     required int maxTime,
+    List<String>? overrideIngredients, // For unit tests or future extensions
   }) async {
-    // Example backend URL, replace with your actual Render/FastAPI endpoint
-    final url = Uri.parse('https://your-backend-url/recipes/search');
+    // Fetch user data
+    final prefs = await fetchUserPreferences(userId);
+    final ingredients =
+        overrideIngredients ?? await fetchUserIngredients(userId);
+
+    // print('\x1B[34m[DEBUG] Sending Search Request:\x1B[0m');
+    // print('\x1B[34m[DEBUG] Ingredients: $ingredients\x1B[0m');
+    // print('\x1B[34m[DEBUG] Allergies: ${prefs['allergies']}\x1B[0m');
+    // print('\x1B[34m[DEBUG] Diets: ${prefs['diets']}\x1B[0m');
+    // print('\x1B[34m[DEBUG] Cuisines: ${prefs['cuisines']}\x1B[0m');
+    // print('\x1B[34m[DEBUG] SpiceLevel: ${prefs['spiceLevel']}\x1B[0m');
+    // print('\x1B[34m[DEBUG] MaxTime: $maxTime\x1B[0m');
+    blueDebugPrint('Sending Search Request:');
+    //blueDebugPrint('Ingredients: $ingredients');
+    blueDebugPrint('Allergies: ${prefs['allergies']}');
+    blueDebugPrint('Diets: ${prefs['diets']}');
+    blueDebugPrint('Cuisines: ${prefs['cuisines']}');
+    blueDebugPrint('SpiceLevel: ${prefs['spiceLevel']}');
+    blueDebugPrint('MaxTime: $maxTime');
+
+    // Prepare payload
+    final url = Uri.parse(agentRecipeSearch); 
+    final payload = {
+      'ingredients': ingredients,
+      'maxTime': maxTime,
+      'allergies': prefs['allergies'],
+      'diets': prefs['diets'],
+      'cuisines': prefs['cuisines'],
+      'spiceLevel': prefs['spiceLevel'],
+    };
+
+    // Send to backend
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'ingredients': ingredients,
-        'maxTime': maxTime,
-      }),
+      body: jsonEncode(payload),
     );
     if (response.statusCode != 200) {
       throw Exception('Backend error: ${response.body}');
@@ -41,41 +112,7 @@ class RecipeSearchService {
       throw Exception('Invalid response from backend');
     }
     return (data['recipes'] as List)
-        .map((e) => Recipe.fromJson(e))
+        .map((e) => Recipe.fromJson(e as Map<String, dynamic>))
         .toList();
   }
-}
-
-/// Example Recipe model. Adjust fields as per your backend’s output.
-class Recipe {
-  final String id;
-  final String title;
-  final String imageUrl;
-  final int totalTime;
-  final List<String> ingredients; // Or List<Ingredient> if you prefer
-  final List<String> instructions;
-
-  Recipe({
-    required this.id,
-    required this.title,
-    required this.imageUrl,
-    required this.totalTime,
-    required this.ingredients,
-    required this.instructions,
-  });
-
-  factory Recipe.fromJson(Map<String, dynamic> json) => Recipe(
-        id: json['id'] ?? '',
-        title: json['title'] ?? '',
-        imageUrl: json['imageUrl'] ?? '',
-        totalTime: json['totalTime'] ?? 0,
-        ingredients: (json['ingredients'] as List?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            [],
-        instructions: (json['instructions'] as List?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            [],
-      );
 }

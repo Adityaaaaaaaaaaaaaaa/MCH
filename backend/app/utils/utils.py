@@ -40,12 +40,56 @@ def build_receipt_ingredient_prompt():
     )
 
 
-# Gemini API endpoint root and model here
-GEMINI_API_ROOT = "https://generativelanguage.googleapis.com/v1beta/models"
-DEFAULT_STABLE_GEMINI_MODEL = "gemini-2.0-flash-001"
+# --- Spice Level Mapping ---
+SPICE_LEVEL_MAP = {
+    "No Spice (Plain Jane)":      "No spice (not spicy at all, suitable for children and sensitive palates)",
+    "Gentle Warmth (Mild)":       "Mild (very gentle heat, just a little warmth)",
+    "Balanced Kick (Medium)":     "Medium (noticeable kick, balanced for most adults)",
+    "Bring the Heat (Spicy)":     "Spicy (hot for most people, may cause sweating)",
+    "RIP (Super Spicy!)":         "Super Spicy (extremely hot, for chili-lovers only, ghost pepper level)",
+    "Mystery Heat (Surprise me!)": "Any (surprise, any level of heat may be included)",
+    "Spice? I'm Open!":           "Any (no preference, all levels welcome)",
+}
 
-def gemini_model_url(model=DEFAULT_STABLE_GEMINI_MODEL, method="generateContent", api_key=None):
-    url = f"{GEMINI_API_ROOT}/{model}:{method}"
-    if api_key:
-        url += f"?key={api_key}"
-    return url
+def build_recipe_agent_prompt(
+    ingredients, max_time, allergies, diets, cuisines, spice_level_label, num_recipes=15
+):
+    ingredient_str = ", ".join(ingredients)
+    allergies_str = ", ".join(allergies or [])
+    diets_str = ", ".join(diets or [])
+    cuisines_str = ", ".join(cuisines or [])
+    spice_description = SPICE_LEVEL_MAP.get(spice_level_label, "Any (no preference, all levels welcome)")
+
+    return (
+        "You are an expert AI recipe agent for home cooking."
+        "\nSpice Level Guide:"
+        "\n- No spice: Not spicy at all, suitable for children and sensitive palates"
+        "\n- Mild: Very gentle heat, just a little warmth"
+        "\n- Medium: Noticeable kick, balanced for most adults"
+        "\n- Spicy: Hot for most people, may cause sweating"
+        "\n- Super Spicy: Extremely hot, for chili-lovers only (ghost pepper, extra-hot chilies)"
+        "\n- Any: No preference, any level of spice"
+        "\nInterpret 'spice level' strictly according to this guide only and do not rename the Recipe title with spice level in its name"
+        f"\nStrictly use ONLY these ingredients: {ingredient_str} for every recipe."
+        " Common pantry ingredient that are found commonly but not on this list, except water, salt, pepper, and common pantry basics. Assume the user already has these pantry basics available."
+        "\nEach recipe may use any subset of the listed ingredients, but does not need to use them all. Recipes should be practical and reflect real cooking. Never add extra ingredients not on the list (except pantry basics)."
+        f"\nThe user cannot consume (allergies): {allergies_str if allergies_str else 'none'}, so avoid recipes with these."
+        f"\nThe user prefers these diets: {diets_str if diets_str else 'none'}."
+        f"\nRequested cuisines: {cuisines_str if cuisines_str else 'any'}."
+        f"\nSpice level: {spice_description}."
+        f"\nMaximum cooking time per recipe: {max_time} minutes."
+        f"\nReturn exactly {num_recipes} unique recipes. DO NOT invent or repeat recipes."
+        "\nFORBIDDEN: hallucinating, inventing fake websites, using restricted or unavailable ingredients, or providing incomplete/ambiguous information."
+        "\nFor each recipe, strictly output as a valid JSON object, with these fields only:"
+        "\n- title (string, the name of the recipe as on the website/recipe guide, do not invent names for recipes titles, use orginal name of recipe as available)"
+        "\n- imageUrl (string, use a real link if available, else empty string)"
+        "\n- totalTime (integer, total cooking+prep time in minutes or hours and minutes)"
+        "\n- ingredients (list of objects: name [string], quantity [string, e.g. '2 cups'])"
+        "\n- instructions (list of detailed step-by-step strings)"
+        "\n- equipment (list of strings, eqipment used to prepare the recipe e.g. ['pan', 'oven'])"
+        "\n- website (string, MUST be a real recipe websites accessible URL from a public cooking or food guides, vlogs, websites, recipe recognised sources)"
+        "\n- videos (list of strings, optional, URLs to relevant recipe video available online or on youtube, if available, else empty list)"
+        "\nAggregate these in a single JSON object with key 'recipes', e.g.:"
+        '\n{"recipes": [ {...}, {...}, ... ]}'
+        "\nDo not add any explanation, commentary, or other text. Your entire reply must be a single valid JSON object as described above, and nothing else."
+    )

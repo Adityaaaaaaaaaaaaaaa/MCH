@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/models/recipe.dart'; // <--- NEW: adjust path as needed
 import '/widgets/cook_picker.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
@@ -22,7 +23,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
   bool processing = false;
   int? selectedTime;
   List<String> ingredientList = [];
-  Set<String> unwantedIngredients = {}; // Excluded ones (red)
+  Set<String> unwantedIngredients = {};
   List<Recipe> recipeResults = [];
   String? errorMsg;
 
@@ -88,9 +89,9 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
     );
 
     try {
-      recipeResults = await service.searchRecipes(
-        ingredients: selectedIngredients,
-        maxTime: selectedTime!,
+      recipeResults = await service.searchRecipesWithUserPrefs(
+        userId: userId,
+        maxTime: selectedTime!, // as picked by user
       );
       lottieController.hide();
       setState(() => processing = false);
@@ -101,6 +102,86 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
         errorMsg = e.toString();
       });
     }
+  }
+
+  void showRecipeDetails(Recipe recipe) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.all(24.0.w),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (recipe.imageUrl.isNotEmpty)
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20.r),
+                      child: Image.network(
+                        recipe.imageUrl,
+                        width: 280.w,
+                        height: 180.h,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => const Icon(Icons.broken_image, size: 80),
+                      ),
+                    ),
+                  ),
+                SizedBox(height: 16.h),
+                Text(recipe.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22.sp)),
+                SizedBox(height: 8.h),
+                Text('Total time: ${recipe.totalTime} min', style: TextStyle(fontSize: 15.sp)),
+                SizedBox(height: 12.h),
+                if (recipe.ingredients.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Ingredients:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ...recipe.ingredients.map((i) =>
+                        Text('• ${i.name}${i.quantity.isNotEmpty ? " (${i.quantity})" : ""}')
+                      ),
+                    ],
+                  ),
+                SizedBox(height: 12.h),
+                if (recipe.instructions.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Instructions:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ...recipe.instructions.asMap().entries.map((entry) =>
+                        Text('${entry.key + 1}. ${entry.value}')),
+                    ],
+                  ),
+                SizedBox(height: 12.h),
+                if (recipe.equipment.isNotEmpty)
+                  Text('Equipment: ${recipe.equipment.join(", ")}', style: TextStyle(fontSize: 14.sp)),
+                SizedBox(height: 8.h),
+                if (recipe.website.isNotEmpty)
+                  GestureDetector(
+                    onTap: () {
+                      // Add url_launcher to open recipe.website
+                    },
+                    child: Text('Website Link', style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline)),
+                  ),
+                SizedBox(height: 12.h),
+                if (recipe.videos.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Videos:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ...recipe.videos.map((v) => Text(v, style: TextStyle(color: Colors.blue))),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -169,6 +250,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                                     width: 56.w,
                                     height: 56.w,
                                     fit: BoxFit.cover,
+                                    errorBuilder: (c, e, s) => const Icon(Icons.broken_image, size: 36),
                                   ),
                                 )
                               : const Icon(Icons.restaurant_menu, size: 36),
@@ -177,12 +259,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
                           ),
                           subtitle: Text('${recipe.totalTime} min'),
-                          onTap: () {
-                            // TODO: handle recipe selection (details/confirm/etc.)
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Selected: ${recipe.title}')),
-                            );
-                          },
+                          onTap: () => showRecipeDetails(recipe),
                         ),
                       );
                     },
