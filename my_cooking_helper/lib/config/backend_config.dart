@@ -1,15 +1,16 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 //final String ip = dotenv.env['IP'] ?? '';
-final String ip = "192.168.8.52";
+final String ip = "10.207.127.52";
 final String port = dotenv.env['PORT'] ?? '';
 final String serverUrl = dotenv.env['SERVER_URL'] ?? '';
 
 //to be uncommented based on use 
-String get backendApiUrl => serverUrl;
-//String get backendApiUrl => "http://$ip:$port";
+//String get backendApiUrl => serverUrl;
+String get backendApiUrl => "http://$ip:$port";
 
 //Gemini API endpoints
 String get geminiScanReceipt => "$backendApiUrl/receipt/scanReceipt";
 String get geminiScanFood => "$backendApiUrl/food/scanFood";
+String get agentRecipeSearch => "$backendApiUrl/agent/recipes/searchByIngredients";
 
