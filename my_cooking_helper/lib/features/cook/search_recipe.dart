@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '/models/recipe.dart'; // <--- NEW: adjust path as needed
+import 'package:glass/glass.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import '/models/recipe.dart';
 import '/widgets/cook_picker.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
@@ -27,10 +29,27 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
   List<Recipe> recipeResults = [];
   String? errorMsg;
 
+  int visibleRecipes = 3;
+  Set<String> selectedRecipes = {};
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => startFlow());
+  }
+
+  String formatTime(int totalMinutes) {
+    if (totalMinutes < 60) {
+      return '${totalMinutes}m';
+    } else {
+      int hours = totalMinutes ~/ 60;
+      int minutes = totalMinutes % 60;
+      if (minutes == 0) {
+        return '${hours}h';
+      } else {
+        return '${hours}h ${minutes}m';
+      }
+    }
   }
 
   Future<void> startFlow() async {
@@ -38,9 +57,10 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
       loading = true;
       errorMsg = null;
       recipeResults.clear();
+      visibleRecipes = 3;
+      selectedRecipes.clear();
     });
 
-    // Step 1: Pick cooking time
     int? time = await pickCookingTime(context);
     if (time == null) {
       setState(() => loading = false);
@@ -48,7 +68,6 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
     }
     selectedTime = time;
 
-    // Step 2: Fetch ingredients
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
       setState(() {
@@ -59,7 +78,6 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
     }
     ingredientList = await service.fetchUserIngredients(userId);
 
-    // Step 3: Select ingredients (returns unwanted/excluded ones)
     Set<String>? unwanted = await selectIngredients(context, ingredientList);
     if (unwanted == null) {
       setState(() => loading = false);
@@ -68,12 +86,10 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
     unwantedIngredients = unwanted;
     final selectedIngredients = ingredientList.where((ing) => !unwanted.contains(ing)).toList();
 
-    // BLUE DEBUG PRINTS for selection values
     print('\x1B[34m[DEBUG] Selected Time: $selectedTime\x1B[0m');
     print('\x1B[34m[DEBUG] Selected Ingredients: $selectedIngredients\x1B[0m');
     print('\x1B[34m[DEBUG] Unselected Ingredients: ${unwantedIngredients.toList()}\x1B[0m');
 
-    // Step 4: Animation and backend call
     setState(() {
       loading = false;
       processing = true;
@@ -91,7 +107,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
     try {
       recipeResults = await service.searchRecipesWithUserPrefs(
         userId: userId,
-        maxTime: selectedTime!, // as picked by user
+        maxTime: selectedTime!,
       );
       lottieController.hide();
       setState(() => processing = false);
@@ -104,83 +120,252 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
     }
   }
 
+  void toggleRecipeSelection(String recipeTitle) {
+    setState(() {
+      if (selectedRecipes.contains(recipeTitle)) {
+        selectedRecipes.remove(recipeTitle);
+      } else {
+        selectedRecipes.add(recipeTitle);
+      }
+    });
+  }
+
+  void showMoreRecipes() {
+    setState(() {
+      visibleRecipes = (visibleRecipes + 3).clamp(0, recipeResults.length);
+    });
+  }
+
   void showRecipeDetails(Recipe recipe) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      backgroundColor: Colors.transparent,
+      builder: (context) => RecipeDetailModal(
+        recipe: recipe,
+        formatTime: formatTime,
+        openWebView: (url) => showRecipeWebView(url),
       ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.all(24.0.w),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (recipe.imageUrl.isNotEmpty)
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20.r),
-                      child: Image.network(
-                        recipe.imageUrl,
-                        width: 280.w,
-                        height: 180.h,
-                        fit: BoxFit.cover,
-                        errorBuilder: (c, e, s) => const Icon(Icons.broken_image, size: 80),
-                      ),
+    );
+  }
+
+  void showRecipeWebView(String url) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.12),
+      builder: (context) => RecipeWebViewDialog(url: url),
+    );
+  }
+
+  Widget _buildRecipeCard(Recipe recipe, int index) {
+    bool isSelected = selectedRecipes.contains(recipe.title);
+    return AnimatedScale(
+      scale: 1.0,
+      duration: const Duration(milliseconds: 200),
+      child: GestureDetector(
+        onTap: () => showRecipeDetails(recipe),
+        child: Container(
+          margin: EdgeInsets.only(bottom: 16.h),
+          child: Stack(
+            children: [
+              // Glass effect
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.07),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                  border: isSelected ? Border.all(color: Colors.green, width: 2.5) : null,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28.r),
+                  child: Container(
+                    padding: EdgeInsets.only(bottom: 0),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.88),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Recipe Image with Glass Badge
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+                              child: Image.network(
+                                recipe.imageUrl,
+                                width: double.infinity,
+                                height: 180.h,
+                                fit: BoxFit.cover,
+                                errorBuilder: (c, e, s) => Container(
+                                  width: double.infinity,
+                                  height: 180.h,
+                                  color: Colors.grey[200],
+                                  child: Icon(Icons.restaurant_menu, size: 60.sp, color: Colors.grey[400]),
+                                ),
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    width: double.infinity,
+                                    height: 180.h,
+                                    color: Colors.grey[200],
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        value: loadingProgress.expectedTotalBytes != null
+                                            ? loadingProgress.cumulativeBytesLoaded /
+                                                loadingProgress.expectedTotalBytes!
+                                            : null,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            // Time badge (glass effect)
+                            Positioned(
+                              bottom: 14.h,
+                              left: 16.w,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(18.r),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.access_time, size: 14.sp, color: Colors.white),
+                                    SizedBox(width: 6.w),
+                                    Text(
+                                      formatTime(recipe.totalTime),
+                                      style: TextStyle(
+                                        color: textColor(context),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13.sp,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ).asGlass(
+                                blurX: 7,
+                                blurY: 7,
+                                tintColor: Colors.black.withOpacity(0.38),
+                                clipBorderRadius: BorderRadius.circular(18.r),
+                              ),
+                            ),
+                            // Select badge
+                            Positioned(
+                              top: 14.h,
+                              right: 16.w,
+                              child: GestureDetector(
+                                onTap: () {
+                                  toggleRecipeSelection(recipe.title);
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.all(10.w),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? Colors.green : Colors.white.withOpacity(0.92),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.11),
+                                        blurRadius: 6,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    isSelected ? Icons.check : Icons.add,
+                                    size: 18.sp,
+                                    color: isSelected ? Colors.white : Colors.green,
+                                  ),
+                                ).asGlass(
+                                  blurX: 10,
+                                  blurY: 10,
+                                  tintColor: isSelected ? Colors.green : Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Recipe Info Section
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 20.h),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                recipe.title,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 19.sp,
+                                  color: textColor(context),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              SizedBox(height: 8.h),
+                              Row(
+                                children: [
+                                  Icon(Icons.inventory_2_outlined, size: 14.sp, color: Colors.grey[700]),
+                                  SizedBox(width: 6.w),
+                                  Text(
+                                    '${recipe.ingredients.length} ingredients',
+                                    style: TextStyle(
+                                      fontSize: 13.sp,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 12.h),
+                              // View Recipe Button
+                              InkWell(
+                                borderRadius: BorderRadius.circular(14.r),
+                                onTap: () => showRecipeDetails(recipe),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.symmetric(vertical: 11.h),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(14.r),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'View Recipe',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14.sp,
+                                      ),
+                                    ),
+                                  ),
+                                ).asGlass(
+                                  blurX: 4,
+                                  blurY: 6,
+                                  tintColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                  clipBorderRadius: BorderRadius.circular(14.r),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                SizedBox(height: 16.h),
-                Text(recipe.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22.sp)),
-                SizedBox(height: 8.h),
-                Text('Total time: ${recipe.totalTime} min', style: TextStyle(fontSize: 15.sp)),
-                SizedBox(height: 12.h),
-                if (recipe.ingredients.isNotEmpty)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Ingredients:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ...recipe.ingredients.map((i) =>
-                        Text('• ${i.name}${i.quantity.isNotEmpty ? " (${i.quantity})" : ""}')
-                      ),
-                    ],
-                  ),
-                SizedBox(height: 12.h),
-                if (recipe.instructions.isNotEmpty)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Instructions:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ...recipe.instructions.asMap().entries.map((entry) =>
-                        Text('${entry.key + 1}. ${entry.value}')),
-                    ],
-                  ),
-                SizedBox(height: 12.h),
-                if (recipe.equipment.isNotEmpty)
-                  Text('Equipment: ${recipe.equipment.join(", ")}', style: TextStyle(fontSize: 14.sp)),
-                SizedBox(height: 8.h),
-                if (recipe.website.isNotEmpty)
-                  GestureDetector(
-                    onTap: () {
-                      // Add url_launcher to open recipe.website
-                    },
-                    child: Text('Website Link', style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline)),
-                  ),
-                SizedBox(height: 12.h),
-                if (recipe.videos.isNotEmpty)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Videos:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ...recipe.videos.map((v) => Text(v, style: TextStyle(color: Colors.blue))),
-                    ],
-                  ),
-              ],
-            ),
+                ).asGlass(
+                  blurX: 8,
+                  blurY: 8,
+                  tintColor: Colors.white.withOpacity(0.07),
+                  clipBorderRadius: BorderRadius.circular(28.r),
+                ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -200,7 +385,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
         ),
       );
     }
-    if (processing) return const SizedBox.shrink(); // Lottie overlay shown
+    if (processing) return const SizedBox.shrink();
 
     return Scaffold(
       backgroundColor: bgColor(context),
@@ -214,61 +399,535 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
         borderRadius: 26.r,
         topPadding: 40.h,
       ),
-      body: Padding(
-        padding: EdgeInsets.all(20.0.w),
-        child: errorMsg != null
-            ? Center(
-                child: Text(
-                  errorMsg!,
-                  style: TextStyle(color: Colors.red, fontSize: 18.sp),
-                ),
-              )
-            : recipeResults.isEmpty
-                ? Center(
-                    child: Text(
-                      'No recipes found. Try again!',
-                      style: TextStyle(fontSize: 18.sp),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: recipeResults.length,
-                    itemBuilder: (context, idx) {
-                      final recipe = recipeResults[idx];
-                      return Card(
-                        elevation: 2,
-                        margin: EdgeInsets.symmetric(vertical: 10.h, horizontal: 4.w),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18.r),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
-                          leading: recipe.imageUrl.isNotEmpty
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(12.r),
-                                  child: Image.network(
-                                    recipe.imageUrl,
-                                    width: 56.w,
-                                    height: 56.w,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (c, e, s) => const Icon(Icons.broken_image, size: 36),
-                                  ),
-                                )
-                              : const Icon(Icons.restaurant_menu, size: 36),
-                          title: Text(
-                            recipe.title,
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
-                          ),
-                          subtitle: Text('${recipe.totalTime} min'),
-                          onTap: () => showRecipeDetails(recipe),
-                        ),
-                      );
-                    },
+      body: errorMsg != null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 60.sp, color: Colors.red),
+                  SizedBox(height: 16.h),
+                  Text(
+                    errorMsg!,
+                    style: TextStyle(color: Colors.red, fontSize: 18.sp),
+                    textAlign: TextAlign.center,
                   ),
-      ),
-      floatingActionButton: FloatingActionButton(
+                ],
+              ),
+            )
+          : recipeResults.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.search_off, size: 80.sp, color: Colors.grey[400]),
+                      SizedBox(height: 16.h),
+                      Text(
+                        'No recipes found',
+                        style: TextStyle(
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      Text(
+                        'Try adjusting your preferences and search again',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: Colors.grey[500],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: [
+                    // Results header
+                    Container(
+                      padding: EdgeInsets.fromLTRB(20.w, 120.h, 20.w, 16.h),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Found ${recipeResults.length} recipes',
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          if (selectedRecipes.isNotEmpty)
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(16.r),
+                              ),
+                              child: Text(
+                                '${selectedRecipes.length} selected',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    // Recipes list
+                    Expanded(
+                      child: ListView.builder(
+                        padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 20.h),
+                        itemCount: visibleRecipes + (visibleRecipes < recipeResults.length ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index < visibleRecipes) {
+                            return _buildRecipeCard(recipeResults[index], index);
+                          } else {
+                            // Show more button
+                            return Container(
+                              margin: EdgeInsets.only(top: 8.h),
+                              child: GestureDetector(
+                                onTap: showMoreRecipes,
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(vertical: 16.h),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(16.r),
+                                    border: Border.all(
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.expand_more,
+                                        color: Theme.of(context).colorScheme.primary,
+                                        size: 20.sp,
+                                      ),
+                                      SizedBox(width: 8.w),
+                                      Text(
+                                        'Show ${(recipeResults.length - visibleRecipes).clamp(0, 3)} more recipes',
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.primary,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14.sp,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ).asGlass(
+                                  blurX: 7,
+                                  blurY: 7,
+                                  tintColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                  clipBorderRadius: BorderRadius.circular(16.r),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: startFlow,
-        tooltip: 'Start Again',
-        child: const Icon(Icons.refresh),
+        icon: const Icon(Icons.refresh),
+        label: const Text('Search Again'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+      ),
+    );
+  }
+}
+
+/// Recipe Detail Modal with glass and in-app webview open callback
+class RecipeDetailModal extends StatelessWidget {
+  final Recipe recipe;
+  final String Function(int) formatTime;
+  final void Function(String url) openWebView;
+  const RecipeDetailModal({
+    Key? key,
+    required this.recipe,
+    required this.formatTime,
+    required this.openWebView,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.90,
+      maxChildSize: 0.98,
+      minChildSize: 0.60,
+      expand: false,
+      builder: (context, scrollController) => Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(34)),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(34)),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.96),
+            ),
+            child: SingleChildScrollView(
+              controller: scrollController,
+              padding: EdgeInsets.fromLTRB(26, 18, 26, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 45,
+                      height: 6,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  // IMAGE
+                  if (recipe.imageUrl.isNotEmpty)
+                    Center(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.07),
+                              blurRadius: 14,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: Image.network(
+                            recipe.imageUrl,
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => Container(
+                              width: double.infinity,
+                              height: 200,
+                              color: Colors.grey[200],
+                              child: Icon(Icons.restaurant_menu, size: 60, color: Colors.grey[400]),
+                            ),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                width: double.infinity,
+                                height: 200,
+                                color: Colors.grey[200],
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+                  Text(
+                    recipe.title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 28,
+                      color: textColor(context),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Time Info
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.deepPurple.withOpacity(0.25),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.access_time, size: 16, color: Colors.deepPurple),
+                            const SizedBox(width: 7),
+                            Text(
+                              formatTime(recipe.totalTime),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.deepPurple,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+                  // Ingredients
+                  if (recipe.ingredients.isNotEmpty) ...[
+                    Text(
+                      'Ingredients',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: textColor(context),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...recipe.ingredients.map((ingredient) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: Colors.deepPurple,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              '${ingredient.name}${ingredient.quantity.isNotEmpty ? " (${ingredient.quantity})" : ""}',
+                              style: TextStyle(fontSize: 16, color: textColor(context)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                    const SizedBox(height: 18),
+                  ],
+                  // Instructions
+                  if (recipe.instructions.isNotEmpty) ...[
+                    Text(
+                      'Instructions',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: textColor(context),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...recipe.instructions.asMap().entries.map((entry) => Padding(
+                      padding: const EdgeInsets.only(bottom: 13),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: Colors.deepPurple,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${entry.key + 1}',
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              entry.value,
+                              style: TextStyle(fontSize: 15, height: 1.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                    const SizedBox(height: 16),
+                  ],
+                  // Equipment
+                  if (recipe.equipment.isNotEmpty) ...[
+                    Text(
+                      'Equipment',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: textColor(context),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: recipe.equipment.map((equipment) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: Colors.deepPurple.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Text(
+                          equipment,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
+                      )).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  // Website Link
+                  if (recipe.website.isNotEmpty) ...[
+                    GestureDetector(
+                      onTap: () => openWebView(recipe.website),
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 8, bottom: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.blue.withOpacity(0.18)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.language, color: Colors.blue, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Visit Recipe Website',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                  // Videos
+                  if (recipe.videos.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Videos',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...recipe.videos.map((video) => Padding(
+                      padding: const EdgeInsets.only(bottom: 7),
+                      child: GestureDetector(
+                        onTap: () => openWebView(video),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.07),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.red.withOpacity(0.18)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.play_circle_fill, color: Colors.red, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  video,
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Fullscreen dialog for displaying a WebView.
+/// This is the recommended solution for platform views, as per the official Flutter guidance.
+class RecipeWebViewDialog extends StatefulWidget {
+  final String url;
+  const RecipeWebViewDialog({Key? key, required this.url}) : super(key: key);
+
+  @override
+  State<RecipeWebViewDialog> createState() => _RecipeWebViewDialogState();
+}
+
+class _RecipeWebViewDialogState extends State<RecipeWebViewDialog> {
+  late final WebViewController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadRequest(Uri.parse(widget.url));
+  }
+
+  @override
+  void dispose() {
+    _controller.clearCache();
+    // Optionally: clear cookies, local storage, etc. if needed
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      insetPadding: EdgeInsets.zero,
+      backgroundColor: Colors.transparent,
+      child: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.white.withOpacity(0.99),
+            child: WebViewWidget(controller: _controller),
+          ),
+          Positioned(
+            top: 32,
+            right: 20,
+            child: InkWell(
+              onTap: () => Navigator.of(context).pop(),
+              borderRadius: BorderRadius.circular(32),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.85),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, size: 28, color: Colors.black54),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

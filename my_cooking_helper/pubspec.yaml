@@ -45,6 +45,8 @@ dependencies:
   liquid_pull_to_refresh: ^3.0.1
   animated_emoji: ^3.2.1
   flutter_dotenv: ^5.2.1
+  url_launcher: ^6.3.2 # not used, will remove manually after 
+  webview_flutter: ^4.13.0
 
 dev_dependencies:
   flutter_test:
