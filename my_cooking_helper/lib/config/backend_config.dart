@@ -1,7 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 //final String ip = dotenv.env['IP'] ?? '';
-final String ip = "10.138.145.52";
+final String ip = "10.31.176.52";
 final String port = dotenv.env['PORT'] ?? '';
 final String serverUrl = dotenv.env['SERVER_URL'] ?? '';
 
