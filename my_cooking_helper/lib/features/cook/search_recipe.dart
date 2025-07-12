@@ -89,6 +89,8 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
     print('\x1B[34m[DEBUG] Selected Time: $selectedTime\x1B[0m');
     print('\x1B[34m[DEBUG] Selected Ingredients: $selectedIngredients\x1B[0m');
     print('\x1B[34m[DEBUG] Unselected Ingredients: ${unwantedIngredients.toList()}\x1B[0m');
+    print('\x1B[34m------------------------------------\x1B[0m');
+
 
     setState(() {
       loading = false;
@@ -104,11 +106,15 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
       barrierDismissible: false,
     );
 
+    print('\x1B[34m[DEBUG] Ingredients sent to backend: $selectedIngredients\x1B[0m');
+
     try {
       recipeResults = await service.searchRecipesWithUserPrefs(
         userId: userId,
         maxTime: selectedTime!,
+        overrideIngredients: selectedIngredients,
       );
+
       lottieController.hide();
       setState(() => processing = false);
     } catch (e) {
