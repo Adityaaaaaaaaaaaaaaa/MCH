@@ -6,6 +6,7 @@ import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:my_cooking_helper/utils/colors.dart';
 import '/utils/emoji_animation.dart';
 import '/utils/loader.dart';
 import '/utils/snackbar.dart';
@@ -281,19 +282,34 @@ class _SettingsScreenState extends ConsumerState<Settings>
               SizedBox(height: 10.h),
               Text(
                 "Delete Account?",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20.sp),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 20.sp,
+                  color: textColor(context),
+                ),
               ),
               SizedBox(height: 12.h),
-              const Text(
+              Text(
                 "This action is irreversible. Are you sure you want to delete your account?",
                 textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: textColor(context),
+                ),
               ),
               SizedBox(height: 24.h),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      child: const Text("Cancel"),
+                      child: Text(
+                        "Cancel",
+                        style: TextStyle(
+                          color: Colors.lightGreen,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       onPressed: () => Navigator.of(ctx).pop(),
                     ),
                   ),
@@ -318,7 +334,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
         ).asGlass(
           blurX: 15,
           blurY: 15,
-          tintColor: Colors.redAccent,
+          tintColor: Colors.white,
           clipBorderRadius: BorderRadius.circular(18.r),
           frosted: true,
         ),
