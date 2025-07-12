@@ -145,7 +145,7 @@ class PreferenceUtils {
     PreferenceOption("British", ["🥧"]),
     PreferenceOption("Greek", ["🥙"]),
     PreferenceOption("German", ["🥨"]),
-    PreferenceOption("Mauritian/Creole", ["🍲"]), // omit mauritian cuisine
+    PreferenceOption("Mauritian", ["🍲"]), // omit mauritian cuisine
     PreferenceOption("Other", ["🌍"], [{"name": "globeShowingEuropeAfrica"}]),
   ];
 
