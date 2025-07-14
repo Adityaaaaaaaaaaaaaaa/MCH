@@ -40,18 +40,18 @@ def build_receipt_ingredient_prompt():
     )
 
 
-# --- Spice Level Mapping ---
+""" # --- Spice Level Mapping ---
 SPICE_LEVEL_MAP = {
     "No Spice (Plain Jane)":      "No spice (not spicy at all, suitable for children and sensitive palates)",
     "Gentle Warmth (Mild)":       "Mild (very gentle heat, just a little warmth)",
     "Balanced Kick (Medium)":     "Medium (noticeable kick, balanced for most adults)",
-    "Bring the Heat (Spicy)":     "Spicy (hot for most people, may cause sweating)",
-    "RIP (Super Spicy!)":         "Super Spicy (extremely hot, for chili-lovers only, ghost pepper level)",
+    "Bring the Heat (Spicy)":     "Spicy (spicy but not super hot)",
+    "RIP (Super Spicy!)":         "Spicy (for chili-lovers)",
     "Mystery Heat (Surprise me!)": "Any (surprise, any level of heat may be included)",
     "Spice? I'm Open!":           "Any (no preference, all levels welcome)",
 }
-
-def build_recipe_agent_prompt(
+ """
+""" def build_recipe_agent_prompt(
     ingredients, max_time, allergies, diets, cuisines, spice_level_label, num_recipes=15
 ):
     ingredient_str = ", ".join(ingredients)
@@ -77,7 +77,7 @@ def build_recipe_agent_prompt(
         f"\nThe user prefers these diets: {diets_str if diets_str else 'none'}."
         f"\nRequested cuisines: {cuisines_str if cuisines_str else 'any'}."
         f"\nSpice level: {spice_description}."
-        f"\nMaximum cooking time per recipe: {max_time} minutes."
+        f"\nMaximum cooking time per recipe: {max_time} minutes. The total time should includes both preparation and cooking time."
         f"\nReturn exactly {num_recipes} unique recipes. DO NOT invent or repeat recipes."
         "\nFORBIDDEN: hallucinating, inventing fake websites, using restricted or unavailable ingredients, or providing incomplete/ambiguous information."
         "\nFor each recipe, strictly output as a valid JSON object, with these fields only:"
@@ -93,3 +93,178 @@ def build_recipe_agent_prompt(
         '\n{"recipes": [ {...}, {...}, ... ]}'
         "\nDo not add any explanation, commentary, or other text. Your entire reply must be a single valid JSON object as described above, and nothing else."
     )
+ """ 
+
+""" def build_recipe_links_prompt(
+    ingredients, max_time, allergies, diets, cuisines, spice_level_label, num_links=15
+):
+    # Using the Tier 1 list of most popular and trusted domains
+    ALLOWED_DOMAINS = [
+        "allrecipes.com",
+        "bbcgoodfood.com", "bonappetit.com", "budgetbytes.com", "chefkoch.de", "cookieandkate.com",
+        "cooking.nytimes.com",
+        "damndelicious.net", "delish.com",
+        "epicurious.com", 
+        "food.com", "food52.com", "foodnetwork.com",
+        "gimmesomeoven.com",
+        "halfbakedharvest.com", 
+        "inspiredtaste.net", 
+        "jamieoliver.com", 
+        "kingarthurbaking.com",
+        "maangchi.com", "marmiton.org", "minimalistbaker.com", "myrecipes.com", 
+        "onceuponachef.com", "pinchofyum.com",
+        "recipetineats.com", "ricette.giallozafferano.it",
+        "sallysbakingaddiction.com", "seriouseats.com", "simplyrecipes.com", "skinnytaste.com",
+        "taste.com.au", "tasteofhome.com", "tasty.co", "thekitchn.com", "thepioneerwoman.com", "thespruceeats.com", "thewoksoflife.com",
+    ]
+    domain_str = ", ".join(ALLOWED_DOMAINS)
+    ingredient_str = ", ".join(ingredients)
+    allergies_str = ", ".join(allergies or [])
+    diets_str = ", ".join(diets or [])
+    cuisines_str = ", ".join(cuisines or [])
+    spice_description = SPICE_LEVEL_MAP.get(spice_level_label, "Any (no preference, all levels welcome)")
+
+    # Add specific focus for Mauritian if present in cuisine selection
+    cuisine_focus = ""
+    if "Mauritian" in [c.lower() for c in cuisines]:
+        cuisine_focus = (
+            "Focus on Mauritian, Indian Ocean, Indo-French Creole, and fusion Mauritian recipes. "
+            "Find recipe links to typical Mauritian dishes. "
+            "Use local Mauritian ingredients and cooking styles where possible. "
+            "If not available, provide the best closest alternative to the recipe. else focus on other cuisines asked by the user"
+            "but try to get Mauritian cuisines if available"
+            "If available, provide the link to the recipe, Link must be a valid and real url accessible"
+        )
+        
+    return (
+        "You are an AI recipe search assistant for home cooks. "
+        f"Given the following user constraints, return ONLY a JSON object with a single key 'links', containing an array of working, real, accessible recipe URLs from these trusted sites: {domain_str}. "
+        f"Recipes links outside allowed trusted sites are allowed but carefully choosen so as they match the criteria of the search request. "
+        f"{cuisine_focus}"
+        "The recipes must closely fit the requirements below. Never invent URLs. Never add commentary, markdown, or explanation. No extra text, only valid JSON:\n"
+        f"- Allowed ( Do not use other ingredients outside ot the allowed ingredients list ) ingredients: {ingredient_str}\n"
+        f"- Common pantry ingredient that are found commonly but not on this list, except water, salt, pepper, and common pantry basics. Assume the user already has these pantry basics available\n"
+        f"- Maximum total cooking ( Preparation + Cooking time ) time: {max_time} minutes\n"
+        f"- Allergies (avoid): {allergies_str or 'none'}\n"
+        f"- Diets: {diets_str or 'none'}\n"
+        f"- Cuisines: {cuisines_str or 'any'}\n"
+        f"- Spice level: {spice_description}\n"
+        f"Each recipe may use any subset of the listed allowed ingredients, but does not need to use them all. Never add extra ingredients not on the list (except pantry basics)\n"
+        f"Return exactly {num_links} unique, non-duplicate links. All links must be to real, public recipe pages, not category or search result pages.\n"
+        "Do not invent websites, URLs, or recipes. Do not use private blogs or subscription-only sites. The response must be a single, valid JSON object like:\n"
+        '{\n  "links": [\n    "https://allrecipes.com/recipe/12345/example",\n    "https://mauritianfood.com/recipe/rougaille", ...\n  ]\n}\n'
+        "Respond ONLY in this JSON format, with no markdown, no explanation, and no extra fields."
+    )
+ """
+
+""" def build_recipe_agent_prompt(
+    ingredients, max_time, allergies, diets, cuisines, spice_level_label, num_recipes=15
+):
+    ingredient_str = ", ".join(ingredients)
+    allergies_str = ", ".join(allergies or [])
+    diets_str = ", ".join(diets or [])
+    cuisines_str = ", ".join(cuisines or [])
+    spice_description = SPICE_LEVEL_MAP.get(spice_level_label, "Any (no preference, all levels welcome)")
+
+    # Safety and robust fallback for spice
+    if spice_level_label in {"RIP (Super Spicy!)", "Mystery Heat (Surprise me!)"}:
+        spice_caution = (
+            "For high or uncertain spice requests ('Super Spicy', 'Surprise me!'), return only recipes that are authentic and traditionally served at such heat levels. "
+            "NEVER invent or escalate the spice artificially, and NEVER propose unsafe challenge dishes or novelty recipes. "
+            "If no safe, authentic options are available, **reduce the result set and, if necessary, substitute with the closest authentic recipe matching other criteria.** "
+            "Always avoid recipes where the heat level could present risk or be unsuitable for the general public."
+        )
+    else:
+        spice_caution = (
+            "For other spice levels, select only authentic dishes that naturally correspond to the requested heat."
+        )
+
+    prompt = (
+        "You are an advanced, professional AI recipe expert for home cooking. "
+        "Your task is to recommend only genuine, practical, and diverse recipes, strictly adhering to the user's constraints. "
+        "Every result must be drawn from reputable, publicly accessible, and verifiable recipe sources online. "
+        f"Use ONLY the following as main ingredients: {ingredient_str}. "
+        "Do NOT introduce additional ingredients except universally available pantry basics (e.g., water, salt, pepper, oil). "
+        f"Exclude any recipe containing these allergens: {allergies_str if allergies_str else 'None specified'}. "
+        f"Respect the following dietary requirements: {diets_str if diets_str else 'None specified'}. "
+        f"Focus on these cuisines if specified: {cuisines_str if cuisines_str else 'Any cuisine'}. "
+        f"Strictly adhere to the requested spice level: {spice_description}. {spice_caution} "
+        "Do NOT alter recipe names to reflect spice. Use only the real name of the recipe. "
+        "Find recipes that are suitable for main course meals mostly as mandatory and other types as non mandatory. "
+        f"Total preparation and cooking time per recipe must not exceed {max_time} minutes. "
+        "Each returned recipe MUST be a unique, authentic, real-world dish, with a valid, accessible website link from a reputable culinary domain. "
+        "Do not repeat, invent, or generalise. If the full number of recipes cannot be found that match ALL criteria, return only those that are fully compliant, ensuring maximal diversity and relevance. "
+        f"Return up to {num_recipes} distinct, high-quality recipes that meet these standards."
+        " If no suitable recipes exist for some criteria (e.g., too restrictive), gracefully provide the closest matches, explain the shortfall, and never invent or hallucinate results."
+        " Do NOT include any explanation, commentary, or extra output—just the result."
+    )
+    return prompt """
+
+# --- Spice Level Mappings ---
+SPICE_LEVEL_DESCRIPTIONS = {
+    "No Spice (Plain Jane)":      "No spice (not spicy at all, suitable for children and sensitive palates)",
+    "Gentle Warmth (Mild)":       "Mild (very gentle heat, just a little warmth)",
+    "Balanced Kick (Medium)":     "Medium (noticeable kick, balanced for most adults)",
+    "Bring the Heat (Spicy)":     "Spicy (spicy but not super hot)",
+    "RIP (Super Spicy!)":         "Super Spicy (for chili-lovers, ghost pepper level)",
+    "Mystery Heat (Surprise me!)": "Any (surprise, any level of heat may be included)",
+    "Spice? I'm Open!":           "Any (no preference, all levels welcome)",
+}
+
+SPICE_SCALE_MAP = {
+    "No Spice (Plain Jane)":      "1",
+    "Gentle Warmth (Mild)":       "2-3",
+    "Balanced Kick (Medium)":     "4-5",
+    "Bring the Heat (Spicy)":     "6-7",
+    "RIP (Super Spicy!)":         "8-10",
+    "Mystery Heat (Surprise me!)": "1-10",
+    "Spice? I'm Open!":           "1-10",
+}
+
+def build_recipe_agent_prompt(
+    ingredients, max_time, allergies, diets, cuisines, spice_level_label, num_recipes=15
+):
+    ingredient_str = ", ".join(ingredients)
+    allergies_str = ", ".join(allergies or [])
+    diets_str = ", ".join(diets or [])
+    cuisines_str = ", ".join(cuisines or [])
+    spice_description = SPICE_LEVEL_DESCRIPTIONS.get(spice_level_label, "Any (no preference, all levels welcome)")
+    spice_numeric = SPICE_SCALE_MAP.get(spice_level_label, "1-10")
+
+    # Safety and robust fallback for spice
+    if spice_level_label in {"RIP (Super Spicy!)", "Mystery Heat (Surprise me!)"}:
+        spice_caution = (
+            "For high or uncertain spice requests (such as 'Super Spicy' or 'Surprise me!'), recommend only authentic recipes that are traditionally served at such heat levels. "
+            "NEVER invent or escalate the spice artificially. NEVER propose unsafe challenge dishes or novelty recipes. "
+            "If no safe, authentic options are available, reduce the result set and, if necessary, substitute with the closest authentic recipe matching other criteria. "
+            "Always avoid recipes where the heat level could present risk or be unsuitable for the general public."
+        )
+    else:
+        spice_caution = (
+            "For all other spice levels, select only authentic dishes that naturally correspond to the requested heat. "
+            "NEVER assign a higher spice level than requested. Only select recipes that authentically match the user's heat preference using the numeric scale below."
+        )
+
+    prompt = (
+        "You are a professional AI recipe agent for home cooking. "
+        "When interpreting spice requests, use this numeric scale: "
+        "1 = No spice at all; 2-3 = Mild; 4-5 = Medium; 6-7 = Spicy; 8-10 = Super Spicy (for chili-lovers); 1-10 = Any. "
+        f"Requested spice level: {spice_description} (numeric scale: {spice_numeric}). "
+        f"{spice_caution} "
+        "Your task is to recommend only genuine, practical, and diverse recipes, strictly adhering to the user's constraints. "
+        "Every result must be drawn from reputable, publicly accessible, and verifiable recipe sources online. "
+        f"Use ONLY the following as main ingredients: {ingredient_str}. "
+        "Do NOT introduce additional ingredients except universally available pantry basics (e.g., water, salt, pepper, oil). "
+        f"Exclude any recipe containing these allergens: {allergies_str if allergies_str else 'None specified'}. "
+        f"Respect the following dietary requirements: {diets_str if diets_str else 'None specified'}. "
+        f"Focus on these cuisines if specified: {cuisines_str if cuisines_str else 'Any cuisine'}. "
+        "Do NOT alter recipe names to reflect spice. Use only the real name of the recipe. "
+        "Find recipes that are suitable for main course meals (mandatory) and other meal types (optional). "
+        f"Total preparation and cooking time per recipe must not exceed {max_time} minutes. "
+        "Each returned recipe MUST be a unique, authentic, real-world dish, with a valid, accessible website link from a reputable culinary domain. "
+        "Do not repeat, invent, or generalise. If the full number of recipes cannot be found that match ALL criteria, return only those that are fully compliant, ensuring maximal diversity and relevance. "
+        f"Return up to {num_recipes} distinct, high-quality recipes that meet these standards. "
+        "If no suitable recipes exist for some criteria (e.g., too restrictive), gracefully provide the closest matches, explain the shortfall, and never invent or hallucinate results. "
+        "Do NOT include any explanation, commentary, or extra output—just the result."
+    )
+    return prompt
