@@ -16,13 +16,16 @@ class Ingredient(BaseModel):
 class Recipe(BaseModel):
     id: Optional[str] = None
     title: str
+    summary: Optional[str] = ""
     imageUrl: Optional[str] = ""
     totalTime: Optional[int] = 0
     ingredients: List[Ingredient] = Field(default_factory=list)
     instructions: List[str] = Field(default_factory=list)
     equipment: List[str] = Field(default_factory=list)
+    substitutions: List[str] = Field(default_factory=list)
     website: Optional[str] = ""
     videos: List[str] = Field(default_factory=list)
+    aiGenerated: bool = False
 
 class RecipeSearchResponse(BaseModel):
     recipes: List[Recipe]

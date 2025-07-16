@@ -1,24 +1,30 @@
 class Recipe {
   final String id;
   final String title;
+  final String summary;
   final String imageUrl;
   final int totalTime;
   final List<RecipeIngredient> ingredients;
   final List<String> instructions;
   final List<String> equipment;
+  final List<String> substitutions;
   final String website;
   final List<String> videos;
+  final bool aiGenerated;
 
   Recipe({
     required this.id,
     required this.title,
+    required this.summary,
     required this.imageUrl,
     required this.totalTime,
     required this.ingredients,
     required this.instructions,
     required this.equipment,
+    required this.substitutions,
     required this.website,
     required this.videos,
+    required this.aiGenerated,
   });
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
@@ -38,13 +44,16 @@ class Recipe {
     return Recipe(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
+      summary: json['summary'] ?? '',
       imageUrl: json['imageUrl'] ?? '',
       totalTime: json['totalTime'] ?? 0,
       ingredients: ingredientObjs,
       instructions: (json['instructions'] as List?)?.map((e) => e.toString()).toList() ?? [],
       equipment: (json['equipment'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      substitutions: (json['substitutions'] as List?)?.map((e) => e.toString()).toList() ?? [],
       website: json['website'] ?? '',
       videos: (json['videos'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      aiGenerated: json['aiGenerated'] ?? false,
     );
   }
 }
