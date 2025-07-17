@@ -1,4 +1,6 @@
 import filetype
+from typing import List, Optional
+from app.models.recipe import Recipe
 
 def detect_mime_type(file_bytes: bytes):
     kind = filetype.guess(file_bytes)
@@ -268,3 +270,49 @@ def build_recipe_agent_prompt(
         "Do NOT include any explanation, commentary, or extra output—just the result."
     )
     return prompt
+
+# For blue debug prints
+BLUE = "\033[94m"
+RESET = "\033[0m"
+
+def filter_recipes(
+    recipes: List[Recipe],
+    max_time: Optional[int] = None,
+    cuisines: Optional[List[str]] = None,
+    diets: Optional[List[str]] = None
+) -> List[Recipe]:
+    # Define values to ignore for filters
+    IGNORED_DIET_VALUES = {"none", "other"}
+    IGNORED_CUISINE_VALUES = {"none", "other", "mauritian"}
+
+    # Clean the input filters
+    filtered_diets = [d for d in (diets or []) if d and d.strip().lower() not in IGNORED_DIET_VALUES]
+    filtered_cuisines = [c for c in (cuisines or []) if c and c.strip().lower() not in IGNORED_CUISINE_VALUES]
+
+    filtered = []
+    for recipe in recipes:
+        # Filter by max_time
+        if max_time is not None and recipe.readyInMinutes is not None:
+            if recipe.readyInMinutes > max_time:
+                print(f"{BLUE}[DEBUG] Recipe {recipe.id} skipped: readyInMinutes={recipe.readyInMinutes} > max_time={max_time}{RESET}")
+                continue
+
+        # Filter by cuisines ONLY if there are valid values
+        if filtered_cuisines:
+            recipe_cuisines_lower = [c.lower() for c in (recipe.cuisines or [])]
+            if not any(c.lower() in recipe_cuisines_lower for c in filtered_cuisines):
+                print(f"{BLUE}[DEBUG] Recipe {recipe.id} skipped: cuisines {recipe.cuisines} do not match any of {filtered_cuisines}{RESET}")
+                continue
+
+        # Filter by diets ONLY if there are valid values
+        if filtered_diets:
+            recipe_diets_lower = [d.lower() for d in (recipe.diets or [])]
+            if not any(d.lower() in recipe_diets_lower for d in filtered_diets):
+                print(f"{BLUE}[DEBUG] Recipe {recipe.id} skipped: diets {recipe.diets} do not match any of {filtered_diets}{RESET}")
+                continue
+
+        # Passed all filters
+        filtered.append(recipe)
+
+    print(f"{BLUE}[DEBUG] Recipes after filtering: {len(filtered)}{RESET}")
+    return filtered

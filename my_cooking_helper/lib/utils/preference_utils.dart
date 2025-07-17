@@ -98,7 +98,7 @@ class PreferenceUtils {
 
   static final diets = [
     PreferenceOption("Vegan", ["🌱"], [{"name": "plant"}]),
-    PreferenceOption("Vegetarian (Lacto)", ["🥛"]),
+    PreferenceOption("Vegetarian (Lacto)", ["🥛"], [{"name": "muscle"}]),
     PreferenceOption("Vegetarian (Ovo)", ["🥚"]),
     PreferenceOption("Vegetarian", ["🍠"], [{"name": "rootVegetable"}]),
     PreferenceOption("Pescatarian", ["🐟"], [{"name": "fish"}]),
@@ -106,14 +106,14 @@ class PreferenceUtils {
     PreferenceOption("Whole30", ["🧘"]),    
     PreferenceOption("Gluten-free", ["🚫🌾"]),
     PreferenceOption("Low FODMAP", ["🦠"], [{"name": "microbe"}]),
-    PreferenceOption("Ketogenic", ["🥓"]), //omit
-    PreferenceOption("Low-carb", ["🥗"]), //omit
-    PreferenceOption("High Protein", ["🍗"]), //omit
-    PreferenceOption("Intermittent Fasting", ["⏳"]), //omit
-    PreferenceOption("Halal", ["☪️"]), //omit
-    PreferenceOption("Diabetic-friendly", ["🍏"]), //omit
-    PreferenceOption("DASH", ["💪"], [{"name": "muscle"}]), //omit
-    PreferenceOption("None / Open to all", ["👌"], [{"name": "ok"}]),
+    PreferenceOption("Ketogenic", ["🥓"]),
+    // PreferenceOption("Low-carb", ["🥗"]), //omit
+    PreferenceOption("Primal", ["🍗"]),
+    // PreferenceOption("Intermittent Fasting", ["⏳"]), //omit
+    // PreferenceOption("Halal", ["☪️"]), //omit
+    // PreferenceOption("Diabetic-friendly", ["🍏"]), //omit
+    // PreferenceOption("DASH", ["💪"], [{"name": "muscle"}]), //omit
+    PreferenceOption("None", ["👌"], [{"name": "ok"}]),
     PreferenceOption("Other", ["❓"], [{"name": "question"}]),
   ];
 
