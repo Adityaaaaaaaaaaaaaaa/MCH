@@ -281,6 +281,7 @@ def filter_recipes(
     cuisines: Optional[List[str]] = None,
     diets: Optional[List[str]] = None
 ) -> List[Recipe]:
+    """
     # Define values to ignore for filters
     IGNORED_DIET_VALUES = {"none", "other"}
     IGNORED_CUISINE_VALUES = {"none", "other", "mauritian"}
@@ -288,6 +289,7 @@ def filter_recipes(
     # Clean the input filters
     filtered_diets = [d for d in (diets or []) if d and d.strip().lower() not in IGNORED_DIET_VALUES]
     filtered_cuisines = [c for c in (cuisines or []) if c and c.strip().lower() not in IGNORED_CUISINE_VALUES]
+    """
 
     filtered = []
     for recipe in recipes:
@@ -298,6 +300,7 @@ def filter_recipes(
                 continue
 
         # Filter by cuisines ONLY if there are valid values
+        """
         if filtered_cuisines:
             recipe_cuisines_lower = [c.lower() for c in (recipe.cuisines or [])]
             if not any(c.lower() in recipe_cuisines_lower for c in filtered_cuisines):
@@ -310,6 +313,7 @@ def filter_recipes(
             if not any(d.lower() in recipe_diets_lower for d in filtered_diets):
                 print(f"{BLUE}[DEBUG] Recipe {recipe.id} skipped: diets {recipe.diets} do not match any of {filtered_diets}{RESET}")
                 continue
+        """
 
         # Passed all filters
         filtered.append(recipe)
