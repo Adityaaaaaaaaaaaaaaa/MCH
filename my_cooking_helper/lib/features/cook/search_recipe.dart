@@ -807,7 +807,16 @@ class RecipeDetailModal extends StatelessWidget {
                   // Website Link
                   if (recipe.website.isNotEmpty) ...[
                     GestureDetector(
-                      onTap: () => openWebView(recipe.website),
+                      //onTap: () => openWebView(recipe.website),
+                      onTap: () {
+                        final originalUrl = recipe.website;
+                        final fixedUrl = recipe.website.startsWith('http://')
+                            ? recipe.website.replaceFirst('http://', 'https://')
+                            : recipe.website;
+
+                        print('\x1B[33m[DEBUG] Recipe Website tapped.\n[DEBUG] Original: $originalUrl\n[DEBUG] Modified: $fixedUrl\x1B[0m');
+                        openWebView(fixedUrl);
+                      },
                       child: Container(
                         margin: const EdgeInsets.only(top: 8, bottom: 4),
                         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
