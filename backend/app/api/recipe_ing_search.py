@@ -30,7 +30,7 @@ async def search_by_ingredients(payload: RecipeSearchRequest, request: Request):
         print(f"{BLUE}[DEBUG] Calling SpoonacularProvider.find_by_ingredients(){RESET}")
         recipes_data = provider.find_by_ingredients(
             ingredients=payload.ingredients,
-            number=100
+            number=15
         )
 
         print(f"{BLUE}[DEBUG] Partial recipes received: {len(recipes_data)}{RESET}")
@@ -43,17 +43,12 @@ async def search_by_ingredients(payload: RecipeSearchRequest, request: Request):
         full_details = []
         for i in range(0, len(ids), BATCH_SIZE):
             batch_ids = ids[i:i+BATCH_SIZE]
-            #print(f"{BLUE}[DEBUG] Fetching bulk details for IDs: {batch_ids}{RESET}")
             details = details_provider.get_bulk_recipe_details(batch_ids)
             full_details.extend(details)
-            #print(f"{BLUE}[DEBUG] Accumulated full recipes: {len(full_details)}{RESET}")
             if i + BATCH_SIZE < len(ids):
-                #print(f"{BLUE}[DEBUG] Waiting for 1.1s to respect Spoonacular API rate limit{RESET}")
                 time.sleep(1.1)  # Respect free plan limit
 
         # Step 3: Map the full_details dicts to Recipe Pydantic models
-        #print(f"{BLUE}[DEBUG] Mapping raw recipe dicts to Recipe models...{RESET}")
-
         recipes_obj = []
         for r in full_details:
             try:
@@ -61,9 +56,8 @@ async def search_by_ingredients(payload: RecipeSearchRequest, request: Request):
                 recipes_obj.append(recipe_obj)
             except Exception as map_err:
                 print(f"{BLUE}[DEBUG] Error mapping recipe ID {r.get('id')} to model: {map_err}{RESET}")
-                # Optionally skip or handle bad entries
 
-        # Step 4: Filter based on maxTime, cuisines, diets
+        # Step 4: ENABLE FILTERING
         print(f"{BLUE}[DEBUG] Filtering recipes by time/cuisine/diet...{RESET}")
         filtered_recipes = filter_recipes(
             recipes_obj,
@@ -76,7 +70,7 @@ async def search_by_ingredients(payload: RecipeSearchRequest, request: Request):
 
         if filtered_recipes:
             print(f"{BLUE}[DEBUG] Filtered recipes selected to send to frontend:{RESET}")
-            for rec in filtered_recipes:
+            for rec in filtered_recipes[:5]:  # print only a sample of first 5 for brevity
                 print(
                     f"{BLUE}[DEBUG] Recipe ID: {rec.id}, Title: {rec.title}, "
                     f"Cuisines: {rec.cuisines}, Diets: {rec.diets}, Time: {rec.readyInMinutes} min{RESET}"
@@ -84,13 +78,16 @@ async def search_by_ingredients(payload: RecipeSearchRequest, request: Request):
         else:
             print(f"{BLUE}[DEBUG] No recipes selected to send to frontend after filtering.{RESET}")
 
-        # Return both the strongly-typed models and raw data for debugging
+        print(f"{BLUE}[DEBUG] Sending {len(filtered_recipes)} recipes back to frontend (via HTTP response).{RESET}")
+        if filtered_recipes:
+            print(f"{BLUE}[DEBUG] Sample recipe being sent: {filtered_recipes[0].dict() if hasattr(filtered_recipes[0],'dict') else filtered_recipes[0]}{RESET}")
+
         return RecipeSearchResponse(
             recipes=filtered_recipes,
             raw_gemini={"full_recipes": full_details},
             raw_gemini_str=str(full_details)
         )
-
+    
     except Exception as e:
         print(f"{BLUE}[DEBUG] Exception occurred in search_by_ingredients: {e}{RESET}")
         raise HTTPException(status_code=500, detail=str(e))

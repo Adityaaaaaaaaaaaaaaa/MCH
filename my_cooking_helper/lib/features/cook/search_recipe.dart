@@ -486,12 +486,20 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                     Expanded(
                       child: ListView.builder(
                         padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 20.h),
-                        itemCount: visibleRecipes + (visibleRecipes < recipeResults.length ? 1 : 0),
+                        // itemCount logic:
+                        // - If there are more recipes to show, show a "Show More" button as the last item.
+                        // - Otherwise, just show as many as we have.
+                        itemCount: (recipeResults.length > visibleRecipes)
+                            ? visibleRecipes + 1 // +1 for the button
+                            : recipeResults.length,
                         itemBuilder: (context, index) {
-                          if (index < visibleRecipes) {
+                          // Display recipe cards
+                          if (index < visibleRecipes && index < recipeResults.length) {
                             return _buildRecipeCard(recipeResults[index], index);
-                          } else {
-                            // Show more button
+                          }
+                          // "Show more" button logic
+                          else if (index == visibleRecipes &&
+                                  recipeResults.length > visibleRecipes) {
                             return Container(
                               margin: EdgeInsets.only(top: 8.h),
                               child: GestureDetector(
@@ -532,6 +540,10 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                                 ),
                               ),
                             );
+                          }
+                          // Defensive: If index is out of range (shouldn't happen), return empty
+                          else {
+                            return const SizedBox.shrink();
                           }
                         },
                       ),
@@ -821,6 +833,28 @@ class RecipeDetailModal extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (recipe.website.startsWith('http://')) // Show warning for HTTP
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0, bottom: 0),
+                        child: Row(
+                          children: [
+                            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'This website is not secure (HTTP). Your connection may not be private.',
+                                style: TextStyle(
+                                  color: Colors.red[700],
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                   // Videos
                   if (recipe.videos.isNotEmpty) ...[

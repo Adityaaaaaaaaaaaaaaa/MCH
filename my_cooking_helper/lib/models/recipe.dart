@@ -1,9 +1,9 @@
 class Recipe {
-  final String id;
+  final String id; // backend may send int, so .toString()
   final String title;
   final String imageUrl;
-  final int totalTime;
-  final List<RecipeIngredient> ingredients;
+  final int totalTime; // readyInMinutes, must be int
+  final List<Ingredient> ingredients;
   final List<String> instructions;
   final List<String> equipment;
   final String website;
@@ -22,46 +22,70 @@ class Recipe {
   });
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
-    // ingredients may be returned as list of strings or list of objects
-    final rawIngredients = json['ingredients'] as List? ?? [];
-    List<RecipeIngredient> ingredientObjs;
-    if (rawIngredients.isNotEmpty && rawIngredients[0] is Map) {
-      ingredientObjs = rawIngredients
-          .map((e) => RecipeIngredient.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
-    } else {
-      ingredientObjs = rawIngredients
-          .map((e) => RecipeIngredient(name: e.toString(), quantity: ""))
-          .toList();
+    // Defensive int parsing
+    int parseTotalTime(dynamic val) {
+      if (val == null) return 0;
+      if (val is int) return val;
+      if (val is String) return int.tryParse(val) ?? 0;
+      return 0;
     }
 
     return Recipe(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      imageUrl: json['imageUrl'] ?? '',
-      totalTime: json['totalTime'] ?? 0,
-      ingredients: ingredientObjs,
-      instructions: (json['instructions'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      equipment: (json['equipment'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      website: json['website'] ?? '',
-      videos: (json['videos'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      imageUrl: json['image']?.toString() ?? '',
+      totalTime: parseTotalTime(json['readyInMinutes']),
+      ingredients: (json['extendedIngredients'] as List<dynamic>? ?? [])
+          .map((i) => Ingredient.fromJson(i as Map<String, dynamic>))
+          .toList(),
+      instructions: _parseInstructions(json),
+      equipment: _parseEquipment(json),
+      website: json['sourceUrl']?.toString() ?? '',
+      videos: [], // implement if you add video support from backend
     );
+  }
+
+  static List<String> _parseInstructions(Map<String, dynamic> json) {
+    if (json['analyzedInstructions'] is List && (json['analyzedInstructions'] as List).isNotEmpty) {
+      final steps = json['analyzedInstructions'][0]['steps'] as List<dynamic>? ?? [];
+      return steps.map((s) => s['step']?.toString() ?? '').where((e) => e.isNotEmpty).toList();
+    }
+    if (json['instructions'] is String && (json['instructions'] as String).isNotEmpty) {
+      return (json['instructions'] as String)
+          .split(RegExp(r'\.\s+'))
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    return [];
+  }
+
+  static List<String> _parseEquipment(Map<String, dynamic> json) {
+    if (json['analyzedInstructions'] is List && (json['analyzedInstructions'] as List).isNotEmpty) {
+      final steps = json['analyzedInstructions'][0]['steps'] as List<dynamic>? ?? [];
+      final allEquipment = <String>{};
+      for (var s in steps) {
+        if (s is Map && s['equipment'] is List) {
+          for (var e in s['equipment']) {
+            if (e is Map && e['name'] != null) allEquipment.add(e['name'].toString());
+          }
+        }
+      }
+      return allEquipment.toList();
+    }
+    return [];
   }
 }
 
-class RecipeIngredient {
+class Ingredient {
   final String name;
   final String quantity;
+  Ingredient({required this.name, required this.quantity});
 
-  RecipeIngredient({
-    required this.name,
-    required this.quantity,
-  });
-
-  factory RecipeIngredient.fromJson(Map<String, dynamic> json) {
-    return RecipeIngredient(
-      name: json['name'] ?? '',
-      quantity: json['quantity'] ?? '',
+  factory Ingredient.fromJson(Map<String, dynamic> json) {
+    return Ingredient(
+      name: json['name']?.toString() ?? '',
+      quantity: json['original']?.toString() ?? '',
     );
   }
 }
