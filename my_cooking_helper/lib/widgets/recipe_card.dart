@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:glass/glass.dart';
@@ -24,191 +26,343 @@ class RecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Enhanced theme detection for better dark/light mode support
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark 
+        ? Colors.grey[900]!.withOpacity(0.7)
+        : Colors.white.withOpacity(0.95);
+        
+    final shadowColor = isDark 
+        ? Colors.black.withOpacity(0.4)
+        : Colors.black.withOpacity(0.08);
+
     return AnimatedScale(
       scale: 1.0,
       duration: const Duration(milliseconds: 200),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          margin: EdgeInsets.only(bottom: 16.h),
+          margin: EdgeInsets.only(bottom: 20.h), // Increased margin for better spacing
           child: Stack(
             children: [
+              // Enhanced card container with better shadows and modern design
               Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28.r),
+                  borderRadius: BorderRadius.circular(24.r), // Slightly reduced for modern look
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.07),
-                      blurRadius: 24,
-                      offset: const Offset(0, 10),
+                      color: shadowColor,
+                      blurRadius: 20, // Enhanced shadow
+                      offset: const Offset(0, 8),
+                      spreadRadius: 0,
+                    ),
+                    // Additional subtle shadow for depth
+                    BoxShadow(
+                      color: shadowColor.withOpacity(0.1),
+                      blurRadius: 40,
+                      offset: const Offset(0, 20),
                     ),
                   ],
-                  border: isSelected ? Border.all(color: Colors.green, width: 2.5) : null,
+                  // Enhanced border with theme-aware colors
+                  border: isSelected 
+                      ? Border.all(
+                          color: Theme.of(context).colorScheme.primary, 
+                          width: 2.5
+                        ) 
+                      : Border.all(
+                          color: isDark 
+                              ? Colors.grey[700]!.withOpacity(0.3)
+                              : Colors.grey[200]!.withOpacity(0.5),
+                          width: 1,
+                        ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28.r),
+                  borderRadius: BorderRadius.circular(24.r),
                   child: Container(
-                    padding: EdgeInsets.only(bottom: 0),
+                    // Enhanced background with theme awareness
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.88),
+                      color: cardColor,
+                      // Added subtle gradient for modern look
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          cardColor,
+                          cardColor.withOpacity(0.8),
+                        ],
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Recipe Image with Glass Badge
+                        // Enhanced Recipe Image Section
                         Stack(
                           children: [
+                            // Improved image container with better aspect ratio
                             ClipRRect(
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-                              child: Image.network(
-                                recipe.imageUrl,
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+                              child: SizedBox(
+                                height: 200.h, // Increased height for better proportions
                                 width: double.infinity,
-                                height: 180.h,
-                                fit: BoxFit.cover,
-                                errorBuilder: (c, e, s) => Container(
+                                child: Image.network(
+                                  recipe.imageUrl,
                                   width: double.infinity,
-                                  height: 180.h,
-                                  color: Colors.grey[200],
-                                  child: Icon(Icons.restaurant_menu, size: 60.sp, color: Colors.grey[400]),
-                                ),
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Container(
+                                  height: 200.h,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (c, e, s) => Container(
                                     width: double.infinity,
-                                    height: 180.h,
-                                    color: Colors.grey[200],
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        value: loadingProgress.expectedTotalBytes != null
-                                            ? loadingProgress.cumulativeBytesLoaded /
-                                                loadingProgress.expectedTotalBytes!
-                                            : null,
+                                    height: 200.h,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          isDark ? Colors.grey[800]! : Colors.grey[100]!,
+                                          isDark ? Colors.grey[700]! : Colors.grey[200]!,
+                                        ],
                                       ),
                                     ),
-                                  );
-                                },
+                                    child: Icon(
+                                      Icons.restaurant_menu_rounded, // More modern icon
+                                      size: 48.sp, 
+                                      color: isDark ? Colors.grey[500] : Colors.grey[400]
+                                    ),
+                                  ),
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      width: double.infinity,
+                                      height: 200.h,
+                                      decoration: BoxDecoration(
+                                        color: isDark ? Colors.grey[800] : Colors.grey[100],
+                                      ),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          color: Theme.of(context).colorScheme.primary,
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded /
+                                                  loadingProgress.expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             ),
-                            // Time badge (glass effect)
+                            
+                            // Enhanced overlay gradient for better text readability
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    stops: const [0.0, 0.6, 1.0],
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.transparent,
+                                      Colors.black.withOpacity(0.3),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            
+                            // Redesigned time badge with modern glassmorphism
                             Positioned(
-                              bottom: 14.h,
+                              bottom: 16.h,
                               left: 16.w,
                               child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
+                                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(18.r),
+                                  borderRadius: BorderRadius.circular(20.r),
+                                  // Enhanced glass effect
+                                  color: Colors.black.withOpacity(0.2),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.2),
+                                    width: 1,
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.access_time, size: 14.sp, color: Colors.white),
+                                    Icon(
+                                      Icons.schedule_rounded, // More modern icon
+                                      size: 16.sp, 
+                                      color: Colors.white,
+                                    ),
                                     SizedBox(width: 6.w),
                                     Text(
                                       formatTime(recipe.totalTime),
                                       style: TextStyle(
-                                        color: textColor(context),
-                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
                                         fontSize: 13.sp,
+                                        letterSpacing: 0.5,
                                       ),
                                     ),
                                   ],
                                 ),
                               ).asGlass(
-                                blurX: 7,
-                                blurY: 7,
-                                tintColor: Colors.black.withOpacity(0.38),
-                                clipBorderRadius: BorderRadius.circular(18.r),
+                                blurX: 10,
+                                blurY: 10,
+                                tintColor: Colors.white.withOpacity(0.1),
+                                clipBorderRadius: BorderRadius.circular(20.r),
                               ),
                             ),
-                            // Select badge
+                            
+                            // Modern select badge with enhanced design
                             Positioned(
-                              top: 14.h,
+                              top: 16.h,
                               right: 16.w,
                               child: GestureDetector(
                                 onTap: onSelect,
-                                child: Container(
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
                                   padding: EdgeInsets.all(10.w),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? Colors.green : Colors.white.withOpacity(0.92),
+                                    color: isSelected 
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Colors.white.withOpacity(0.95),
                                     shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSelected 
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Colors.white.withOpacity(0.5),
+                                      width: 1.5,
+                                    ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.11),
-                                        blurRadius: 6,
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
                                       ),
                                     ],
                                   ),
                                   child: Icon(
-                                    isSelected ? Icons.check : Icons.add,
+                                    isSelected ? Icons.check_rounded : Icons.add_rounded,
                                     size: 18.sp,
-                                    color: isSelected ? Colors.white : Colors.green,
+                                    color: isSelected 
+                                        ? Colors.white 
+                                        : Theme.of(context).colorScheme.primary,
                                   ),
-                                ).asGlass(
-                                  blurX: 10,
-                                  blurY: 10,
-                                  tintColor: isSelected ? Colors.green : Colors.white,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        // Recipe Info Section
+                        
+                        // Enhanced Recipe Info Section with modern layout
                         Padding(
-                          padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 20.h),
+                          padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 24.h), // Better padding
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Recipe title with improved typography
                               Text(
                                 recipe.title,
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 19.sp,
+                                  fontWeight: FontWeight.w700, // Slightly bolder
+                                  fontSize: 20.sp, // Increased size
                                   color: textColor(context),
+                                  letterSpacing: -0.5, // Modern tight spacing
+                                  height: 1.2, // Better line height
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              SizedBox(height: 8.h),
-                              Row(
-                                children: [
-                                  Icon(Icons.inventory_2_outlined, size: 14.sp, color: Colors.grey[700]),
-                                  SizedBox(width: 6.w),
-                                  Text(
-                                    '${recipe.ingredients.length} ingredients',
-                                    style: TextStyle(
-                                      fontSize: 13.sp,
-                                      color: Colors.grey[700],
+                              
+                              SizedBox(height: 12.h), // Increased spacing
+                              
+                              // Enhanced ingredients info with modern design
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                                decoration: BoxDecoration(
+                                  color: isDark 
+                                      ? Colors.grey[800]!.withOpacity(0.5)
+                                      : Colors.grey[100]!.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  border: Border.all(
+                                    color: isDark 
+                                        ? Colors.grey[600]!.withOpacity(0.3)
+                                        : Colors.grey[300]!.withOpacity(0.5),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.inventory_2_rounded, // More modern icon
+                                      size: 16.sp, 
+                                      color: Theme.of(context).colorScheme.primary,
                                     ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 12.h),
-                              // View Recipe Button
-                              InkWell(
-                                borderRadius: BorderRadius.circular(14.r),
-                                onTap: onViewRecipe,
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.symmetric(vertical: 11.h),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    borderRadius: BorderRadius.circular(14.r),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'View Recipe',
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      '${recipe.ingredients.length} ingredients',
                                       style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14.sp,
+                                        fontSize: 14.sp, // Slightly larger
+                                        color: isDark ? Colors.grey[300] : Colors.grey[700],
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
+                                  ],
+                                ),
+                              ),
+                              
+                              SizedBox(height: 16.h), // Better spacing
+                              
+                              // Enhanced View Recipe Button with modern design
+                              InkWell(
+                                borderRadius: BorderRadius.circular(16.r),
+                                onTap: onViewRecipe,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  width: double.infinity,
+                                  padding: EdgeInsets.symmetric(vertical: 14.h), // Better padding
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Theme.of(context).colorScheme.primary,
+                                        Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(16.r), // More modern radius
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
                                   ),
-                                ).asGlass(
-                                  blurX: 4,
-                                  blurY: 6,
-                                  tintColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                                  clipBorderRadius: BorderRadius.circular(14.r),
+                                  child: Center(
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.restaurant_menu_rounded,
+                                          color: Colors.white,
+                                          size: 16.sp,
+                                        ),
+                                        SizedBox(width: 8.w),
+                                        Text(
+                                          'View Recipe',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15.sp, // Slightly larger
+                                            letterSpacing: 0.5, // Modern spacing
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
@@ -218,10 +372,12 @@ class RecipeCard extends StatelessWidget {
                     ),
                   ),
                 ).asGlass(
-                  blurX: 8,
-                  blurY: 8,
-                  tintColor: Colors.white.withOpacity(0.07),
-                  clipBorderRadius: BorderRadius.circular(28.r),
+                  blurX: 12, // Enhanced blur
+                  blurY: 12,
+                  tintColor: isDark 
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.white.withOpacity(0.1),
+                  clipBorderRadius: BorderRadius.circular(24.r),
                 ),
               ),
             ],
