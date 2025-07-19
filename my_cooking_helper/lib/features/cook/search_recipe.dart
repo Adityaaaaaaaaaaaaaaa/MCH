@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:glass/glass.dart';
+import 'package:go_router/go_router.dart';
 import '/theme/app_theme.dart';
 import '/utils/emoji_animation.dart';
 import '/models/recipe.dart';
@@ -461,7 +462,6 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                           ),
                         );
                       }
-                      // Defensive: If index is out of range (shouldn't happen), return empty
                       else {
                         return const SizedBox.shrink();
                       }
@@ -470,12 +470,45 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                 ),
               ],
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: startFlow,
-        icon: const Icon(Icons.refresh),
-        label: const Text('Search Again'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+      floatingActionButton: Builder(
+        builder: (context) {
+          final isRecipeSelected = selectedRecipes.length == 1;     
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24.r),
+            ),
+            child: FloatingActionButton.extended(
+              onPressed: isRecipeSelected
+                  ? () { 
+                      context.push('/recipePage');  /////////////////////////////////////////////////////////////////////////
+                    }
+                  : startFlow,
+              icon: Icon(
+                isRecipeSelected ? Icons.restaurant_menu_rounded : Icons.refresh,
+                size: 22.sp,
+              ),
+              label: Text(
+                isRecipeSelected ? "Cook >>>" : "Search Again",
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15.sp),
+              ),
+              backgroundColor: Colors.transparent,
+              foregroundColor: textColor(context),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24.r),
+                side: BorderSide(
+                  color: Colors.white.withOpacity(0.5),
+                  width: 1.5,
+                ),
+              ),
+            ).asGlass(
+              blurX: 20,
+              blurY: 20,
+              tintColor: isRecipeSelected? Colors.green : Colors.red,
+              clipBorderRadius: BorderRadius.circular(24.r),
+            ),
+          );
+        },
       ),
     );
   }
