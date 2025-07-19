@@ -84,7 +84,7 @@ class RecipeDetailModal extends StatelessWidget {
                               recipe.imageUrl,
                               width: double.infinity,
                               height: 220.h,
-                              fit: BoxFit.cover,
+                              fit: BoxFit.contain,
                               errorBuilder: (c, e, s) => Container(
                                 width: double.infinity,
                                 height: 220.h,
@@ -131,21 +131,6 @@ class RecipeDetailModal extends StatelessWidget {
                                 );
                               },
                             ),
-                            //image gradient 
-                            /*Positioned.fill(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.transparent,
-                                      Colors.grey.withOpacity(0.3),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),*/
                           ],
                         ),
                       ),
@@ -322,9 +307,6 @@ class RecipeDetailModal extends StatelessWidget {
                             ),
                           ],
                         ),
-                        /////////////////////////////////////////////////////////////////////////////////////////// 
-                        ///reached here , 
-                        ///////////////////////////////////////////////////////////////////////////////////////////
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -365,7 +347,7 @@ class RecipeDetailModal extends StatelessWidget {
                         ),
                       );
                     }),
-                    SizedBox(height: 32.h),
+                    SizedBox(height: 25.h),
                   ],
 
                   // EQUIPMENT SECTION
@@ -400,13 +382,13 @@ class RecipeDetailModal extends StatelessWidget {
                         ),
                       )).toList(),
                     ),
-                    SizedBox(height: 32.h),
+                    SizedBox(height: 25.h),
                   ],
                     
                   // Nutrition Section
                   if (recipe.nutrition != null && recipe.nutrition!.isNotEmpty) ...[
                     NutritionSection(nutrition: recipe.nutrition!),
-                    SizedBox(height: 32.h),
+                    SizedBox(height: 35.h),
                   ],
                   
                   // Website Link
@@ -466,7 +448,7 @@ class RecipeDetailModal extends StatelessWidget {
                         margin: EdgeInsets.only(bottom: 16.h),
                         decoration: BoxDecoration(
                           color: isDark 
-                              ? Colors.red[900]!.withOpacity(0.2)
+                              ? Colors.red[900]!.withOpacity(0.15)
                               : Colors.red[50],
                           borderRadius: BorderRadius.circular(12.r),
                           border: Border.all(
@@ -480,18 +462,40 @@ class RecipeDetailModal extends StatelessWidget {
                             Icon(
                               Icons.warning_amber_rounded, 
                               color: isDark ? Colors.red[300] : Colors.red[700], 
-                              size: 20.sp
+                              size: 30.sp
                             ),
                             SizedBox(width: 12.w),
                             Expanded(
-                              child: Text(
-                                'This website is not secure (HTTP). Your connection may not be private.',
-                                style: TextStyle(
-                                  color: isDark ? Colors.red[300] : Colors.red[700],
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14.sp,
-                                  height: 1.4,
-                                ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'This website is not secure (HTTP).',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.red[300] : Colors.red[700],
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 13.sp,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Your connection may not be private.',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.red[300] : Colors.red[700],
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 12.sp,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                  Text(
+                                    'HTTPS version will be used if available.',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.green[300] : Colors.green[700],
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 12.sp,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -617,7 +621,7 @@ class RecipeDetailModal extends StatelessWidget {
           Icon(
             icon,
             size: 16.sp,
-            color: isDark ? Colors.deepPurple[300] : Colors.deepPurple[700],
+            color: isDark ? Colors.cyan[300] : Colors.deepPurple[700],
           ),
           SizedBox(width: 8.w),
           Text(
@@ -625,7 +629,7 @@ class RecipeDetailModal extends StatelessWidget {
             style: TextStyle(
               fontSize: 14.sp,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.deepPurple[300] : Colors.deepPurple[700],
+              color: isDark ? Colors.cyan[300] : Colors.deepPurple[700],
             ),
           ),
         ],
