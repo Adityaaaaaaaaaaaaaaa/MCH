@@ -624,16 +624,21 @@ class RecipeDetailModal extends StatelessWidget {
             color: isDark ? Colors.cyan[300] : Colors.deepPurple[700],
           ),
           SizedBox(width: 8.w),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.cyan[300] : Colors.deepPurple[700],
+          Flexible( 
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.cyan[300] : Colors.deepPurple[700],
+              ),
+              softWrap: true,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
-      ),
+      )
     );
   }
 
