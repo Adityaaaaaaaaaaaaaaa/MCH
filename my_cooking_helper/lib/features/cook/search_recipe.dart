@@ -259,7 +259,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
       appBar: CustomAppBar(
         title: "Find Recipes",
         showMenu: false,
-        themeToggleWidget: ThemeToggleButton(),
+        themeToggleWidget: ThemeToggleButton(), ////////////////////////// remove aftrer test 
         height: 70.h,
         borderRadius: 26.r,
         topPadding: 40.h,
@@ -328,12 +328,19 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Found ${recipeResults.length} recipes',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
+                      Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(16.r),
+                          ),
+                        child: Text(
+                          'Found ${recipeResults.length} recipes',
+                          style: TextStyle(
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w600,
+                            color: textColor(context),
+                          ),
                         ),
                       ),
                       if (selectedRecipes.isNotEmpty)
@@ -346,7 +353,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                           child: Text(
                             '${selectedRecipes.length} selected',
                             style: TextStyle(
-                              fontSize: 12.sp,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
                               color: Colors.green,
                             ),
