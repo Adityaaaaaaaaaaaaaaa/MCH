@@ -4,7 +4,7 @@ from app.models.recipe import Recipe, RecipeSearchRequest, RecipeSearchResponse
 # from app.utils.ai_image import generate_recipe_image
 from app.providers.spoonacular import SpoonacularProvider
 from app.providers.spoonacular_recipe_details import SpoonacularRecipeDetailsProvider
-from app.utils.utils import filter_recipes  # <-- Import your utility
+from app.utils.utils import filter_recipes
 import os
 # import pprint
 # from dataclasses import dataclass, field, asdict, is_dataclass
@@ -30,7 +30,7 @@ async def search_by_ingredients(payload: RecipeSearchRequest, request: Request):
         print(f"{BLUE}[DEBUG] Calling SpoonacularProvider.find_by_ingredients(){RESET}")
         recipes_data = provider.find_by_ingredients(
             ingredients=payload.ingredients,
-            number=15
+            number=3
         )
 
         print(f"{BLUE}[DEBUG] Partial recipes received: {len(recipes_data)}{RESET}")
