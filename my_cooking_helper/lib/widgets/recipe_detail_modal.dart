@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '/models/recipe.dart';
 import '/utils/colors.dart';
 
@@ -23,28 +24,28 @@ class RecipeDetailModal extends StatelessWidget {
       expand: false,
       builder: (context, scrollController) => Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(34)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(34.r)),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(34)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(34.r)),
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.96),
             ),
             child: SingleChildScrollView(
               controller: scrollController,
-              padding: EdgeInsets.fromLTRB(26, 18, 26, 32),
+              padding: EdgeInsets.fromLTRB(26.w, 18.h, 26.w, 32.h),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Center(
                     child: Container(
-                      width: 45,
-                      height: 6,
-                      margin: const EdgeInsets.only(bottom: 16),
+                      width: 45.w,
+                      height: 6.h,
+                      margin: EdgeInsets.only(bottom: 16.h),
                       decoration: BoxDecoration(
                         color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                     ),
                   ),
@@ -53,7 +54,7 @@ class RecipeDetailModal extends StatelessWidget {
                     Center(
                       child: Container(
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(24.r),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.07),
@@ -63,23 +64,23 @@ class RecipeDetailModal extends StatelessWidget {
                           ],
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(24.r),
                           child: Image.network(
                             recipe.imageUrl,
                             width: double.infinity,
-                            height: 200,
+                            height: 200.h,
                             fit: BoxFit.cover,
                             errorBuilder: (c, e, s) => Container(
                               width: double.infinity,
-                              height: 200,
+                              height: 200.h,
                               color: Colors.grey[200],
-                              child: Icon(Icons.restaurant_menu, size: 60, color: Colors.grey[400]),
+                              child: Icon(Icons.restaurant_menu, size: 60.sp, color: Colors.grey[400]),
                             ),
                             loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
                               return Container(
                                 width: double.infinity,
-                                height: 200,
+                                height: 200.h,
                                 color: Colors.grey[200],
                                 child: Center(
                                   child: CircularProgressIndicator(
@@ -95,34 +96,82 @@ class RecipeDetailModal extends StatelessWidget {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20.h),
                   Text(
                     recipe.title,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 28,
+                      fontSize: 28.sp,
                       color: textColor(context),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                if (recipe.dishTypes.isNotEmpty || recipe.servings > 0)
+                  Padding(
+                    padding: EdgeInsets.only(bottom: 8.0.h),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (recipe.dishTypes.isNotEmpty)
+                          Text(
+                            recipe.dishTypes.join(', ').replaceFirstMapped(RegExp(r'^\w'), (m) => m.group(0)!.toUpperCase()),
+                            style: TextStyle(
+                              color: Colors.deepPurple,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16.sp,
+                            ),
+                          ),
+                        if (recipe.servings > 0)
+                          Row(
+                            children: [
+                              Icon(Icons.people, size: 16.sp, color: Colors.deepPurple),
+                              SizedBox(width: 4.w),
+                              Text(
+                                'Serves ${recipe.servings}',
+                                style: TextStyle(
+                                  color: Colors.deepPurple,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 15.sp,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                  // Times Row
+                  Row(
+                    children: [
+                      if (recipe.prepTime > 0)
+                        Text('Prep: ${recipe.prepTime} min', style: TextStyle(fontSize: 13.sp, color: Colors.grey[800])),
+                      if (recipe.prepTime > 0 && recipe.cookTime > 0)
+                        const Text('  |  '),
+                      if (recipe.cookTime > 0)
+                        Text('Cook: ${recipe.cookTime} min', style: TextStyle(fontSize: 13.sp, color: Colors.grey[800])),
+                      if ((recipe.prepTime > 0 || recipe.cookTime > 0) && recipe.totalTime > 0)
+                        const Text('  |  '),
+                      if (recipe.totalTime > 0)
+                        Text('Total: ${recipe.totalTime} min', style: TextStyle(fontSize: 13.sp, color: Colors.grey[800])),
+                    ],
+                  ),
+                  SizedBox(height: 14.h),
                   // Time Info
                   Row(
                     children: [
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 7.h),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(16.r),
                           color: Colors.deepPurple.withOpacity(0.25),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.access_time, size: 16, color: Colors.deepPurple),
-                            const SizedBox(width: 7),
+                            Icon(Icons.access_time, size: 16.sp, color: Colors.deepPurple),
+                            SizedBox(width: 7.w),
                             Text(
                               formatTime(recipe.totalTime),
-                              style: const TextStyle(
-                                fontSize: 15,
+                              style: TextStyle(
+                                fontSize: 15.sp,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.deepPurple,
                               ),
@@ -132,41 +181,41 @@ class RecipeDetailModal extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 22),
+                  SizedBox(height: 22.h),
                   // Ingredients
                   if (recipe.ingredients.isNotEmpty) ...[
                     Text(
                       'Ingredients',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        fontSize: 20.sp,
                         color: textColor(context),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10.h),
                     ...recipe.ingredients.map((ingredient) => Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
+                      padding: EdgeInsets.only(bottom: 6.h),
                       child: Row(
                         children: [
                           Container(
-                            width: 7,
-                            height: 7,
+                            width: 7.w,
+                            height: 7.h,
                             decoration: const BoxDecoration(
                               color: Colors.deepPurple,
                               shape: BoxShape.circle,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12.w),
                           Expanded(
                             child: Text(
                               '${ingredient.name}${ingredient.quantity.isNotEmpty ? " (${ingredient.quantity})" : ""}',
-                              style: TextStyle(fontSize: 16, color: textColor(context)),
+                              style: TextStyle(fontSize: 16.sp, color: textColor(context)),
                             ),
                           ),
                         ],
                       ),
                     )),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 18.h),
                   ],
                   // Instructions
                   if (recipe.instructions.isNotEmpty) ...[
@@ -174,19 +223,19 @@ class RecipeDetailModal extends StatelessWidget {
                       'Instructions',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        fontSize: 20.sp,
                         color: textColor(context),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10.h),
                     ...recipe.instructions.asMap().entries.map((entry) => Padding(
-                      padding: const EdgeInsets.only(bottom: 13),
+                      padding: EdgeInsets.only(bottom: 13.h),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            width: 28,
-                            height: 28,
+                            width: 28.w,
+                            height: 28.h,
                             decoration: BoxDecoration(
                               color: Colors.deepPurple,
                               shape: BoxShape.circle,
@@ -201,17 +250,17 @@ class RecipeDetailModal extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10.w),
                           Expanded(
                             child: Text(
                               entry.value,
-                              style: TextStyle(fontSize: 15, height: 1.5),
+                              style: TextStyle(fontSize: 15.sp, height: 1.5),
                             ),
                           ),
                         ],
                       ),
                     )),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                   ],
                   // Equipment
                   if (recipe.equipment.isNotEmpty) ...[
@@ -219,31 +268,34 @@ class RecipeDetailModal extends StatelessWidget {
                       'Equipment',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        fontSize: 20.sp,
                         color: textColor(context),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10.h),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: recipe.equipment.map((equipment) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 7.h),
                         decoration: BoxDecoration(
                           color: Colors.deepPurple.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(18.r),
                         ),
                         child: Text(
                           equipment,
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 15.sp,
                             fontWeight: FontWeight.w500,
                             color: Colors.deepPurple,
                           ),
                         ),
                       )).toList(),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
+                  ],
+                  if (recipe.nutrition != null && recipe.nutrition!.isNotEmpty) ...[
+                    NutritionSection(nutrition: recipe.nutrition!),
                   ],
                   // Website Link
                   if (recipe.website.isNotEmpty) ...[
@@ -259,24 +311,24 @@ class RecipeDetailModal extends StatelessWidget {
                         openWebView(fixedUrl);
                       },
                       child: Container(
-                        margin: const EdgeInsets.only(top: 8, bottom: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                        margin: EdgeInsets.only(top: 8.h, bottom: 4.h),
+                        padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 13.h),
                         decoration: BoxDecoration(
                           color: Colors.blue.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(14.r),
                           border: Border.all(color: Colors.blue.withOpacity(0.18)),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.language, color: Colors.blue, size: 18),
-                            const SizedBox(width: 8),
+                            Icon(Icons.language, color: Colors.blue, size: 18.sp),
+                            SizedBox(width: 8.w),
                             Text(
                               'Visit Recipe Website',
                               style: TextStyle(
                                 color: Colors.blue,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 15,
+                                fontSize: 15.sp,
                               ),
                             ),
                           ],
@@ -285,18 +337,18 @@ class RecipeDetailModal extends StatelessWidget {
                     ),
                     if (recipe.website.startsWith('http://')) // Show warning for HTTP
                       Padding(
-                        padding: const EdgeInsets.only(top: 8.0, bottom: 0),
+                        padding: EdgeInsets.only(top: 8.0.h, bottom: 0.h),
                         child: Row(
                           children: [
-                            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 18),
-                            const SizedBox(width: 8),
+                            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 18.sp),
+                            SizedBox(width: 8.w),
                             Expanded(
                               child: Text(
                                 'This website is not secure (HTTP). Your connection may not be private.',
                                 style: TextStyle(
                                   color: Colors.red[700],
                                   fontWeight: FontWeight.w500,
-                                  fontSize: 13,
+                                  fontSize: 13.sp,
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
@@ -308,37 +360,37 @@ class RecipeDetailModal extends StatelessWidget {
                   ],
                   // Videos
                   if (recipe.videos.isNotEmpty) ...[
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     Text(
                       'Videos',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        fontSize: 20.sp,
                         color: Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10.h),
                     ...recipe.videos.map((video) => Padding(
-                      padding: const EdgeInsets.only(bottom: 7),
+                      padding: EdgeInsets.only(bottom: 7.h),
                       child: GestureDetector(
                         onTap: () => openWebView(video),
                         child: Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: EdgeInsets.all(12.w),
                           decoration: BoxDecoration(
                             color: Colors.red.withOpacity(0.07),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14.r),
                             border: Border.all(color: Colors.red.withOpacity(0.18)),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.play_circle_fill, color: Colors.red, size: 20),
-                              const SizedBox(width: 8),
+                              Icon(Icons.play_circle_fill, color: Colors.red, size: 20.sp),
+                              SizedBox(width: 8.w),
                               Expanded(
                                 child: Text(
                                   video,
                                   style: TextStyle(
                                     color: Colors.red,
-                                    fontSize: 14,
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -359,3 +411,52 @@ class RecipeDetailModal extends StatelessWidget {
     );
   }
 }
+
+class NutritionSection extends StatelessWidget {
+  final Map<String, dynamic> nutrition;
+
+  const NutritionSection({Key? key, required this.nutrition}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final nutrients = nutrition['nutrients'] as List<dynamic>? ?? [];
+    if (nutrients.isEmpty) return const SizedBox.shrink();
+
+    final important = [
+      'Calories', 'Protein', 'Carbohydrates', 'Fat', 'Saturated Fat', 'Fiber', 'Sugar', 'Sodium'
+    ];
+
+    final filtered = nutrients.where((n) => important.contains(n['name'])).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Nutrition',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20.sp,
+            color: textColor(context),
+          ),
+        ),
+        SizedBox(height: 10.h),
+        ...filtered.map((n) => Row(
+          children: [
+            Icon(Icons.local_dining, size: 18.sp, color: Colors.orange[700]),
+            SizedBox(width: 10.w),
+            Text(
+              '${n['name'] ?? ''}: ',
+              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: textColor(context)),
+            ),
+            Text(
+              '${n['amount']?.toStringAsFixed(0) ?? ''} ${n['unit'] ?? ''}',
+              style: TextStyle(fontSize: 16.sp, color: Colors.grey[800]),
+            ),
+          ],
+        )),
+        SizedBox(height: 18.h),
+      ],
+    );
+  }
+}
+

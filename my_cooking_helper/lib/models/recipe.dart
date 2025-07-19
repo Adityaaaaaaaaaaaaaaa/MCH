@@ -1,47 +1,65 @@
 class Recipe {
-  final String id; // backend may send int, so .toString()
+  final String id;
   final String title;
   final String imageUrl;
-  final int totalTime; // readyInMinutes, must be int
+  final int totalTime;
+  final int prepTime;
+  final int cookTime;
+  final int servings;
+  final List<String> dishTypes;
   final List<Ingredient> ingredients;
   final List<String> instructions;
   final List<String> equipment;
   final String website;
   final List<String> videos;
+  final Map<String, dynamic>? nutrition;
 
   Recipe({
     required this.id,
     required this.title,
     required this.imageUrl,
     required this.totalTime,
+    required this.prepTime,
+    required this.cookTime,
+    required this.servings,
+    required this.dishTypes,
     required this.ingredients,
     required this.instructions,
     required this.equipment,
     required this.website,
     required this.videos,
+    this.nutrition,
   });
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
-    // Defensive int parsing
-    int parseTotalTime(dynamic val) {
+    int parseTime(dynamic val) {
       if (val == null) return 0;
       if (val is int) return val;
       if (val is String) return int.tryParse(val) ?? 0;
       return 0;
     }
 
+    // Always fallback to an empty list if null
+    final List<String> parsedDishTypes =
+        (json['dishTypes'] as List<dynamic>? ?? []).map((e) => e.toString()).toList();
+
     return Recipe(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       imageUrl: json['image']?.toString() ?? '',
-      totalTime: parseTotalTime(json['readyInMinutes']),
+      totalTime: parseTime(json['readyInMinutes']),
+      prepTime: parseTime(json['preparationMinutes']),
+      cookTime: parseTime(json['cookingMinutes']),
+      servings: parseTime(json['servings']),
+      dishTypes: parsedDishTypes,  // <--- Always a non-null list
       ingredients: (json['extendedIngredients'] as List<dynamic>? ?? [])
           .map((i) => Ingredient.fromJson(i as Map<String, dynamic>))
           .toList(),
       instructions: _parseInstructions(json),
       equipment: _parseEquipment(json),
       website: json['sourceUrl']?.toString() ?? '',
-      videos: [], // implement if you add video support from backend
+      videos: [], // Implement if your backend supports it
+      nutrition: json['nutrition'] as Map<String, dynamic>?,
     );
   }
 
