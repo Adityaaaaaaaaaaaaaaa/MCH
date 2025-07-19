@@ -17,7 +17,7 @@ class SpoonacularRecipeDetailsProvider:
             raise ValueError("SPOONACULAR_API_KEY not set")
         self.base_url = "https://api.spoonacular.com/recipes/informationBulk"
 
-    def get_bulk_recipe_details(self, ids, include_nutrition=False):
+    def get_bulk_recipe_details(self, ids, include_nutrition=True):
         """
         Fetch full recipe details for a batch of IDs.
 

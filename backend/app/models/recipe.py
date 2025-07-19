@@ -47,6 +47,26 @@ class WinePairing(BaseModel):
     pairingText: Optional[str] = None
     productMatches: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
 
+class Nutrient(BaseModel):
+    name: Optional[str]
+    amount: Optional[float]
+    unit: Optional[str]
+    percentOfDailyNeeds: Optional[float] = None
+
+class CaloricBreakdown(BaseModel):
+    percentProtein: Optional[float]
+    percentFat: Optional[float]
+    percentCarbs: Optional[float]
+
+class WeightPerServing(BaseModel):
+    amount: Optional[float]
+    unit: Optional[str]
+
+class Nutrition(BaseModel):
+    nutrients: Optional[List[Nutrient]] = Field(default_factory=list)
+    caloricBreakdown: Optional[CaloricBreakdown] = None
+    weightPerServing: Optional[WeightPerServing] = None
+
 class Recipe(BaseModel):
     id: Optional[int] = None
     title: Optional[str] = None
@@ -57,6 +77,7 @@ class Recipe(BaseModel):
     sourceUrl: Optional[str] = None
     vegetarian: Optional[bool] = None
     vegan: Optional[bool] = None
+    nutrition: Optional[Nutrition] = None
     glutenFree: Optional[bool] = None
     dairyFree: Optional[bool] = None
     veryHealthy: Optional[bool] = None
