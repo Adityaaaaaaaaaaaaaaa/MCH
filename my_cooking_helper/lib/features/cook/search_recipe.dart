@@ -1,5 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -140,9 +142,11 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
   void toggleRecipeSelection(String recipeTitle) {
     setState(() {
       if (selectedRecipes.contains(recipeTitle)) {
-        selectedRecipes.remove(recipeTitle);
+        selectedRecipes.clear();
       } else {
-        selectedRecipes.add(recipeTitle);
+        selectedRecipes
+          ..clear()
+          ..add(recipeTitle);
       }
     });
   }
@@ -375,16 +379,43 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                     itemBuilder: (context, index) {
                       // Display recipe cards
                       if (index < visibleRecipes && index < recipeResults.length) {
-                        //return _buildRecipeCard(recipeResults[index], index);
-                        // inside ListView.builder:
-                        return RecipeCard(
-                          recipe: recipeResults[index],
-                          isSelected: selectedRecipes.contains(recipeResults[index].title),
-                          formatTime: formatTime,
-                          onTap: () => showRecipeDetails(recipeResults[index]),
-                          onSelect: () => toggleRecipeSelection(recipeResults[index].title),
-                          onViewRecipe: () => showRecipeDetails(recipeResults[index]),
-                        );
+                        final isSelected = selectedRecipes.contains(recipeResults[index].title);
+                        if (selectedRecipes.isNotEmpty && !isSelected) {
+                          // Only blur non-selected cards when something is selected
+                          return Stack(
+                            children: [
+                              RecipeCard(
+                                recipe: recipeResults[index],
+                                isSelected: false,
+                                formatTime: formatTime,
+                                onTap: () => showRecipeDetails(recipeResults[index]),
+                                onSelect: () => toggleRecipeSelection(recipeResults[index].title),
+                                onViewRecipe: () => showRecipeDetails(recipeResults[index]),
+                              ),
+                              Positioned.fill(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(24.r),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                                    child: Container(
+                                      color: Colors.black.withOpacity(0.05), // Optional: subtle overlay
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        } else {
+                          // Show the selected card (or all cards when nothing is selected) without any blur
+                          return RecipeCard(
+                            recipe: recipeResults[index],
+                            isSelected: isSelected,
+                            formatTime: formatTime,
+                            onTap: () => showRecipeDetails(recipeResults[index]),
+                            onSelect: () => toggleRecipeSelection(recipeResults[index].title),
+                            onViewRecipe: () => showRecipeDetails(recipeResults[index]),
+                          );
+                        }
                       }
                       // "Show more" button logic
                       else if (index == visibleRecipes &&
@@ -406,7 +437,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    Icons.expand_more,
+                                    Icons.expand_more_rounded,
                                     color: Theme.of(context).colorScheme.primary,
                                     size: 20.sp,
                                   ),
