@@ -27,9 +27,6 @@ class RecipeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark 
-        ? Colors.grey[900]!.withOpacity(0.7)
-        : Colors.white.withOpacity(0.95);
         
     final shadowColor = isDark 
         ? Colors.black.withOpacity(0.4)
@@ -44,10 +41,9 @@ class RecipeCard extends StatelessWidget {
           margin: EdgeInsets.only(bottom: 20.h), 
           child: Stack(
             children: [
-              // Enhanced card container with better shadows and modern design
               Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24.r), // Slightly reduced for modern look
+                  borderRadius: BorderRadius.circular(24.r),
                   boxShadow: [
                     BoxShadow(
                       color: shadowColor,
