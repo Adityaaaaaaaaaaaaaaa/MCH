@@ -1,9 +1,11 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:glass/glass.dart';
-import '../../theme/app_theme.dart';
-import '../../utils/emoji_animation.dart';
+import '/theme/app_theme.dart';
+import '/utils/emoji_animation.dart';
 import '/models/recipe.dart';
 import '/widgets/cook_picker.dart';
 import '/widgets/navigation/appbar.dart';
@@ -430,13 +432,13 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                 ),
               ],
             ),
-      /*floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: startFlow,
         icon: const Icon(Icons.refresh),
         label: const Text('Search Again'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
-      ),*/
+      ),
     );
   }
 }
