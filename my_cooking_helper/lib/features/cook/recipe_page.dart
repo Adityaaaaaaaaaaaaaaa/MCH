@@ -89,7 +89,7 @@ class RecipePage extends ConsumerWidget {
             ),
           SafeArea(
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(0, 0, 0, 50.h),
+              padding: EdgeInsets.fromLTRB(0, 0, 0, 70.h),
               physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
