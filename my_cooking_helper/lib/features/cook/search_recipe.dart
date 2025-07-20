@@ -479,10 +479,16 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
             ),
             child: FloatingActionButton.extended(
               onPressed: isRecipeSelected
-                  ? () { 
-                      context.push('/recipePage');  /////////////////////////////////////////////////////////////////////////
-                    }
-                  : startFlow,
+                ? () { 
+                    final selectedRecipe = recipeResults.firstWhere(
+                      (r) => selectedRecipes.contains(r.title),
+                    );
+                    context.push('/recipePage', extra: {
+                      'recipeId': selectedRecipe.id,
+                      'recipe': selectedRecipe, // Pass the full Recipe object (must be serializable)
+                    });
+                  }
+                : startFlow,
               icon: Icon(
                 isRecipeSelected ? Icons.restaurant_menu_rounded : Icons.refresh,
                 size: 22.sp,
