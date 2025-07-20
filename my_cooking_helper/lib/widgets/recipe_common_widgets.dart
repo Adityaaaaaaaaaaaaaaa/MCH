@@ -373,18 +373,17 @@ class IngredientsList extends StatelessWidget {
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
         color: isDark 
-             ? Colors.deepPurple[850]?.withOpacity(0.5) 
+             ? Colors.blueGrey.withOpacity(0.25) 
              : Colors.red[50],
         borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
           color: isDark 
-               ? Colors.grey[700]!.withOpacity(0.3) 
+               ? Colors.grey[700]!.withOpacity(0.7) 
                : Colors.grey[300]!,
           width: 1,
         ),
       ),
       child: Column(
-        //crossAxisAlignment: CrossAxisAlignment.start,
         children: ingredients.asMap().entries.map((entry) {
           final index = entry.key;
           final ingredient = entry.value;
@@ -393,12 +392,11 @@ class IngredientsList extends StatelessWidget {
               bottom: index < ingredients.length - 1 ? 16.h : 0
             ),
             child: Row(
-              //crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   width: 8.w,
                   height: 8.h,
-                  //margin: EdgeInsets.only(top: 5.h),
+                  margin: EdgeInsets.only(top: 5.h),
                   decoration: BoxDecoration(
                     color: isDark ? Colors.deepPurple[200] : Colors.deepPurple,
                     shape: BoxShape.circle,
@@ -444,11 +442,11 @@ class InstructionsList extends StatelessWidget {
           padding: EdgeInsets.all(14.w),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15.r),
-            color: isDark ? Colors.deepPurple[800]?.withOpacity(0.15) : Colors.deepPurple.withOpacity(0.07),
+            color: isDark ? Colors.deepPurple[800]?.withOpacity(0.15) : Colors.deepPurple.withOpacity(0.1),
             border: Border.all(
               color: isDark 
-              ? Colors.deepPurple[300]!.withOpacity(0.19) 
-              : Colors.deepPurple.withOpacity(0.09),
+              ? Colors.deepPurple[300]!.withOpacity(0.7) 
+              : Colors.deepPurple.withOpacity(0.7),
             ),
           ),
           child: Row(
