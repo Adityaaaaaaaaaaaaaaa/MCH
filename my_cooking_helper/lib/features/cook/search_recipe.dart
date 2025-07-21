@@ -182,51 +182,282 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
   // dummy data for test , delete apres
   List<Recipe> getDummyRecipes() {
     Map<String, dynamic> sample = {
-      'id': 157473,
-      'title': 'Cauliflower Mash with Roasted Garlic',
-      'image': 'https://img.spoonacular.com/recipes/641890-556x370.jpg',
+      'id': 641759,
+      'title': 'Dutch Baby',
+      'image': 'https://img.spoonacular.com/recipes/641759-556x370.jpg',
       'imageType': 'jpg',
-      'readyInMinutes': 15,
-      'servings': 6,
-      'sourceUrl': 'http://spoonacular.com/-1385395050102',
+      'readyInMinutes': 45,
+      'servings': 4,
+      'sourceUrl': 'http://www.foodista.com/recipe/WVMGFLGF/dutch-baby',
       'vegetarian': true,
       'vegan': false,
       'nutrition': {
         'nutrients': [
-          {'name': 'Calories', 'amount': 104.34, 'unit': 'kcal'},
-          {'name': 'Fat', 'amount': 6.74, 'unit': 'g'},
-          {'name': 'Saturated Fat', 'amount': 4.16, 'unit': 'g'},
-          {'name': 'Carbohydrates', 'amount': 9.46, 'unit': 'g'},
-          {'name': 'Sugar', 'amount': 3.7, 'unit': 'g'},
-          {'name': 'Sodium', 'amount': 289.32, 'unit': 'mg'},
-          {'name': 'Protein', 'amount': 3.71, 'unit': 'g'},
-          {'name': 'Fiber', 'amount': 2.9, 'unit': 'g'},
-        ]
+          {'name': 'Calories', 'amount': 309.59, 'unit': 'kcal', 'percentOfDailyNeeds': 15.48},
+          {'name': 'Fat', 'amount': 11.27, 'unit': 'g', 'percentOfDailyNeeds': 17.35},
+          {'name': 'Saturated Fat', 'amount': 5.83, 'unit': 'g', 'percentOfDailyNeeds': 36.45},
+          {'name': 'Carbohydrates', 'amount': 43.92, 'unit': 'g', 'percentOfDailyNeeds': 14.64},
+          {'name': 'Net Carbohydrates', 'amount': 41.57, 'unit': 'g', 'percentOfDailyNeeds': 15.12},
+          {'name': 'Sugar', 'amount': 16.47, 'unit': 'g', 'percentOfDailyNeeds': 18.3},
+          {'name': 'Cholesterol', 'amount': 145.13, 'unit': 'mg', 'percentOfDailyNeeds': 48.38},
+          {'name': 'Sodium', 'amount': 72.64, 'unit': 'mg', 'percentOfDailyNeeds': 3.16},
+          {'name': 'Alcohol', 'amount': 0.0, 'unit': 'g', 'percentOfDailyNeeds': 100.0},
+          {'name': 'Alcohol %', 'amount': 0.0, 'unit': '%', 'percentOfDailyNeeds': 100.0},
+          {'name': 'Protein', 'amount': 10.04, 'unit': 'g', 'percentOfDailyNeeds': 20.08},
+          {'name': 'Vitamin C', 'amount': 28.62, 'unit': 'mg', 'percentOfDailyNeeds': 34.69},
+          {'name': 'Selenium', 'amount': 22.24, 'unit': 'µg', 'percentOfDailyNeeds': 31.77},
+          {'name': 'Vitamin B2', 'amount': 0.4, 'unit': 'mg', 'percentOfDailyNeeds': 23.81},
+          {'name': 'Vitamin B1', 'amount': 0.31, 'unit': 'mg', 'percentOfDailyNeeds': 20.97},
+          {'name': 'Folate', 'amount': 78.85, 'unit': 'µg', 'percentOfDailyNeeds': 19.71},
+          {'name': 'Phosphorus', 'amount': 171.02, 'unit': 'mg', 'percentOfDailyNeeds': 17.1},
+          {'name': 'Iron', 'amount': 2.36, 'unit': 'mg', 'percentOfDailyNeeds': 13.11},
+          {'name': 'Manganese', 'amount': 0.24, 'unit': 'mg', 'percentOfDailyNeeds': 12.09},
+          {'name': 'Calcium', 'amount': 114.04, 'unit': 'mg', 'percentOfDailyNeeds': 11.4},
+          {'name': 'Vitamin B12', 'amount': 0.63, 'unit': 'µg', 'percentOfDailyNeeds': 10.58},
+          {'name': 'Vitamin B3', 'amount': 1.99, 'unit': 'mg', 'percentOfDailyNeeds': 9.95},
+          {'name': 'Vitamin B5', 'amount': 0.98, 'unit': 'mg', 'percentOfDailyNeeds': 9.81},
+          {'name': 'Vitamin D', 'amount': 1.44, 'unit': 'µg', 'percentOfDailyNeeds': 9.57},
+          {'name': 'Fiber', 'amount': 2.36, 'unit': 'g', 'percentOfDailyNeeds': 9.42},
+          {'name': 'Vitamin A', 'amount': 463.83, 'unit': 'IU', 'percentOfDailyNeeds': 9.28},
+          {'name': 'Vitamin B6', 'amount': 0.15, 'unit': 'mg', 'percentOfDailyNeeds': 7.52},
+          {'name': 'Potassium', 'amount': 246.92, 'unit': 'mg', 'percentOfDailyNeeds': 7.05},
+          {'name': 'Zinc', 'amount': 0.93, 'unit': 'mg', 'percentOfDailyNeeds': 6.23},
+          {'name': 'Magnesium', 'amount': 22.61, 'unit': 'mg', 'percentOfDailyNeeds': 5.65},
+          {'name': 'Copper', 'amount': 0.09, 'unit': 'mg', 'percentOfDailyNeeds': 4.57},
+          {'name': 'Vitamin E', 'amount': 0.64, 'unit': 'mg', 'percentOfDailyNeeds': 4.26}
+        ],
+        'caloricBreakdown': {
+          'percentProtein': 12.66,
+          'percentFat': 31.98,
+          'percentCarbs': 55.36
+        },
+        'weightPerServing': {'amount': 198.0, 'unit': 'g'}
       },
-      'glutenFree': true,
+      'glutenFree': false,
       'dairyFree': false,
-      'dishTypes': ['side dish'],
+      'veryHealthy': false,
+      'cheap': false,
+      'veryPopular': false,
+      'sustainable': false,
+      'lowFodmap': false,
+      'weightWatcherSmartPoints': 11,
+      'gaps': 'no',
+      'preparationMinutes': null,
+      'cookingMinutes': null,
+      'aggregateLikes': 22,
+      'healthScore': 5.0,
+      'creditsText': 'Foodista.com – The Cooking Encyclopedia Everyone Can Edit',
+      'license': 'CC BY 3.0',
+      'sourceName': 'Foodista',
+      'pricePerServing': 63.09,
       'extendedIngredients': [
-        {'name': 'butter', 'original': '3 tablespoons butter'},
-        {'name': 'cauliflower', 'original': '1 large head of cauliflower, cut into florets'},
-        {'name': 'garlic', 'original': '1 head of garlic, roasted'},
-        {'name': 'milk', 'original': '1/2 cup milk (I used 2%)'},
-        {'name': 'salt and pepper', 'original': 'salt and pepper, to taste'},
+        {
+          'id': 1123,
+          'aisle': 'Milk, Eggs, Other Dairy',
+          'image': 'egg.png',
+          'consistency': 'SOLID',
+          'name': 'eggs',
+          'nameClean': 'eggs',
+          'original': '3 Eggs',
+          'originalName': 'Eggs',
+          'amount': 3.0,
+          'unit': '',
+          'meta': [],
+          'measures': {
+            'us': {'amount': 3.0, 'unitShort': '', 'unitLong': ''},
+            'metric': {'amount': 3.0, 'unitShort': '', 'unitLong': ''}
+          }
+        },
+        {
+          'id': 20081,
+          'aisle': 'Baking',
+          'image': 'flour.png',
+          'consistency': 'SOLID',
+          'name': 'flour',
+          'nameClean': 'flour',
+          'original': '1 cup all-purpose flour',
+          'originalName': 'all-purpose flour',
+          'amount': 1.0,
+          'unit': 'cup',
+          'meta': ['all-purpose'],
+          'measures': {
+            'us': {'amount': 1.0, 'unitShort': 'cup', 'unitLong': 'cup'},
+            'metric': {'amount': 125.0, 'unitShort': 'g', 'unitLong': 'grams'}
+          }
+        },
+        {
+          'id': 9150,
+          'aisle': 'Produce',
+          'image': 'lemon.png',
+          'consistency': 'SOLID',
+          'name': 'lemons',
+          'nameClean': 'lemons',
+          'original': '2 lemons',
+          'originalName': 'lemons',
+          'amount': 2.0,
+          'unit': '',
+          'meta': [],
+          'measures': {
+            'us': {'amount': 2.0, 'unitShort': '', 'unitLong': ''},
+            'metric': {'amount': 2.0, 'unitShort': '', 'unitLong': ''}
+          }
+        },
+        {
+          'id': 1077,
+          'aisle': 'Milk, Eggs, Other Dairy',
+          'image': 'milk.png',
+          'consistency': 'LIQUID',
+          'name': 'milk',
+          'nameClean': 'milk',
+          'original': '1 cup milk',
+          'originalName': 'milk',
+          'amount': 1.0,
+          'unit': 'cup',
+          'meta': [],
+          'measures': {
+            'us': {'amount': 1.0, 'unitShort': 'cup', 'unitLong': 'cup'},
+            'metric': {'amount': 244.0, 'unitShort': 'ml', 'unitLong': 'milliliters'}
+          }
+        },
+        {
+          'id': 19335,
+          'aisle': 'Baking',
+          'image': 'sugar-in-bowl.png',
+          'consistency': 'SOLID',
+          'name': "confectioner's sugar",
+          'nameClean': "confectioner's sugar",
+          'original': "confectioner's sugar",
+          'originalName': "confectioner's sugar",
+          'amount': 4.0,
+          'unit': 'servings',
+          'meta': [],
+          'measures': {
+            'us': {'amount': 4.0, 'unitShort': 'servings', 'unitLong': 'servings'},
+            'metric': {'amount': 4.0, 'unitShort': 'servings', 'unitLong': 'servings'}
+          }
+        },
+        {
+          'id': 1145,
+          'aisle': 'Milk, Eggs, Other Dairy',
+          'image': 'butter-sliced.jpg',
+          'consistency': 'SOLID',
+          'name': 'butter',
+          'nameClean': 'butter',
+          'original': '2 tablespoons Unsalted Organic Butter',
+          'originalName': 'Unsalted Organic Butter',
+          'amount': 2.0,
+          'unit': 'tablespoons',
+          'meta': ['unsalted', 'organic'],
+          'measures': {
+            'us': {'amount': 2.0, 'unitShort': 'Tbsps', 'unitLong': 'Tbsps'},
+            'metric': {'amount': 2.0, 'unitShort': 'Tbsps', 'unitLong': 'Tbsps'}
+          }
+        }
       ],
-      'instructions': 'Place the florets in a steamer basket in a pot filled with 1-2 inches of boiling water. Cover and steam until soft, 15-20 minutes. Puree cauliflower with butter, milk, salt, pepper, and roasted garlic. Serve warm garnished with butter, chives, and sour cream if you like.',
+      'summary': "Dutch Baby could be just the <b>lacto ovo vegetarian</b> recipe you've been looking for. For <b>63 cents per serving</b>, this recipe <b>covers 12%</b> of your daily requirements of vitamins and minerals. This side dish has <b>310 calories</b>, <b>10g of protein</b>, and <b>11g of fat</b> per serving. This recipe serves 4. From preparation to the plate, this recipe takes approximately <b>45 minutes</b>. 22 people have tried and liked this recipe. This recipe from Foodista requires eggs, flour, butter, and milk. Taking all factors into account, this recipe <b>earns a spoonacular score of 46%</b>, which is solid. If you like this recipe, take a look at these similar recipes: <a href=\"https://spoonacular.com/recipes/going-dutch-apple-spice-buttermilk-dutch-baby-864590\">Going Dutch: Apple-Spice Buttermilk Dutch Baby</a>, <a href=\"https://spoonacular.com/recipes/dutch-baby-141619\">Dutch Baby</a>, and <a href=\"https://spoonacular.com/recipes/dutch-baby-1220881\">Dutch Baby</a>.",
+      'cuisines': [],
+      'dishTypes': ['side dish'],
+      'diets': ['lacto ovo vegetarian'],
+      'occasions': [],
+      'winePairing': {
+        'pairedWines': [],
+        'pairingText': '',
+        'productMatches': []
+      },
+      'instructions': '<ol><li>Preheat oven to 475 degrees F. Cut lemons in half, crosswise.</li><li>Place butter in a heavy 10" oven-proof skillet. Melt butter in oven; when melted, carefully remove skillet from oven.</li><li>In a bowl, combine milk, flour and eggsmix just enough to blend. Add mixture to hot butter in skillet (swish butter around sides of skillet). Return to oven and bake for 12 minutes or until puffed up.</li><li>Remove puffed Dutch baby from oven to platter. Sprinkle with juice from lemon halves and dust with confectioner\'s sugar. Cut into serving size pieces and serve immediately.</li></ol>',
       'analyzedInstructions': [
         {
+          'name': '',
           'steps': [
-            {'step': 'Place the florets in a steamer basket in a pot filled with 1-2 inches of boiling water.'},
-            {'step': 'Cover and steam until soft, 15-20 minutes.'},
-            {'step': 'Puree cauliflower with butter, milk, salt, pepper, and roasted garlic.'},
-            {'step': 'Serve warm garnished with butter, chives, and sour cream if you like.'},
+            {
+              'number': 1,
+              'step': 'Preheat oven to 475 degrees F.',
+              'ingredients': [],
+              'equipment': [
+                {
+                  'id': 404784,
+                  'name': 'oven',
+                  'localizedName': 'oven',
+                  'image': 'https://spoonacular.com/cdn/equipment_100x100/oven.jpg',
+                  'temperature': {'number': 475.0, 'unit': 'Fahrenheit'}
+                }
+              ],
+              'length': {}
+            },
+            {
+              'number': 2,
+              'step': 'Cut lemons in half, crosswise.',
+              'ingredients': [
+                {
+                  'id': 9150,
+                  'name': 'lemon',
+                  'localizedName': 'lemon',
+                  'image': 'https://spoonacular.com/cdn/ingredients_100x100/lemon.png'
+                }
+              ],
+              'equipment': [],
+              'length': {}
+            },
+            {
+              'number': 3,
+              'step': 'Place butter in a heavy 10" oven-proof skillet. Melt butter in oven; when melted, carefully remove skillet from oven.In a bowl, combine milk, flour and eggsmix just enough to blend.',
+              'ingredients': [
+                {'id': 1001, 'name': 'butter', 'localizedName': 'butter', 'image': 'butter-sliced.jpg'},
+                {'id': 20081, 'name': 'all purpose flour', 'localizedName': 'all purpose flour', 'image': 'flour.png'},
+                {'id': 1077, 'name': 'milk', 'localizedName': 'milk', 'image': 'milk.png'}
+              ],
+              'equipment': [
+                {'id': 404645, 'name': 'frying pan', 'localizedName': 'frying pan', 'image': 'https://spoonacular.com/cdn/equipment_100x100/pan.png', 'temperature': null},
+                {'id': 404783, 'name': 'bowl', 'localizedName': 'bowl', 'image': 'https://spoonacular.com/cdn/equipment_100x100/bowl.jpg', 'temperature': null},
+                {'id': 404784, 'name': 'oven', 'localizedName': 'oven', 'image': 'https://spoonacular.com/cdn/equipment_100x100/oven.jpg', 'temperature': null}
+              ],
+              'length': {}
+            },
+            {
+              'number': 4,
+              'step': 'Add mixture to hot butter in skillet (swish butter around sides of skillet). Return to oven and bake for 12 minutes or until puffed up.',
+              'ingredients': [
+                {'id': 1001, 'name': 'butter', 'localizedName': 'butter', 'image': 'butter-sliced.jpg'}
+              ],
+              'equipment': [
+                {'id': 404784, 'name': 'oven', 'localizedName': 'oven', 'image': 'https://spoonacular.com/cdn/equipment_100x100/oven.jpg', 'temperature': null},
+                {'id': 404645, 'name': 'frying pan', 'localizedName': 'frying pan', 'image': 'https://spoonacular.com/cdn/equipment_100x100/pan.png', 'temperature': null}
+              ],
+              'length': {'number': 12, 'unit': 'minutes'}
+            },
+            {
+              'number': 5,
+              'step': 'Remove puffed Dutch baby from oven to platter.',
+              'ingredients': [],
+              'equipment': [
+                {'id': 404784, 'name': 'oven', 'localizedName': 'oven', 'image': 'https://spoonacular.com/cdn/equipment_100x100/oven.jpg', 'temperature': null}
+              ],
+              'length': {}
+            },
+            {
+              'number': 6,
+              'step': "Sprinkle with juice from lemon halves and dust with confectioner's sugar.",
+              'ingredients': [
+                {'id': 1019016, 'name': 'juice', 'localizedName': 'juice', 'image': 'apple-juice.jpg'},
+                {'id': 9150, 'name': 'lemon', 'localizedName': 'lemon', 'image': 'https://spoonacular.com/cdn/ingredients_100x100/lemon.png'},
+                {'id': 19335, 'name': 'sugar', 'localizedName': 'sugar', 'image': 'sugar-in-bowl.png'}
+              ],
+              'equipment': [],
+              'length': {}
+            },
+            {
+              'number': 7,
+              'step': 'Cut into serving size pieces and serve immediately.',
+              'ingredients': [],
+              'equipment': [],
+              'length': {}
+            }
           ]
         }
       ],
-      'equipment': ['steamer basket', 'pot'],
-      'videos': [],
-      'website': 'http://spoonacular.com/-1385395050102',
+      'originalId': null,
+      'spoonacularScore': 51.050907135009766,
+      'spoonacularSourceUrl': 'https://spoonacular.com/dutch-baby-641759'
     };
 
     // Generate 5 copies with unique ids
