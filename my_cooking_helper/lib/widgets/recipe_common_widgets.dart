@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '/utils/recipe_webview_dialog.dart';
 import '/models/recipe.dart';
+import '/models/recipe_detail.dart';
 import '/utils/colors.dart';
 
 /// Recipe Hero Image Card
@@ -759,3 +760,162 @@ class HttpWarningCard extends StatelessWidget {
     );
   }
 }
+
+class DietChips extends StatelessWidget {
+  final bool? vegetarian, vegan, glutenFree, dairyFree;
+  final List<String> diets;
+  final bool isDark;
+
+  const DietChips({
+    super.key,
+    required this.vegetarian,
+    required this.vegan,
+    required this.glutenFree,
+    required this.dairyFree,
+    required this.diets,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final chips = <Widget>[];
+    if (vegetarian == true) chips.add(_chip("Vegetarian"));
+    if (vegan == true) chips.add(_chip("Vegan"));
+    if (glutenFree == true) chips.add(_chip("Gluten Free"));
+    if (dairyFree == true) chips.add(_chip("Dairy Free"));
+    for (final diet in diets) {
+      chips.add(_chip(diet));
+    }
+    return Wrap(spacing: 8, children: chips);
+  }
+
+  Widget _chip(String label) => Chip(
+    label: Text(label),
+    backgroundColor: isDark ? Colors.green[900] : Colors.green[50],
+  );
+}
+
+class RecipeStatsRow extends StatelessWidget {
+  final double? healthScore, pricePerServing, spoonacularScore;
+
+  const RecipeStatsRow({
+    super.key,
+    required this.healthScore,
+    required this.pricePerServing,
+    required this.spoonacularScore,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _stat("Health", healthScore != null ? healthScore!.toStringAsFixed(0) : "-"),
+        _stat("Price", pricePerServing != null ? "${pricePerServing!.toStringAsFixed(0)}¢" : "-"),
+        _stat("Score", spoonacularScore != null ? spoonacularScore!.toStringAsFixed(0) : "-"),
+      ],
+    );
+  }
+
+  Widget _stat(String label, String value) => Column(
+    children: [
+      Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+      Text(label, style: const TextStyle(fontSize: 12)),
+    ],
+  );
+}
+
+class HtmlSummaryText extends StatelessWidget {
+  final String html;
+  const HtmlSummaryText({super.key, required this.html});
+  @override
+  Widget build(BuildContext context) {
+    return Text(html.replaceAll(RegExp(r'<[^>]+>'), ''));
+  }
+}
+
+class ExtendedIngredientCard extends StatelessWidget {
+  final ExtendedIngredient ingredient;
+  final bool isDark;
+  const ExtendedIngredientCard({super.key, required this.ingredient, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: isDark ? Colors.deepPurple[900]?.withOpacity(0.08) : Colors.deepPurple.withOpacity(0.03),
+      child: ListTile(
+        leading: ingredient.image != null
+            ? Image.network(
+                'https://spoonacular.com/cdn/ingredients_100x100/${ingredient.image}',
+                width: 40, errorBuilder: (_, __, ___) => const SizedBox.shrink())
+            : null,
+        title: Text(ingredient.original ?? ingredient.name ?? ""),
+        subtitle: Text(_subtitle(ingredient)),
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (_) => SimpleDialog(
+              title: Text(ingredient.nameClean ?? ingredient.name ?? "Ingredient"),
+              children: [
+                if (ingredient.aisle != null) Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Text('Aisle: ${ingredient.aisle}'),
+                ),
+                if (ingredient.meta.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Text('Meta: ${ingredient.meta.join(", ")}'),
+                  ),
+                if (ingredient.measures?.us != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Text('US: ${ingredient.measures?.us?.amount} ${ingredient.measures?.us?.unitShort}'),
+                  ),
+                if (ingredient.measures?.metric != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Text('Metric: ${ingredient.measures?.metric?.amount} ${ingredient.measures?.metric?.unitShort}'),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _subtitle(ExtendedIngredient i) {
+    final a = i.amount != null ? i.amount!.toStringAsFixed(2) : "";
+    final u = i.unit ?? "";
+    return (a.isNotEmpty || u.isNotEmpty) ? "$a $u" : "";
+  }
+}
+
+class CaloricBreakdownWidget extends StatelessWidget {
+  final CaloricBreakdown? breakdown;
+  const CaloricBreakdownWidget({super.key, required this.breakdown});
+
+  @override
+  Widget build(BuildContext context) {
+    if (breakdown == null) return const SizedBox.shrink();
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _stat("Protein", breakdown!.percentProtein),
+        _stat("Fat", breakdown!.percentFat),
+        _stat("Carbs", breakdown!.percentCarbs),
+      ],
+    );
+  }
+
+  Widget _stat(String label, double? value) {
+    final v = value != null ? "${value.toStringAsFixed(1)}%" : "-";
+    return Column(
+      children: [
+        Text(v, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+}
+
