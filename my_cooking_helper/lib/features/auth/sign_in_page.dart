@@ -49,15 +49,24 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
 
   Future<void> _signInWithGoogle(BuildContext context) async {
     try {
-      await GoogleSignIn().signOut();
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return;
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      // Always sign out any previous Google session.
+      await GoogleSignIn.instance.signOut();
+
+      // Authenticate the user.
+      final GoogleSignInAccount account = await GoogleSignIn.instance.authenticate();
+
+      // Get the authentication tokens (now a getter, not a Future).
+      final googleAuth = account.authentication;
+
+      // Create a credential for Firebase Auth.
       final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
+        //accessToken: googleAuth.accessToken, // accessToken is not available as in v6, but idToken suffices for Firebase Auth.
         idToken: googleAuth.idToken,
       );
+
+      // Sign in to Firebase with the Google credential.
       await FirebaseAuth.instance.signInWithCredential(credential);
+
       context.go('/splash');
     } catch (e) {
       SnackbarUtils.alert(

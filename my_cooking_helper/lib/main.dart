@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
+import 'package:my_cooking_helper/features/cook/cook.dart';
+import 'package:my_cooking_helper/features/cook/search_recipe.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'core/firebase_options.dart';
-import 'features/inventory/inventory.dart';
-import 'features/smart_scan/manual_input.dart';
-import 'features/smart_scan/review_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'config/firebase_options.dart';
 import 'theme/theme_provider.dart';  
 import 'theme/app_theme.dart';
 import 'features/smart_scan/scan_food.dart';
@@ -20,10 +21,16 @@ import 'features/auth/sign_in_page.dart';
 import 'features/preferences/preferences_flow.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/settings/settings.dart'; 
+import 'features/cook/recipe_page.dart';
+import 'features/inventory/inventory.dart';
+import 'features/smart_scan/manual_input.dart';
+import 'features/smart_scan/review_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await GoogleSignIn.instance.initialize();
+  await dotenv.load(fileName: ".env");
   final appDocDir = await getApplicationDocumentsDirectory();
   Hive.init(appDocDir.path);
   debugPrint = (String? message, {int? wrapWidth}) {};
@@ -80,7 +87,19 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/inventory', 
       builder: (context, state) => const InventoryPage()
-    )
+    ),
+    GoRoute(
+      path: '/cook',
+      builder: (context, state) => const CookScreen()
+    ),
+    GoRoute(
+      path: '/searchRecipe',
+      builder: (context, state) => const SearchRecipeScreen()
+    ),
+    GoRoute(
+      path: '/recipePage',
+      builder: (context, state) => const RecipePage(),
+    ),
   ],
 );
 

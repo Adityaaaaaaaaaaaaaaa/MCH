@@ -6,6 +6,8 @@ import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:my_cooking_helper/utils/colors.dart';
+import '/utils/emoji_animation.dart';
 import '/utils/loader.dart';
 import '/utils/snackbar.dart';
 import '/utils/preference_utils.dart';
@@ -195,12 +197,23 @@ class _SettingsScreenState extends ConsumerState<Settings>
   
   Future<void> _switchAccount() async {
     try {
-      await GoogleSignIn().signOut();
-      final account = await GoogleSignIn().signIn();
+      await GoogleSignIn.instance.signOut();
+      GoogleSignInAccount? account;
+
+      // Authenticate in v7.x; signIn() removed
+      if (GoogleSignIn.instance.supportsAuthenticate()) {
+        account = await GoogleSignIn.instance.authenticate();
+      } else {
+        // On platforms that do not support .authenticate(), 
+        // you need to provide a platform-specific sign-in flow (e.g., use web button)
+        throw Exception("Google Sign-In not supported on this platform.");
+      }
+
+      // ignore: unnecessary_null_comparison
       if (account != null) {
-        final googleAuth = await account.authentication;
+        final googleAuth = account.authentication;
         final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
+          //accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
         );
         final authResult = await FirebaseAuth.instance.signInWithCredential(credential);
@@ -265,21 +278,38 @@ class _SettingsScreenState extends ConsumerState<Settings>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-               Text(
+              EmojiAnimation(name: 'warning', size: 40,),
+              SizedBox(height: 10.h),
+              Text(
                 "Delete Account?",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20.sp),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 20.sp,
+                  color: textColor(context),
+                ),
               ),
               SizedBox(height: 12.h),
-              const Text(
+              Text(
                 "This action is irreversible. Are you sure you want to delete your account?",
                 textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: textColor(context),
+                ),
               ),
               SizedBox(height: 24.h),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      child: const Text("Cancel"),
+                      child: Text(
+                        "Cancel",
+                        style: TextStyle(
+                          color: Colors.lightGreen,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       onPressed: () => Navigator.of(ctx).pop(),
                     ),
                   ),
@@ -304,7 +334,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
         ).asGlass(
           blurX: 15,
           blurY: 15,
-          tintColor: Colors.redAccent,
+          tintColor: Colors.white,
           clipBorderRadius: BorderRadius.circular(18.r),
           frosted: true,
         ),
@@ -318,6 +348,8 @@ class _SettingsScreenState extends ConsumerState<Settings>
     final avatar = user?.photoURL != null
         ? NetworkImage(user!.photoURL!)
         : const AssetImage("assets/app_icon.png");
+
+    double imgOpacity = 0.80;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -338,11 +370,14 @@ class _SettingsScreenState extends ConsumerState<Settings>
             left: 100,
             child: Transform.rotate(
               angle: -1.5708, //radians
-              child: Image.asset(
-                'assets/images/settings/settings3.png',
-                width: 300,
-                height: 300,
-                fit: BoxFit.contain,
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  'assets/images/settings/settings3.png',
+                  width: 300,
+                  height: 300,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -351,11 +386,14 @@ class _SettingsScreenState extends ConsumerState<Settings>
             left: 40,
             child: Transform.rotate(
               angle: 0.3, 
-              child: Image.asset(
-                'assets/images/settings/settings1.png',
-                width: 200,
-                height: 200,
-                fit: BoxFit.contain,
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  'assets/images/settings/settings1.png',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -364,11 +402,14 @@ class _SettingsScreenState extends ConsumerState<Settings>
             right: 35,
             child: Transform.rotate(
               angle: 0.1, 
-              child: Image.asset(
-                'assets/images/settings/settings2.png',
-                width: 150,
-                height: 150,
-                fit: BoxFit.contain,
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  'assets/images/settings/settings2.png',
+                  width: 150,
+                  height: 150,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -377,11 +418,14 @@ class _SettingsScreenState extends ConsumerState<Settings>
             left: 20,
             child: Transform.rotate(
               angle: -0.4, 
-              child: Image.asset(
-                'assets/images/settings/settings3.png',
-                width: 150,
-                height: 150,
-                fit: BoxFit.contain,
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  'assets/images/settings/settings3.png',
+                  width: 150,
+                  height: 150,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -418,7 +462,10 @@ class _SettingsScreenState extends ConsumerState<Settings>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Change Theme", style: theme.textTheme.bodyLarge),
+                        Text(
+                          "Change Theme",
+                          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                        ),
                       const ThemeToggleButton(),
                     ],
                   ),

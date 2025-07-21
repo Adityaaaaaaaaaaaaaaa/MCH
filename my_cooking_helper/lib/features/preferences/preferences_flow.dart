@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:step_progress_indicator/step_progress_indicator.dart';
+import '/utils/emoji_animation.dart';
 import '/theme/app_theme.dart';
 import '/utils/preference_utils.dart';
 import '/widgets/preference_question_widgets.dart';
@@ -122,10 +123,44 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
                         //Intro
-                        _QuestionPage(
-                          title: "First, let's get to know you better!",
-                          subtitle: "Let's tailor your experience for a food-tastic journey!",
-                          onNext: _nextPage,
+                        Stack(
+                          children: [
+                            _QuestionPage(
+                              title: "First, let's get to know you better!",
+                              subtitle: "Let's tailor your experience for a food-tastic journey!",
+                              onNext: _nextPage,
+                            ),
+                            Positioned(
+                              bottom: 65.h,
+                              left: 250.w,
+                              child: EmojiAnimation(name: 'sparkles'),
+                            ),
+                            Positioned(
+                              top: 140.h,
+                              right: 40.w,
+                              child: EmojiAnimation(name: 'sparkles'),
+                            ),
+                            Positioned(
+                              top: 280.h,
+                              left: 50.w,
+                              child: EmojiAnimation(name: 'sparkles'),
+                            ),
+                            Positioned(
+                              top: 70.h,
+                              left: 50.w,
+                              child: EmojiAnimation(name: 'sparkles'),
+                            ),
+                            Positioned(
+                              top: 100.h,
+                              left: 150.w,
+                              child: EmojiAnimation(name: 'confettiBall', size: 50,),
+                            ),
+                            Positioned(
+                              bottom: 170.h,
+                              left: 150.w,
+                              child: EmojiAnimation(name: 'clinkingBeerMugs', size: 50,),
+                            ),
+                          ],
                         ),
                         //Gender
                         AnimatedSingleSelectBig(
@@ -281,40 +316,74 @@ class _ThankYouPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Stack(
       children: [
-        const Spacer(),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 30.w),
-          child: Text("Thank you for trusting us!",
-              style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
-        ),
-        const Spacer(),
-        Padding(
-          padding: EdgeInsets.all(50.0.w),
-          child: Text(
-            "We're committed to protecting your information with the highest standards of privacy and security.\n\n"
-            "Ready to discover your new cooking partner? Complete this step and click Ready below!",
-            style: Theme.of(context).textTheme.bodyLarge,
-            textAlign: TextAlign.center,
-          ),
-        ),
-        const Spacer(),
-        ElevatedButton(
-          onPressed: onNext,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blueAccent,
-            minimumSize: Size(110.w, 48.h),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16.r),
+        Column(
+          children: [
+            const Spacer(),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 30.w),
+              child: Text("Thank you for trusting us!",
+                  style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
             ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 30.0.w, vertical: 15.h),
-            child: Text("Ready!", style: TextStyle(fontSize: 18.sp, color: Colors.white)),
-          ),
+            const Spacer(),
+            Padding(
+              padding: EdgeInsets.all(50.0.w),
+              child: Text(
+                "We're committed to protecting your information with the highest standards of privacy and security.\n\n"
+                "Ready to discover your new cooking partner? Complete this step and click Ready below!",
+                style: Theme.of(context).textTheme.bodyLarge,
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const Spacer(),
+            ElevatedButton(
+              onPressed: onNext,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                minimumSize: Size(110.w, 48.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 30.0.w, vertical: 15.h),
+                child: Text("Ready!", style: TextStyle(fontSize: 18.sp, color: Colors.white)),
+              ),
+            ),
+            SizedBox(height: 50.h),
+          ],
         ),
-        SizedBox(height: 50.h),
+        Positioned(
+          top: 150.h,
+          left: 150.w,
+          child: EmojiAnimation(name: 'clinkingGlasses', size: 60,),
+        ),
+        Positioned(
+          top: 30.h,
+          left: 150.w,
+          child: EmojiAnimation(name: 'glowingStar', size: 40,),
+        ),
+        Positioned(
+          bottom: 140.h,
+          left: 150.w,
+          child: EmojiAnimation(name: 'rocket', size: 60,),
+        ),
+        Positioned(
+          bottom: 190.h,
+          left: 100.w,
+          child: EmojiAnimation(name: 'sparkles', size: 20,),
+        ),
+        Positioned(
+          bottom: 100.h,
+          right: 70.w,
+          child: EmojiAnimation(name: 'sparkles', size: 20,),
+        ),
+        Positioned(
+          top: 30.h,
+          left: 20.w,
+          child: EmojiAnimation(name: 'partyPopper', size: 40,),
+        ),
       ],
     );
   }

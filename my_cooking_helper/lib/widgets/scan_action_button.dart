@@ -5,7 +5,7 @@ import '/utils/colors.dart';
 
 class ScanActionButton extends StatelessWidget {
   final String label;
-  final IconData icon;
+  final Widget icon;
   final VoidCallback? onPressed;
   final Color? color;
   final bool enabled;
@@ -32,11 +32,7 @@ class ScanActionButton extends StatelessWidget {
         shadowColor: Colors.transparent,
       ),
       onPressed: onPressed,
-      icon: Icon(
-        icon,
-        size: 25.sp,
-        color: Theme.of(context).primaryColor,
-      ),
+      icon: icon,
       label: Text(
         label,
         style: TextStyle(

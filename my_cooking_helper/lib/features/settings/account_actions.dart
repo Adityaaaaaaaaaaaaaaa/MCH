@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/utils/emoji_animation.dart';
 
 class AccountActionsSection extends StatelessWidget {
   final VoidCallback onSignOut;
@@ -34,7 +35,7 @@ class AccountActionsSection extends StatelessWidget {
                     fontSize: 17.sp
                   )),
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.logout),
+                  icon: EmojiAnimation(name: 'wave', size: 20,),
                   label: Text(
                     "Sign Out", 
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -95,16 +96,18 @@ class AccountActionsSection extends StatelessWidget {
                   ),
                 ),
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.delete_forever),
-                  label: Text("Delete",
+                  icon: EmojiAnimation(name: 'policeCarLight', size: 20,),
+                  label: Text(
+                    "Delete",
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w900,
                       fontSize: 15.sp,
-                    ),),
+                    ),
+                  ),
                   onPressed: () => onDelete(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: Colors.red.withOpacity(0.5),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10.r),

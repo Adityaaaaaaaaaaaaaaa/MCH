@@ -4,10 +4,10 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'backend_config.dart';
+import '/config/backend_config.dart';
 
-// ignore: constant_identifier_names
-const String BACKEND_API_URL = "$backendApiUrl/food/scanFood";
+// ignore: non_constant_identifier_names
+final String BACKEND_API_URL = geminiScanFood;
 
 final geminiProvider = Provider((ref) => GeminiService());
 
