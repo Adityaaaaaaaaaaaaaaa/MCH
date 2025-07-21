@@ -10,6 +10,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'config/firebase_options.dart';
+import 'models/recipe_detail.dart';
+// import 'models/recipe.dart';
 import 'theme/theme_provider.dart';  
 import 'theme/app_theme.dart';
 import 'features/smart_scan/scan_food.dart';
@@ -98,7 +100,11 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/recipePage',
-      builder: (context, state) => const RecipePage(),
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>;
+        final recipe = extra['recipe'] as RecipeDetail;
+        return RecipePage(recipe: recipe);
+      },
     ),
   ],
 );
