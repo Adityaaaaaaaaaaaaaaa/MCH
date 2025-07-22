@@ -1,8 +1,5 @@
-# app/providers/spoonacular_recipe_details.py
-
 import os
 import requests
-import time
 
 BLUE = "\033[94m"
 RESET = "\033[0m"

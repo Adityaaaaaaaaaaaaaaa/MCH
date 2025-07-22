@@ -38,6 +38,7 @@ class RecipeDetail {
   final double? spoonacularScore;
   final String? spoonacularSourceUrl;
   final Nutrition? nutrition;
+  final List<RecipeVideo>? videos; 
 
   // For future extensibility: any additional fields from backend
   final Map<String, dynamic> extra;
@@ -83,6 +84,7 @@ class RecipeDetail {
     this.spoonacularSourceUrl,
     this.nutrition,
     this.extra = const {},
+    this.videos,
   });
 
   factory RecipeDetail.fromJson(Map<String, dynamic> json) {
@@ -128,6 +130,7 @@ class RecipeDetail {
       'spoonacularScore',
       'spoonacularSourceUrl',
     };
+    
     final Map<String, dynamic> extra = {};
     for (var key in json.keys) {
       if (!knownKeys.contains(key)) {
@@ -179,6 +182,9 @@ class RecipeDetail {
       spoonacularScore: _parseDouble(json['spoonacularScore']),
       spoonacularSourceUrl: json['spoonacularSourceUrl']?.toString(),
       nutrition: json['nutrition'] != null ? Nutrition.fromJson(json['nutrition']) : null,
+      videos: json['videos'] == null
+        ? null
+        : (json['videos'] as List).map((e) => RecipeVideo.fromJson(e)).toList(),
       extra: extra,
     );
   }
@@ -450,4 +456,42 @@ class InstructionStep {
       length: json['length'] as Map<String, dynamic>?,
     );
   }
+}
+
+class RecipeVideo {
+  final String videoId;
+  final String title;
+  final String thumbnail;
+  final String channelTitle;
+  final String publishedAt;
+  final String description;
+
+  RecipeVideo({
+    required this.videoId,
+    required this.title,
+    required this.thumbnail,
+    required this.channelTitle,
+    required this.publishedAt,
+    required this.description,
+  });
+
+  factory RecipeVideo.fromJson(Map<String, dynamic> json) {
+    return RecipeVideo(
+      videoId: json['videoId'] ?? '',
+      title: json['title'] ?? '',
+      thumbnail: json['thumbnail'] ?? '',
+      channelTitle: json['channelTitle'] ?? '',
+      publishedAt: json['publishedAt'] ?? '',
+      description: json['description'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'videoId': videoId,
+    'title': title,
+    'thumbnail': thumbnail,
+    'channelTitle': channelTitle,
+    'publishedAt': publishedAt,
+    'description': description,
+  };
 }
