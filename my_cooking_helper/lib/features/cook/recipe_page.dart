@@ -216,7 +216,6 @@ class RecipePage extends ConsumerWidget {
                         if (recipe.nutrition != null) ...[
                           NutritionSection(
                             nutrition: recipe.nutrition!.toJson(),
-                            showAllNutrientsDefault: true,
                           ),
                         ],
                         SizedBox(height: 25.h),
