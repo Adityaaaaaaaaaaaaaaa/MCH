@@ -8,6 +8,7 @@ import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
 import '/services/recipe_search_service.dart';
+import '/widgets/recipe_page_widgets.dart';
 
 // 1. Provider for the service itself
 final recipeSearchServiceProvider = Provider<RecipeSearchService>((ref) {

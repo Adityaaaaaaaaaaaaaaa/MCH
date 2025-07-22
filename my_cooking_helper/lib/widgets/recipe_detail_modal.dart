@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '/models/recipe.dart';
 import 'recipe_common_widgets.dart';
+import 'recipe_page_widgets.dart';
 
 class RecipeDetailModal extends StatelessWidget {
   final Recipe recipe;
