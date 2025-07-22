@@ -628,19 +628,32 @@ class EquipmentChips extends StatelessWidget {
 }
 
 // Nutrition Section (reuse your previous NutritionSection)
-class NutritionSection extends StatelessWidget {
+class NutritionSection extends StatefulWidget {
   final Map<String, dynamic> nutrition;
-  final bool showAllNutrients; // new parameter
+  final bool showAllNutrientsDefault;
 
   const NutritionSection({
-    Key? key, 
-    required this.nutrition, 
-    this.showAllNutrients = false, // default: filter important only
+    Key? key,
+    required this.nutrition,
+    this.showAllNutrientsDefault = false,
   }) : super(key: key);
 
   @override
+  State<NutritionSection> createState() => _NutritionSectionState();
+}
+
+class _NutritionSectionState extends State<NutritionSection> {
+  late bool expanded;
+
+  @override
+  void initState() {
+    super.initState();
+    expanded = widget.showAllNutrientsDefault;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final nutrients = nutrition['nutrients'] as List<dynamic>? ?? [];
+    final nutrients = widget.nutrition['nutrients'] as List<dynamic>? ?? [];
     if (nutrients.isEmpty) return const SizedBox.shrink();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -648,16 +661,12 @@ class NutritionSection extends StatelessWidget {
     final important = [
       'Calories', 'Protein', 'Carbohydrates', 'Fat', 'Saturated Fat', 'Fiber', 'Sugar', 'Sodium'
     ];
-
-    // Use all or filtered
-    final displayNutrients = showAllNutrients
-        ? nutrients
-        : nutrients.where((n) => important.contains(n['name'])).toList();
+    final displayNutrientsDefault = nutrients.where((n) => important.contains(n['name'])).toList();
+    final displayNutrients = expanded ? nutrients : displayNutrientsDefault;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ... (Header remains unchanged)
         Row(
           children: [
             Container(
@@ -676,7 +685,7 @@ class NutritionSection extends StatelessWidget {
                 size: 18.sp,
               ),
             ),
-            SizedBox(width: 13.w),
+            SizedBox(width: 15.w),
             Text(
               'Nutrition',
               style: TextStyle(
@@ -688,9 +697,9 @@ class NutritionSection extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: 14.h),
+        SizedBox(height: 15.h),
         Container(
-          padding: EdgeInsets.all(16.w),
+          padding: EdgeInsets.all(20.w),
           decoration: BoxDecoration(
             color: isDark ? Colors.grey[850]?.withOpacity(0.47) : Colors.orange[50],
             borderRadius: BorderRadius.circular(16.r),
@@ -700,43 +709,66 @@ class NutritionSection extends StatelessWidget {
             ),
           ),
           child: Column(
-            children: displayNutrients.asMap().entries.map((entry) {
-              final index = entry.key;
-              final nutrient = entry.value;
-              return Container(
-                margin: EdgeInsets.only(
-                  bottom: index < displayNutrients.length - 1 ? 10.h : 0,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${nutrient['name'] ?? ''}',
-                      style: TextStyle(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w600,
-                        color: textColor(context),
-                      ),
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.orange[800]?.withOpacity(0.32) : Colors.orange[100],
-                        borderRadius: BorderRadius.circular(11.r),
-                      ),
-                      child: Text(
-                        '${_safeAmount(nutrient['amount'])} ${nutrient['unit'] ?? ''}',
+            children: [
+              ...displayNutrients.asMap().entries.map((entry) {
+                final index = entry.key;
+                final nutrient = entry.value;
+                return Container(
+                  margin: EdgeInsets.only(
+                    bottom: index < displayNutrients.length - 1 ? 10.h : 0,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${nutrient['name'] ?? ''}',
                         style: TextStyle(
-                          fontSize: 13.sp,
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.w600,
+                          color: textColor(context),
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.orange[800]?.withOpacity(0.32) : Colors.orange[100],
+                          borderRadius: BorderRadius.circular(11.r),
+                        ),
+                        child: Text(
+                          '${_safeAmount(nutrient['amount'])} ${nutrient['unit'] ?? ''}',
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.orange[300] : Colors.orange[800],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              if (nutrients.length > displayNutrientsDefault.length)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      setState(() {
+                        expanded = !expanded;
+                      });
+                    },
+                    child: Center(
+                      child: Text(
+                        expanded ? 'Show Less' : 'Show More',
+                        style: TextStyle(
                           color: isDark ? Colors.orange[300] : Colors.orange[800],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15.sp,
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              );
-            }).toList(),
+            ],
           ),
         ),
       ],
