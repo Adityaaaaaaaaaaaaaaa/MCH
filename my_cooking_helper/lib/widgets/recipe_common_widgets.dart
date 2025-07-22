@@ -631,12 +631,10 @@ class EquipmentChips extends StatelessWidget {
 // Nutrition Section (reuse your previous NutritionSection)
 class NutritionSection extends StatefulWidget {
   final Map<String, dynamic> nutrition;
-  final bool showAllNutrientsDefault;
 
   const NutritionSection({
     Key? key,
     required this.nutrition,
-    this.showAllNutrientsDefault = false,
   }) : super(key: key);
 
   @override
@@ -644,13 +642,7 @@ class NutritionSection extends StatefulWidget {
 }
 
 class _NutritionSectionState extends State<NutritionSection> {
-  late bool expanded;
-
-  @override
-  void initState() {
-    super.initState();
-    expanded = widget.showAllNutrientsDefault;
-  }
+  bool expanded = false; // Always start collapsed
 
   @override
   Widget build(BuildContext context) {
@@ -675,8 +667,8 @@ class _NutritionSectionState extends State<NutritionSection> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isDark
-                      ? [Colors.orange[600]!, Colors.orange[700]!]
-                      : [Colors.orange[600]!, Colors.orange[700]!],
+                      ? [Colors.orange.shade600, Colors.orange.shade700]
+                      : [Colors.orange.shade600, Colors.orange.shade700],
                 ),
                 borderRadius: BorderRadius.circular(12.r),
               ),
@@ -733,7 +725,7 @@ class _NutritionSectionState extends State<NutritionSection> {
                         padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
                         decoration: BoxDecoration(
                           color: isDark ? Colors.orange[800]?.withOpacity(0.32) : Colors.orange[100],
-                          borderRadius: BorderRadius.circular(11.r),
+                          borderRadius: BorderRadius.circular(12.r),
                         ),
                         child: Text(
                           '${_safeAmount(nutrient['amount'])} ${nutrient['unit'] ?? ''}',
@@ -1284,7 +1276,7 @@ class GlassIngredientDialog extends StatelessWidget {
   }
 }
 
-class CaloricBreakdownWidget extends StatelessWidget {
+class CaloricBreakdownWidget extends StatefulWidget {
   final CaloricBreakdown? breakdown;
   final bool? glutenFree;
   final bool? dairyFree;
@@ -1301,92 +1293,470 @@ class CaloricBreakdownWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    if (breakdown == null) return const SizedBox.shrink();
-    final themeIsDark = isDark ?? Theme.of(context).brightness == Brightness.dark;
-    final labelStyle = TextStyle(
-      fontSize: 13,
-      fontWeight: FontWeight.w600,
-      color: themeIsDark ? Colors.grey[300] : Colors.grey[800],
-    );
-    final valueStyle = TextStyle(
-      fontWeight: FontWeight.bold,
-      fontSize: 14,
-      color: themeIsDark ? Colors.orange[100] : Colors.deepOrange,
-    );
+  State<CaloricBreakdownWidget> createState() => _CaloricBreakdownWidgetState();
+}
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-      decoration: BoxDecoration(
-        color: themeIsDark ? Colors.orange[900]?.withOpacity(0.07) : Colors.orange.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _stat("Protein", breakdown!.percentProtein, themeIsDark),
-              _stat("Fat", breakdown!.percentFat, themeIsDark),
-              _stat("Carbs", breakdown!.percentCarbs, themeIsDark),
-            ],
+class _CaloricBreakdownWidgetState extends State<CaloricBreakdownWidget>
+    with SingleTickerProviderStateMixin {
+  bool tapped = false;
+  bool isHovered = false;
+  late AnimationController _shimmerController;
+  late Animation<double> _shimmerAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      duration: Duration(milliseconds: 2000),
+      vsync: this,
+    );
+    _shimmerAnimation = Tween<double>(
+      begin: -2.0,
+      end: 2.0,
+    ).animate(CurvedAnimation(
+      parent: _shimmerController,
+      curve: Curves.easeInOutSine,
+    ));
+    _shimmerController.repeat();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.breakdown == null) return const SizedBox.shrink();
+
+    final themeIsDark = widget.isDark ?? Theme.of(context).brightness == Brightness.dark;
+    final accent = themeIsDark ? Colors.amber[300] : Colors.deepOrange[600];
+    final cardBg = themeIsDark ? Colors.grey[900]!.withOpacity(0.1) : Colors.white.withOpacity(0.1);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => tapped = true),
+        onTapUp: (_) => setState(() => tapped = false),
+        onTapCancel: () => setState(() => tapped = false),
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.identity()
+            ..scale(tapped ? 0.97 : (isHovered ? 1.02 : 1.0))
+            ..rotateZ(isHovered ? 0.001 : 0.0),
+          child: Card(
+            elevation: 0,
+            color: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28.r)),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28.r),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: themeIsDark
+                      ? [
+                          Colors.amber[900]!.withOpacity(0.1),
+                          Colors.orange[800]!.withOpacity(0.05),
+                          Colors.deepOrange[700]!.withOpacity(0.08),
+                        ]
+                      : [
+                          Colors.orange[50]!.withOpacity(0.8),
+                          Colors.amber[50]!.withOpacity(0.6),
+                          Colors.deepOrange[50]!.withOpacity(0.7),
+                        ],
+                ),
+                border: Border.all(
+                  color: themeIsDark 
+                      ? Colors.amber[400]!.withOpacity(isHovered ? 0.6 : 0.3) 
+                      : Colors.orange[300]!.withOpacity(isHovered ? 0.8 : 0.4),
+                  width: isHovered ? 2.0 : 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: themeIsDark
+                        ? Colors.amber[600]!.withOpacity(isHovered ? 0.2 : 0.1)
+                        : Colors.deepOrange.withOpacity(isHovered ? 0.25 : 0.12),
+                    blurRadius: isHovered ? 30 : 20,
+                    offset: Offset(0, isHovered ? 12 : 8),
+                    spreadRadius: isHovered ? 2 : 0,
+                  ),
+                  BoxShadow(
+                    color: themeIsDark
+                        ? Colors.amber[900]!.withOpacity(0.1)
+                        : Colors.orange[200]!.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28.r),
+                child: Stack(
+                  children: [
+                    // Subtle shimmer effect
+                    if (isHovered)
+                      AnimatedBuilder(
+                        animation: _shimmerAnimation,
+                        builder: (context, child) {
+                          return Positioned(
+                            top: -50,
+                            left: _shimmerAnimation.value * MediaQuery.of(context).size.width,
+                            child: Transform.rotate(
+                              angle: 0.2,
+                              child: Container(
+                                width: 50,
+                                height: 200,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      (themeIsDark ? Colors.amber[200] : Colors.orange[300])!
+                                          .withOpacity(0.1),
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    // Main content
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 26.h, horizontal: 22.w),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Enhanced Heading Row
+                          Row(
+                            children: [
+                              AnimatedContainer(
+                                duration: Duration(milliseconds: 300),
+                                padding: EdgeInsets.all(8.r),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      accent!.withOpacity(isHovered ? 0.2 : 0.1),
+                                      accent.withOpacity(0.05),
+                                    ],
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.pie_chart_rounded,
+                                  color: accent,
+                                  size: 28.sp,
+                                ),
+                              ),
+                              SizedBox(width: 12.w),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Caloric Breakdown",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 20.sp,
+                                        color: accent,
+                                        letterSpacing: -0.5,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black.withOpacity(0.1),
+                                            blurRadius: 4,
+                                            offset: Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      "Nutritional Information",
+                                      style: TextStyle(
+                                        fontSize: 13.sp,
+                                        color: (themeIsDark ? Colors.grey[400] : Colors.grey[600]),
+                                        fontWeight: FontWeight.w500,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 24.h),
+
+                          // Enhanced Macro Circles
+                          AnimatedSwitcher(
+                            duration: Duration(milliseconds: 500),
+                            transitionBuilder: (Widget child, Animation<double> animation) {
+                              return FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: Offset(0, 0.3),
+                                    end: Offset.zero,
+                                  ).animate(animation),
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: Container(
+                              key: ValueKey(widget.breakdown),
+                              padding: EdgeInsets.symmetric(vertical: 8.h),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _circularStat("Protein", widget.breakdown!.percentProtein, themeIsDark, 
+                                      themeIsDark ? Colors.green[400]! : Colors.green[600]!),
+                                  _circularStat("Fat", widget.breakdown!.percentFat, themeIsDark, 
+                                      themeIsDark ? Colors.red[400]! : Colors.redAccent[700]!),
+                                  _circularStat("Carbs", widget.breakdown!.percentCarbs, themeIsDark, 
+                                      themeIsDark ? Colors.blue[400]! : Colors.blue[600]!),
+                                ],
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 22.h),
+
+                          // Modern divider with gradient
+                          Container(
+                            height: 1.5.h,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(1.r),
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  themeIsDark
+                                      ? Colors.amber[400]!.withOpacity(0.3)
+                                      : Colors.orange[400]!.withOpacity(0.4),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 16.h),
+
+                          // Enhanced Chips
+                          Center(
+                            child: AnimatedContainer(
+                              duration: Duration(milliseconds: 300),
+                              child: Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 10.w,
+                                runSpacing: 8.h,
+                                children: [
+                                  if (widget.glutenFree != null)
+                                    _tagChip(
+                                      icon: widget.glutenFree! ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                                      label: "Gluten-Free",
+                                      color: widget.glutenFree! 
+                                          ? (themeIsDark ? Colors.green[400]! : Colors.green[600]!)
+                                          : (themeIsDark ? Colors.red[400]! : Colors.redAccent[700]!),
+                                      themeIsDark: themeIsDark,
+                                    ),
+                                  if (widget.dairyFree != null)
+                                    _tagChip(
+                                      icon: widget.dairyFree! ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                                      label: "Dairy-Free",
+                                      color: widget.dairyFree! 
+                                          ? (themeIsDark ? Colors.green[400]! : Colors.green[600]!)
+                                          : (themeIsDark ? Colors.red[400]! : Colors.redAccent[700]!),
+                                      themeIsDark: themeIsDark,
+                                    ),
+                                  if (widget.weightPerServing != null &&
+                                      widget.weightPerServing!['amount'] != null &&
+                                      widget.weightPerServing!['unit'] != null)
+                                    _tagChip(
+                                      icon: Icons.restaurant_rounded,
+                                      label: "${widget.weightPerServing!['amount']} ${widget.weightPerServing!['unit']}/serving",
+                                      color: themeIsDark ? Colors.amber[400]! : Colors.amber[700]!,
+                                      themeIsDark: themeIsDark,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ).asGlass(
+              blurX: 8,
+              blurY: 8,
+              tintColor: cardBg,
+              frosted: true,
+              clipBorderRadius: BorderRadius.circular(28.r),
+            ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              if (glutenFree != null)
-                Row(
-                  children: [
-                    Icon(
-                      glutenFree! ? Icons.check_circle : Icons.cancel,
-                      color: glutenFree! ? Colors.green : Colors.red,
-                      size: 17,
-                    ),
-                    const SizedBox(width: 6),
-                    Text("Gluten-Free", style: labelStyle),
-                  ],
-                ),
-              if (dairyFree != null)
-                Row(
-                  children: [
-                    Icon(
-                      dairyFree! ? Icons.check_circle : Icons.cancel,
-                      color: dairyFree! ? Colors.green : Colors.red,
-                      size: 17,
-                    ),
-                    const SizedBox(width: 6),
-                    Text("Dairy-Free", style: labelStyle),
-                  ],
-                ),
-              if (weightPerServing != null &&
-                  weightPerServing!['amount'] != null &&
-                  weightPerServing!['unit'] != null)
-                Row(
-                  children: [
-                    Icon(Icons.restaurant, color: Colors.amber[700], size: 17),
-                    const SizedBox(width: 6),
-                    Text(
-                      "${weightPerServing!['amount']} ${weightPerServing!['unit']}/serving",
-                      style: valueStyle,
-                    ),
-                  ],
-                ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _stat(String label, double? value, bool isDark) {
-    final v = value != null ? "${value.toStringAsFixed(1)}%" : "-";
-    return Column(
-      children: [
-        Text(v, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isDark ? Colors.orange[200] : Colors.orange[900])),
-        Text(label, style: TextStyle(fontSize: 12, color: isDark ? Colors.orange[100] : Colors.orange[900])),
-      ],
+  Widget _circularStat(String label, double? value, bool isDark, Color color) {
+    final val = value ?? 0;
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: val / 100),
+      duration: Duration(milliseconds: 800),
+      curve: Curves.easeOutCubic,
+      builder: (context, animValue, child) {
+        return MouseRegion(
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: 200),
+            child: Column(
+              children: [
+                Container(
+                  width: 64.w,
+                  height: 64.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Background circle
+                      CircularProgressIndicator(
+                        value: 1.0,
+                        backgroundColor: Colors.transparent,
+                        valueColor: AlwaysStoppedAnimation(
+                          (isDark ? Colors.grey[800] : Colors.grey[200])!.withOpacity(0.3)
+                        ),
+                        strokeWidth: 8,
+                        strokeCap: StrokeCap.round,
+                      ),
+                      // Progress circle with gradient effect
+                      CircularProgressIndicator(
+                        value: animValue,
+                        backgroundColor: Colors.transparent,
+                        valueColor: AlwaysStoppedAnimation(color),
+                        strokeWidth: 8,
+                        strokeCap: StrokeCap.round,
+                      ),
+                      // Center content
+                      Center(
+                        child: Container(
+                          width: 40.w,
+                          height: 40.w,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: (isDark ? Colors.grey[900] : Colors.white)!.withOpacity(0.9),
+                            border: Border.all(
+                              color: color.withOpacity(0.2),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              "${(animValue * 100).toStringAsFixed(0)}%",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14.sp,
+                                color: color,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: isDark ? Colors.grey[300] : color.withOpacity(0.9),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _tagChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required bool themeIsDark,
+  }) {
+    return MouseRegion(
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20.r),
+          splashColor: color.withOpacity(0.2),
+          highlightColor: color.withOpacity(0.1),
+          onTap: () {}, // Could open a tooltip or info dialog
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  color.withOpacity(themeIsDark ? 0.15 : 0.1),
+                  color.withOpacity(themeIsDark ? 0.1 : 0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20.r),
+              border: Border.all(
+                color: color.withOpacity(0.3),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.1),
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(2.r),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color.withOpacity(0.1),
+                  ),
+                  child: Icon(icon, color: color, size: 16.sp),
+                ),
+                SizedBox(width: 8.w),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: themeIsDark ? Colors.grey[300] : color,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.sp,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
