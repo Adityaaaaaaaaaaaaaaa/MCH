@@ -66,7 +66,7 @@ Widget build(BuildContext context, WidgetRef ref) {
         if (imageUrl.isNotEmpty)
           Positioned.fill(
             child: Opacity(
-              opacity: 0.25,
+              opacity: 0.15,
               child: Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
@@ -86,6 +86,7 @@ Widget build(BuildContext context, WidgetRef ref) {
                     padding: EdgeInsets.all(10.w),
                     child: RecipeImageCard(imageUrl: imageUrl, isDark: isDark),
                   ),
+                
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 18.w),
                   child: Column(
@@ -93,27 +94,49 @@ Widget build(BuildContext context, WidgetRef ref) {
                     children: [
                       RecipeTitle(title: title),
                       SizedBox(height: 6.h),
+
                       if (summary.isNotEmpty)
                         HtmlSummaryText(html: summary),
-                      RecipeStatsRow(
-                        healthScore: healthScore,
-                        pricePerServing: pricePerServing,
-                        spoonacularScore: spoonacularScore,
-                      ),
+                      SizedBox(height: 10.h),
+
+                      if (recipe.healthScore != null && recipe.pricePerServing != null && recipe.spoonacularScore != null)
+                        RecipeStatsRow(
+                          healthScore: healthScore,
+                          pricePerServing: pricePerServing,
+                          spoonacularScore: spoonacularScore,
+                        ),
+                      SizedBox(height: 10.h),
+
+                      if (recipe.nutrition?.caloricBreakdown != null)
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          child: CaloricBreakdownWidget(
+                            breakdown: recipe.nutrition?.caloricBreakdown,
+                            glutenFree: recipe.glutenFree,
+                            dairyFree: recipe.dairyFree,
+                            weightPerServing: recipe.nutrition?.toJson()['weightPerServing'],
+                            isDark: isDark,
+                          ),
+                        ),
+                      SizedBox(height: 10.h),
                       
                       if (dishTypes.isNotEmpty)
-                        InfoChip(
-                          icon: Icons.restaurant_rounded,
-                          text: dishTypes.join(', ').replaceFirstMapped(RegExp(r'^\w'), (m) => m.group(0)!.toUpperCase()),
-                          isDark: isDark,
+                        Center(
+                          child: InfoChip(
+                            icon: Icons.restaurant_rounded,
+                            text: dishTypes.join(', ').replaceFirstMapped(RegExp(r'^\w'), (m) => m.group(0)!.toUpperCase()),
+                            isDark: isDark,
+                          ),
                         ),
                       SizedBox(height: 7.h),
 
                       if (servings > 0)
-                        InfoChip(
-                          icon: Icons.people_rounded,
-                          text: 'Serves $servings',
-                          isDark: isDark,
+                        Center(
+                          child: InfoChip(
+                            icon: Icons.people_rounded,
+                            text: 'Serves $servings',
+                            isDark: isDark,
+                          ),
                         ),
                       SizedBox(height: 10.h),
 
@@ -133,26 +156,9 @@ Widget build(BuildContext context, WidgetRef ref) {
                       if (recipe.analyzedInstructions.isNotEmpty) ...[
                         SectionHeader(title: 'Instructions', icon: Icons.format_list_numbered_rounded, isDark: isDark),
                         SizedBox(height: 10.h),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: recipe.analyzedInstructions
-                              .expand((instr) => instr.steps)
-                              .map((step) => Padding(
-                                padding: EdgeInsets.only(bottom: 10.h),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor: isDark ? Colors.deepPurple[500] : Colors.deepPurple[300],
-                                      radius: 16.w,
-                                      child: Text("${step.number ?? ''}", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.sp)),
-                                    ),
-                                    SizedBox(width: 16.w),
-                                    Expanded(child: Text(step.step ?? '', style: TextStyle(fontSize: 15.sp, color: textColor(context), height: 1.5))),
-                                  ],
-                                ),
-                              ))
-                              .toList(),
+                        InstructionsList(
+                          instructions: recipe.analyzedInstructions.expand((instr) => instr.steps).toList(),
+                          isDark: isDark,
                         ),
                         SizedBox(height: 22.h),
                       ],
@@ -176,11 +182,9 @@ Widget build(BuildContext context, WidgetRef ref) {
 
                       // NUTRITION
                       if (recipe.nutrition != null)
-                        NutritionSection(nutrition: recipe.nutrition!.toJson()),
-                      if (recipe.nutrition?.caloricBreakdown != null)
-                        Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12.h),
-                          child: CaloricBreakdownWidget(breakdown: recipe.nutrition?.caloricBreakdown),
+                        NutritionSection(
+                          nutrition: recipe.nutrition!.toJson(),
+                          showAllNutrients: true,
                         ),
 
                       // WEBSITE LINK
