@@ -121,46 +121,15 @@ class RecipeSearchService {
     return RecipeSearchResults(summaries: recipeResults, details: recipeDetails);
   }
 
-  // Future<Map<String, dynamic>> fetchRecipeVideosAndSummary({
-  //   required String userId,
-  //   required String title,
-  //   required String htmlSummary,
-  //   List<String>? overrideIngredients,
-  // }) async {
-  //   final prefs = await fetchUserPreferences(userId);
-  //   final ingredients = overrideIngredients ?? await fetchUserIngredients(userId);
-
-  //   final payload = {
-  //     "title": title,
-  //     "html_summary": htmlSummary,
-  //     "ingredients": ingredients,
-  //     "preferences": prefs,
-  //   };
-
-  //   final url = Uri.parse(spoonacularRecipeVideos); // from config
-
-  //   final response = await http.post(
-  //     url,
-  //     headers: {'Content-Type': 'application/json'},
-  //     body: jsonEncode(payload),
-  //   );
-
-  //   if (response.statusCode != 200) {
-  //     throw Exception('Failed to fetch videos and summary: ${response.body}');
-  //   }
-
-  //   return jsonDecode(response.body);
-  // }
-
-  Future<List<dynamic>> fetchRecipeVideos({
+  Future<Map<String, dynamic>> fetchRecipeVideosAndSummary({
     required String title,
-    //required List<String> includeIngredients,
+    required String summary,
   }) async {
     // Replace this with your actual backend endpoint for videos!
     final url = Uri.parse(spoonacularRecipeVideos);
     final payload = {
       "title": title,
-      //"include_ingredients": includeIngredients,
+      "summary": summary,
     };
 
     final response = await http.post(
@@ -169,14 +138,10 @@ class RecipeSearchService {
       body: jsonEncode(payload),
     );
     if (response.statusCode != 200) {
-      throw Exception('Failed to fetch recipe videos: ${response.body}');
+      throw Exception('Failed to fetch: ${response.body}');
     }
-
-    final data = jsonDecode(response.body);
-    // This expects your backend returns {"videos": [...]}
-    return data['videos'] as List<dynamic>;
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
-
 }
 
 class RecipeSearchResults {

@@ -3,7 +3,6 @@ from fastapi.responses import JSONResponse
 import os
 import base64
 import requests
-import filetype
 import re
 from app.utils.utils import detect_mime_type, build_food_ingredient_prompt
 from app.utils.gemini_api import gemini_model_url

@@ -158,35 +158,172 @@ class HealthScoreCard extends StatelessWidget {
   }
 }
 
-class HtmlSummaryText extends StatelessWidget {
-  final String html;
-  const HtmlSummaryText({super.key, required this.html});
+class RecipeSummaryText extends StatelessWidget {
+  final Map<String, dynamic>? geminiSummary;
+  final String originalHtmlSummary;
+
+  const RecipeSummaryText({
+    Key? key,
+    required this.originalHtmlSummary,
+    this.geminiSummary,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (geminiSummary == null) {
+      // Fallback to HTML
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.deepPurple[900]?.withOpacity(0.12)
+              : Colors.deepPurple[50],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark
+                ? Colors.deepPurple[300]!.withOpacity(0.2)
+                : Colors.deepPurple.withOpacity(0.08),
+          ),
+        ),
+        child: HtmlWidget(
+          originalHtmlSummary,
+          textStyle: TextStyle(
+            fontSize: 16,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+            height: 1.6,
+          ),
+          onTapUrl: (url) {
+            showRecipeWebView(context, url);
+            print('Tapped URL: $url');
+            return true;
+          },
+        )
+      );
+    }
+
+    // --- AI Summary Display ---
+    final highlights = (geminiSummary?['highlights'] as List?)?.cast<String>() ?? [];
+    final time = _extractTimeFromSummary(geminiSummary);
+    final nutrition = geminiSummary?['nutrition'] as String?;
+    final servings = geminiSummary?['servings'] as String?;
+    final title = geminiSummary?['title'] as String?;
+    final shortSummary = geminiSummary?['short_summary'] as String?;
+
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10),
-      padding: EdgeInsets.all(18),
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isDark ? Colors.deepPurple[900]?.withOpacity(0.12) : Colors.deepPurple[50],
+        color: isDark
+            ? Colors.deepPurple[900]?.withOpacity(0.12)
+            : Colors.deepPurple[50],
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.deepPurple[300]!.withOpacity(0.2) : Colors.deepPurple.withOpacity(0.08),
+          color: isDark
+              ? Colors.deepPurple[300]!.withOpacity(0.2)
+              : Colors.deepPurple.withOpacity(0.08),
         ),
       ),
-      child: HtmlWidget(
-        html,
-        textStyle: TextStyle(
-          fontSize: 16,
-          color: Theme.of(context).textTheme.bodyLarge?.color,
-          height: 1.6,
-        ),
-        onTapUrl: (url) {
-          showRecipeWebView(context, url);
-          print('Tapped URL: $url');
-          return true;
-        },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // AI-Enhanced Label Row
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_awesome, size: 20.sp, color: Colors.blue[400]),
+              SizedBox(width: 6.w),
+              Text(
+                "Summary (AI-Enhanced)",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.deepPurple[100] : Colors.deepPurple[800],
+                ),
+              ),
+            ],
+          ),
+          // if (title != null && title.isNotEmpty) ...[
+          //   SizedBox(height: 7.h),
+          //   Text(
+          //     title,
+          //     style: TextStyle(
+          //       fontWeight: FontWeight.w700,
+          //       fontSize: 18.sp,
+          //       color: Theme.of(context).colorScheme.primary,
+          //     ),
+          //   ),
+          // ],
+          if (shortSummary != null && shortSummary.isNotEmpty) ...[
+            SizedBox(height: 7.h),
+            Text(
+              shortSummary,
+              style: TextStyle(
+                fontSize: 16.sp,
+                height: 1.5,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+            ),
+          ],
+          if ((servings != null && servings.isNotEmpty) ||
+              (nutrition != null && nutrition.isNotEmpty) ||
+              (time != null && time.isNotEmpty)) ...[
+            SizedBox(height: 10.h),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                if (servings != null && servings.isNotEmpty)
+                  _buildInfoChip(context, icon: Icons.people_alt_rounded, label: 'Serves $servings'),
+                if (nutrition != null && nutrition.isNotEmpty)
+                  _buildInfoChip(context, icon: Icons.local_fire_department, label: nutrition),
+                if (time != null && time.isNotEmpty)
+                  _buildInfoChip(context, icon: Icons.timer, label: time),
+              ],
+            ),
+          ],
+          if (highlights.isNotEmpty) ...[
+            const SizedBox(height: 9),
+            Center(
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: highlights
+                    .map((e) => Chip(
+                          label: Text(e, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500)),
+                          backgroundColor: Colors.deepPurple[100]?.withOpacity(0.5),
+                        ))
+                    .toList(),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Helper to extract time info if available in the short summary or nutrition
+  String? _extractTimeFromSummary(Map<String, dynamic>? summary) {
+    // Try to find time in the short summary (regex for "XX min" or "XX hr YY min")
+    final shortSummary = summary?['short_summary'] as String? ?? '';
+    final match = RegExp(r'(\d+\s*hr)?\s*(\d+)\s*min').firstMatch(shortSummary);
+    if (match != null) {
+      return match.group(0)?.replaceAll(RegExp(r'\s+'), ' ').trim();
+    }
+    return null;
+  }
+
+  Widget _buildInfoChip(BuildContext context, {required IconData icon, required String label}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Center(
+      child: Chip(
+        avatar: Icon(icon, color: isDark ? Colors.deepPurple[200] : Colors.deepPurple[400], size: 18.sp),
+        label: Text(label, style: TextStyle(fontSize: 14.sp)),
+        backgroundColor: isDark ? Colors.deepPurple[700]?.withOpacity(0.18) : Colors.deepPurple[50],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.symmetric(horizontal: 6.w),
       ),
     );
   }

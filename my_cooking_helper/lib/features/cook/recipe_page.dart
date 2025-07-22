@@ -10,20 +10,17 @@ import '/widgets/navigation/drawer.dart';
 import '/services/recipe_search_service.dart';
 import '/widgets/recipe_page_widgets.dart';
 
-// 1. Provider for the service itself
 final recipeSearchServiceProvider = Provider<RecipeSearchService>((ref) {
   return RecipeSearchService();
 });
 
-// 2. FutureProvider.family for fetching videos for a recipe
-final recipeVideosProvider = FutureProvider.family<List<dynamic>, RecipeDetail>((ref, recipe) async {
+final recipeVideosProvider = FutureProvider.family<Map<String, dynamic>, RecipeDetail>((ref, recipe) async {
   final service = ref.read(recipeSearchServiceProvider);
-  return await service.fetchRecipeVideos(
+  return await service.fetchRecipeVideosAndSummary(
     title: recipe.title ?? '',
-    //includeIngredients: [],
+    summary: recipe.summary ?? '',
   );
 });
-
 
 class RecipePage extends ConsumerWidget {
   final RecipeDetail recipe;
@@ -39,24 +36,15 @@ class RecipePage extends ConsumerWidget {
     final website = recipe.sourceUrl ?? '';
     final dishTypes = recipe.dishTypes;
     final servings = recipe.servings ?? 0;
+    final videosAndSummaryAsync = ref.watch(recipeVideosProvider(recipe));
 
-    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    // --- Here: Fetch videos ONCE for this recipe ---
-    final videosAsync = ref.watch(recipeVideosProvider(recipe));
-
-      // Print videos or error for debug (non-UI for now)
-    videosAsync.whenData((videos) {
-      print('\x1B[34m[DEBUG] Recipe videos fetched: ${videos.length}\x1B[0m');
-    });
-    videosAsync.when(
-      loading: () => null,
-      error: (err, stack) {
-        print('\x1B[31m[ERROR] Failed to fetch recipe videos: $err\x1B[0m');
-        return null;
-      },
-      data: (_) => null,
-    );
-    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    Map<String, dynamic>? geminiSummaryData;
+    if (videosAndSummaryAsync.hasValue && videosAndSummaryAsync.value != null) {
+      final summaryData = videosAndSummaryAsync.value!['summary'];
+      if (summaryData is Map) {
+        geminiSummaryData = summaryData as Map<String, dynamic>;
+      }
+    }
 
 
     return Scaffold(
@@ -126,7 +114,10 @@ class RecipePage extends ConsumerWidget {
                         SizedBox(height: 6.h),
 
                         if (summary.isNotEmpty)
-                          HtmlSummaryText(html: summary),
+                          RecipeSummaryText(
+                            geminiSummary: geminiSummaryData,
+                            originalHtmlSummary: summary,
+                          ),
                         SizedBox(height: 10.h),
 
                         if (recipe.healthScore != null)
@@ -226,13 +217,14 @@ class RecipePage extends ConsumerWidget {
                         ],
                         SizedBox(height: 25.h),
 
-                        if (videosAsync.hasValue && videosAsync.value!.isNotEmpty) ...[
+                        if (videosAndSummaryAsync.hasValue && videosAndSummaryAsync.value!.isNotEmpty) ...[
                           SectionHeader(title: 'Youtube Videos', icon: Icons.video_collection, isDark: isDark),
                           SizedBox(height: 10.h),
-                          RecipeVideosSection(videos: videosAsync.value!
-                            .map((e) => RecipeYoutubeVideo.fromJson(e as Map<String, dynamic>))
-                            .toList(),
-                          ),
+                          RecipeVideosSection(
+                            videos: (videosAndSummaryAsync.value!['videos'] as List)
+                              .map((e) => RecipeYoutubeVideo.fromJson(e as Map<String, dynamic>))
+                              .toList(),
+                          )
                         ],
                         SizedBox(height: 10.h),
                       ],
