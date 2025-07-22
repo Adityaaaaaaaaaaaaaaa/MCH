@@ -320,3 +320,21 @@ def filter_recipes(
 
     print(f"{BLUE}[DEBUG] Recipes after filtering: {len(filtered)}{RESET}")
     return filtered
+
+YELLOW = "\033[93m"
+RESET = "\033[0m"
+
+def print_rate_limits(headers):
+    keys = [
+        "X-Ratelimit-Classifications-Limit",
+        "X-Ratelimit-Classifications-Remaining",
+        "X-Ratelimit-Requests-Limit",
+        "X-Ratelimit-Requests-Remaining",
+        "X-Ratelimit-Tinyrequests-Limit",
+        "X-Ratelimit-Tinyrequests-Remaining"
+    ]
+    print(f"{YELLOW}[RAPIDAPI RATE LIMITS]{RESET}")
+    for key in keys:
+        if key in headers:
+            print(f"{YELLOW}{key}: {headers[key]}{RESET}")
+

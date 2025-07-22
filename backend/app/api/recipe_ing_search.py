@@ -1,14 +1,9 @@
 from fastapi import APIRouter, HTTPException, Request
 from typing import List, Optional, Any
 from app.models.recipe import Recipe, RecipeSearchRequest, RecipeSearchResponse
-# from app.utils.ai_image import generate_recipe_image
 from app.providers.spoonacular import SpoonacularProvider
 from app.providers.spoonacular_recipe_details import SpoonacularRecipeDetailsProvider
-from app.utils.utils import filter_recipes
-import os
-# import pprint
-# from dataclasses import dataclass, field, asdict, is_dataclass
-# import json
+from app.utils.utils import filter_recipes, print_rate_limits
 import time
 
 # For blue debug prints
@@ -30,7 +25,7 @@ async def search_by_ingredients(payload: RecipeSearchRequest, request: Request):
         print(f"{BLUE}[DEBUG] Calling SpoonacularProvider.find_by_ingredients(){RESET}")
         recipes_data = provider.find_by_ingredients(
             ingredients=payload.ingredients,
-            number=3
+            number=100
         )
 
         print(f"{BLUE}[DEBUG] Partial recipes received: {len(recipes_data)}{RESET}")
@@ -81,6 +76,14 @@ async def search_by_ingredients(payload: RecipeSearchRequest, request: Request):
         print(f"{BLUE}[DEBUG] Sending {len(filtered_recipes)} recipes back to frontend (via HTTP response).{RESET}")
         if filtered_recipes:
             print(f"{BLUE}[DEBUG] Sample recipe being sent: {filtered_recipes[0].dict() if hasattr(filtered_recipes[0],'dict') else filtered_recipes[0]}{RESET}")
+
+        print(f"{BLUE}[DEBUG] Final rate limit status before responding to frontend:{RESET}")
+        if hasattr(provider, 'last_response_headers'):
+            print(f"{BLUE}[DEBUG] Ingredient search provider limits:{RESET}")
+            print_rate_limits(provider.last_response_headers)
+        if hasattr(details_provider, 'last_response_headers'):
+            print(f"{BLUE}[DEBUG] Recipe details provider limits:{RESET}")
+            print_rate_limits(details_provider.last_response_headers)
 
         return RecipeSearchResponse(
             recipes=filtered_recipes,
