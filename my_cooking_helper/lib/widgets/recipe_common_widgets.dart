@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import 'package:glass/glass.dart';
 import '/utils/recipe_webview_dialog.dart';
 import '/models/recipe.dart';
@@ -1390,3 +1391,135 @@ class CaloricBreakdownWidget extends StatelessWidget {
   }
 }
 
+class RecipeYoutubeVideo {
+  final String videoId;
+  final String title;
+  final String channelTitle;
+
+  RecipeYoutubeVideo({
+    required this.videoId, 
+    required this.title, 
+    required this.channelTitle
+  });
+
+  factory RecipeYoutubeVideo.fromJson(Map<String, dynamic> json) {
+    return RecipeYoutubeVideo(
+      videoId: json['videoId'] as String,
+      title: json['title'] as String,
+      channelTitle: json['channelTitle'] as String,
+    );
+  }
+}
+
+class RecipeVideosSection extends StatefulWidget {
+  final List<RecipeYoutubeVideo> videos;
+  const RecipeVideosSection({Key? key, required this.videos}) : super(key: key);
+
+  @override
+  State<RecipeVideosSection> createState() => _RecipeVideosSectionState();
+}
+
+class _RecipeVideosSectionState extends State<RecipeVideosSection> {
+  bool showAll = false;
+  int selected = 0; // Only this index will have a controller
+  YoutubePlayerController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _initController(selected);
+  }
+
+  void _initController(int index) {
+    _controller?.close();
+    final video = widget.videos[index];
+    _controller = YoutubePlayerController.fromVideoId(
+      videoId: video.videoId,
+      autoPlay: false,
+      params: const YoutubePlayerParams(
+        mute: false,
+        showControls: true,
+        showFullscreenButton: true,
+        enableKeyboard: true,
+        enableJavaScript: true,
+      ),
+    );
+    // Only one controller/listener needed, so no risk of memory leak or UI lag
+  }
+
+  @override
+  void didUpdateWidget(covariant RecipeVideosSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videos != widget.videos && widget.videos.isNotEmpty) {
+      // Reset selected and controller if the list changes
+      selected = 0;
+      _initController(selected);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.videos.isEmpty) return const SizedBox.shrink();
+
+    final mainVideo = widget.videos[selected];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Main player for the selected video
+        Padding(
+          padding: const EdgeInsets.only(bottom: 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              YoutubePlayer(
+                controller: _controller!,
+                aspectRatio: 16 / 9,
+              ),
+              const SizedBox(height: 4),
+              Text(mainVideo.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(mainVideo.channelTitle, style: const TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+        // "Show More" reveals thumbnails and metadata for other videos, but never instantiates more YoutubePlayers
+        if (widget.videos.length > 1 && !showAll)
+          Align(
+            alignment: Alignment.center,
+            child: TextButton(
+              onPressed: () => setState(() => showAll = true),
+              child: const Text("Show More Videos"),
+            ),
+          ),
+        if (showAll && widget.videos.length > 1)
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: widget.videos.length,
+            itemBuilder: (context, i) {
+              if (i == selected) return const SizedBox.shrink(); // Skip main video
+              final video = widget.videos[i];
+              return ListTile(
+                leading: Image.network('https://img.youtube.com/vi/${video.videoId}/0.jpg', width: 80.w, fit: BoxFit.cover),
+                title: Text(video.title),
+                subtitle: Text(video.channelTitle),
+                onTap: () {
+                  setState(() {
+                    selected = i;
+                    showAll = false;
+                    _initController(selected); // Clean up and re-create only the needed player
+                  });
+                },
+              );
+            },
+          ),
+      ],
+    );
+  }
+}

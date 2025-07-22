@@ -1,9 +1,5 @@
-# app/providers/spoonacular.py
-
-# Standard imports
 import os
 import requests
-#import pprint
 
 BLUE = "\033[94m"
 RESET = "\033[0m"
@@ -61,8 +57,3 @@ class SpoonacularProvider:
             print(f"{BLUE}[DEBUG] Exception occurred in SpoonacularProvider: {e}{RESET}")
             raise
 
-# Example usage (Remove/comment out when integrating):
-# if __name__ == "__main__":
-#     provider = SpoonacularProvider(api_key="YOUR_SPOONACULAR_API_KEY")
-#     recipes = provider.find_by_ingredients(["apple", "banana", "flour"])
-#     print(recipes)

@@ -80,7 +80,7 @@ class RecipeSearchService {
     blueDebugPrint('MaxTime: $maxTime');
 
     // Prepare payload
-    final url = Uri.parse(agentRecipeSearch); 
+    final url = Uri.parse(spoonacularRecipeSearch); 
     final payload = {
       'ingredients': ingredients,
       'maxTime': maxTime,
@@ -120,6 +120,63 @@ class RecipeSearchService {
     // Return both lists
     return RecipeSearchResults(summaries: recipeResults, details: recipeDetails);
   }
+
+  // Future<Map<String, dynamic>> fetchRecipeVideosAndSummary({
+  //   required String userId,
+  //   required String title,
+  //   required String htmlSummary,
+  //   List<String>? overrideIngredients,
+  // }) async {
+  //   final prefs = await fetchUserPreferences(userId);
+  //   final ingredients = overrideIngredients ?? await fetchUserIngredients(userId);
+
+  //   final payload = {
+  //     "title": title,
+  //     "html_summary": htmlSummary,
+  //     "ingredients": ingredients,
+  //     "preferences": prefs,
+  //   };
+
+  //   final url = Uri.parse(spoonacularRecipeVideos); // from config
+
+  //   final response = await http.post(
+  //     url,
+  //     headers: {'Content-Type': 'application/json'},
+  //     body: jsonEncode(payload),
+  //   );
+
+  //   if (response.statusCode != 200) {
+  //     throw Exception('Failed to fetch videos and summary: ${response.body}');
+  //   }
+
+  //   return jsonDecode(response.body);
+  // }
+
+  Future<List<dynamic>> fetchRecipeVideos({
+    required String title,
+    //required List<String> includeIngredients,
+  }) async {
+    // Replace this with your actual backend endpoint for videos!
+    final url = Uri.parse(spoonacularRecipeVideos);
+    final payload = {
+      "title": title,
+      //"include_ingredients": includeIngredients,
+    };
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch recipe videos: ${response.body}');
+    }
+
+    final data = jsonDecode(response.body);
+    // This expects your backend returns {"videos": [...]}
+    return data['videos'] as List<dynamic>;
+  }
+
 }
 
 class RecipeSearchResults {

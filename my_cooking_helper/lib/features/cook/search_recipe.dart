@@ -335,20 +335,18 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
   @override
   void initState() {
     super.initState();
-    //WidgetsBinding.instance.addPostFrameCallback((_) => startFlow()); // Uncomment to start flow immediately
+    WidgetsBinding.instance.addPostFrameCallback((_) => startFlow()); // Uncomment to start flow immediately
 
     // For UI dev only: Populate with dummy recipes delete later
-    setState(() {
-      recipeResults = getDummyRecipes();
-      // Dummy details: generate N dummy RecipeDetail using the big sample map
-      recipeDetails = List.generate(5, (i) {
-        // Use the helper to deep-convert all keys and sub-objects:
-        final m = deepConvertToStringKeyedMap(sampleRecipeDetailMap);
-        m['id'] = 157473 + i;
-        m['title'] = 'Dutch Baby #${i + 1}';
-        return RecipeDetail.fromJson(m);
-      });
-    });
+    // setState(() {
+    //   recipeResults = getDummyRecipes();
+    //   recipeDetails = List.generate(5, (i) {
+    //     final m = deepConvertToStringKeyedMap(sampleRecipeDetailMap);
+    //     m['id'] = 157473 + i;
+    //     m['title'] = 'Dutch Baby #${i + 1}';
+    //     return RecipeDetail.fromJson(m);
+    //   });
+    // });
   }
 
   String formatTime(int totalMinutes) {
