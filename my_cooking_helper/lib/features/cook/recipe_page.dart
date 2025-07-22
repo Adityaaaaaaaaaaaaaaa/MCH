@@ -38,12 +38,9 @@ class RecipePage extends ConsumerWidget {
     final website = recipe.sourceUrl ?? '';
     final dishTypes = recipe.dishTypes;
     final servings = recipe.servings ?? 0;
-    final healthScore = recipe.healthScore ?? 0.0;
-    final pricePerServing = recipe.pricePerServing ?? 0.0;
-    final spoonacularScore = recipe.spoonacularScore ?? 0.0;
 
-      // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      // --- Here: Fetch videos ONCE for this recipe ---
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // --- Here: Fetch videos ONCE for this recipe ---
     final videosAsync = ref.watch(recipeVideosProvider(recipe));
 
       // Print videos or error for debug (non-UI for now)
@@ -131,12 +128,8 @@ class RecipePage extends ConsumerWidget {
                           HtmlSummaryText(html: summary),
                         SizedBox(height: 10.h),
 
-                        if (recipe.healthScore != null && recipe.pricePerServing != null && recipe.spoonacularScore != null)
-                          RecipeStatsRow(
-                            healthScore: healthScore,
-                            pricePerServing: pricePerServing,
-                            spoonacularScore: spoonacularScore,
-                          ),
+                        if (recipe.healthScore != null)
+                          HealthScoreCard(healthScore: recipe.healthScore),
                         SizedBox(height: 10.h),
 
                         if (recipe.nutrition?.caloricBreakdown != null)

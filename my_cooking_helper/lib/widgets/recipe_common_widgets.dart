@@ -952,102 +952,152 @@ class DietChips extends StatelessWidget {
   );
 }
 
-class RecipeStatsRow extends StatelessWidget {
-  final double? healthScore, pricePerServing, spoonacularScore;
-
-  const RecipeStatsRow({
-    super.key,
-    required this.healthScore,
-    required this.pricePerServing,
-    required this.spoonacularScore,
-  });
+class HealthScoreCard extends StatelessWidget {
+  final double? healthScore;
+  const HealthScoreCard({Key? key, required this.healthScore}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final healthColor = isDark ? Colors.green[400] : Colors.green[800];
-    final scoreColor = isDark ? Colors.purple[300] : Colors.deepPurple[800];
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _stat(
-          icon: Icons.favorite_rounded,
-          label: "Health Score",
-          value: healthScore != null ? healthScore!.toStringAsFixed(0) : "-",
-          color: healthColor,
-          isDark: isDark,
-        ),
-        /*_stat(
-          icon: Icons.monetization_on_rounded,
-          label: "Price",
-          value: pricePerServing != null ? "${pricePerServing!.toStringAsFixed(0)}¢" : "-",
-          color: priceColor,
-          isDark: isDark,
-        ),*/
-        _stat(
-          icon: Icons.star_rounded,
-          label: "Spoonacular Score",
-          value: spoonacularScore != null ? spoonacularScore!.toStringAsFixed(0) : "-",
-          color: scoreColor,
-          isDark: isDark,
-        ),
-      ],
-    );
-  }
+    final score = (healthScore ?? 0).clamp(0, 100);
+    final grade = _getGradeData(score.toDouble());
+    final accent = score >= 80
+        ? colorScheme.primary
+        : score >= 60
+            ? colorScheme.secondary
+            : colorScheme.error;
 
-  Widget _stat({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color? color,
-    required bool isDark,
-  }) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 4.w),
-      padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 18.w),
+      height: 150.h,
+      margin: EdgeInsets.all(10.w),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24.r),
         gradient: LinearGradient(
-          colors: isDark
-              ? [color!.withOpacity(0.1), Colors.grey[900]!]
-              : [color!.withOpacity(0.1), Colors.blueGrey[200]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            isDark
+                ? colorScheme.surface.withOpacity(0.83)
+                : colorScheme.surface.withOpacity(0.94),
+            isDark
+                ? colorScheme.background.withOpacity(0.83)
+                : colorScheme.background.withOpacity(0.94),
+          ],
         ),
-        borderRadius: BorderRadius.circular(14.r),
         border: Border.all(
-          color: color.withOpacity(isDark ? 0.4 : 0.2),
-          width: 1.2,
+          color: accent.withOpacity(0.19),
+          width: 1.1,
         ),
       ),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 28,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              color: isDark ? Colors.white : color,
-              letterSpacing: -0.5,
+          // Heart + Score Column, centered vertically and spaced
+          Expanded(
+            flex: 8,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(7.w),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accent.withOpacity(0.2),
+                  ),
+                  child: Icon(Icons.favorite_rounded, size: 30.sp, color: accent),
+                ),
+                SizedBox(height: 12.h),
+                Text(
+                  "${score.toStringAsFixed(0)}%",
+                  style: TextStyle(
+                    fontSize: 23.sp,
+                    fontWeight: FontWeight.w900,
+                    color: accent,
+                    height: 1,
+                    letterSpacing: -1,
+                  ),
+                ),
+                SizedBox(height: 5.h),
+                Text(
+                  "Grade: ${grade['grade']}",
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.bold,
+                    color: accent,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.grey[300] : Colors.grey[800],
-              letterSpacing: -0.2,
+
+          // Vertical Divider, centered and sized to column
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8.w),
+            child: Container(
+              width: 1.5,
+              height: 70.h,
+              decoration: BoxDecoration(
+                color: accent.withOpacity(0.13),
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+            ),
+          ),
+
+          // Main Info Column, spaced evenly and vertically centered
+          Expanded(
+            flex: 8,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Spacer(),
+                _divLine(context, "Health Score", accent, isDark, weight: FontWeight.w700),
+                SizedBox(height: 10.h),
+                _divLine(context, "${grade['emoji']} ${grade['label']}", accent, isDark),
+                SizedBox(height: 10.h),
+                _divLine(context, "Higher scores = more good, less bad nutrients.", accent, isDark)
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _divLine(
+      BuildContext context, String text, Color accent, bool isDark,
+      {FontWeight? weight}) {
+    return Text(
+      text,
+      maxLines: 3,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 14.sp,
+        color: isDark
+            ? accent.withOpacity(0.89)
+            : accent.withOpacity(0.81),
+        fontWeight: weight ?? FontWeight.w600,
+        letterSpacing: -0.2,
+      ),
+    );
+  }
+
+  Map<String, dynamic> _getGradeData(double score) {
+    if (score >= 95) return {'grade': 'S+', 'emoji': '🌟', 'label': 'Perfect'};
+    if (score >= 90) return {'grade': 'S', 'emoji': '🏆', 'label': 'Excellent'};
+    if (score >= 85) return {'grade': 'A+', 'emoji': '💎', 'label': 'Outstanding'};
+    if (score >= 80) return {'grade': 'A', 'emoji': '🥇', 'label': 'Great'};
+    if (score >= 75) return {'grade': 'A-', 'emoji': '⭐', 'label': 'Very Good'};
+    if (score >= 70) return {'grade': 'B+', 'emoji': '🌸', 'label': 'Good'};
+    if (score >= 65) return {'grade': 'B', 'emoji': '🌼', 'label': 'Fair'};
+    if (score >= 60) return {'grade': 'B-', 'emoji': '🌻', 'label': 'Okay'};
+    if (score >= 50) return {'grade': 'C', 'emoji': '🌿', 'label': 'Needs Work'};
+    if (score >= 30) return {'grade': 'D', 'emoji': '🌱', 'label': 'Poor'};
+    return {'grade': 'F', 'emoji': '🍃', 'label': 'Critical'};
   }
 }
 
