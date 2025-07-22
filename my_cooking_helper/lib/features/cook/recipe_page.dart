@@ -184,7 +184,7 @@ Widget build(BuildContext context, WidgetRef ref) {
                       if (recipe.nutrition != null)
                         NutritionSection(
                           nutrition: recipe.nutrition!.toJson(),
-                          showAllNutrients: true,
+                          showAllNutrientsDefault: true,
                         ),
 
                       // WEBSITE LINK
