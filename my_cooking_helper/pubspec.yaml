@@ -47,6 +47,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
   url_launcher: ^6.3.2 # not used, will remove manually after 
   webview_flutter: ^4.13.0
+  flutter_widget_from_html: ^0.17.0
 
 dev_dependencies:
   flutter_test:
