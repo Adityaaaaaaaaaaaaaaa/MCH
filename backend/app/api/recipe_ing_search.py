@@ -25,7 +25,7 @@ async def search_by_ingredients(payload: RecipeSearchRequest, request: Request):
         print(f"{BLUE}[DEBUG] Calling SpoonacularProvider.find_by_ingredients(){RESET}")
         recipes_data = provider.find_by_ingredients(
             ingredients=payload.ingredients,
-            number=100
+            number=25
         )
 
         print(f"{BLUE}[DEBUG] Partial recipes received: {len(recipes_data)}{RESET}")

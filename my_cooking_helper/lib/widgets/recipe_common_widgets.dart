@@ -310,14 +310,14 @@ class TimeCard extends StatelessWidget {
               )
             : LinearGradient(
                 colors: isDark
-                    ? [Colors.grey[800]!.withOpacity(0.5), Colors.grey[750]!.withOpacity(0.3)]
+                    ? [Colors.grey[800]!.withOpacity(0.5), Colors.grey[700]!.withOpacity(0.3)]
                     : [Colors.grey[100]!, Colors.grey[50]!],
               ),
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: isHighlighted
               ? (isDark ? Colors.deepPurple[400]! : Colors.deepPurple[300]!)
-              : (isDark ? Colors.grey[600]!.withOpacity(0.3) : Colors.grey[200]!),
+              : (isDark ? Colors.grey[600]!.withOpacity(0.3) : Colors.grey[500]!),
         ),
         boxShadow: [
           BoxShadow(
