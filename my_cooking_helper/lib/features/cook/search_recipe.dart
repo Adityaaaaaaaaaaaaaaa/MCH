@@ -36,7 +36,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
   List<String> ingredientList = [];
   Set<String> unwantedIngredients = {};
   List<Recipe> recipeResults = [];
-  List<RecipeDetail> recipeDetails = [];  // <--- Add this
+  List<RecipeDetail> recipeDetails = [];
   String? errorMsg;
 
   int visibleRecipes = 3;
@@ -441,17 +441,6 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
     }
   }
 
-  // void toggleRecipeSelection(String recipeTitle) {
-  //   setState(() {
-  //     if (selectedRecipes.contains(recipeTitle)) {
-  //       selectedRecipes.clear();
-  //     } else {
-  //       selectedRecipes
-  //         ..clear()
-  //         ..add(recipeTitle);
-  //     }
-  //   });
-  // }
   void toggleRecipeSelection(String recipeId) {
     setState(() {
       if (selectedRecipes.contains(recipeId)) {
