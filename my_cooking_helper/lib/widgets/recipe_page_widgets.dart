@@ -209,7 +209,7 @@ class RecipeSummaryText extends StatelessWidget {
     final time = _extractTimeFromSummary(geminiSummary);
     final nutrition = geminiSummary?['nutrition'] as String?;
     final servings = geminiSummary?['servings'] as String?;
-    final title = geminiSummary?['title'] as String?;
+    //final title = geminiSummary?['title'] as String?;
     final shortSummary = geminiSummary?['short_summary'] as String?;
 
     return Container(
