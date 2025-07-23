@@ -20,7 +20,7 @@ import '/utils/lottie_animation.dart';
 import '/widgets/recipe/recipe_card.dart';
 import '/widgets/recipe/recipe_detail_modal.dart';
 import '/utils/recipe_webview_dialog.dart';
-
+import '/services/recipe_rotation.dart'; 
 class SearchRecipeScreen extends StatefulWidget {
   const SearchRecipeScreen({Key? key}) : super(key: key);
 
@@ -425,11 +425,35 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
         overrideIngredients: selectedIngredients,
       );
 
+      // ============ ROTATION LOGIC START ============
+
+      // 1. Fetch recipe history from Firestore
+      final recipeHistory = await fetchUserRecipeHistory(userId);
+
+      // 2. Rotate recipes (if you wish to disable, comment this line)
+      final rotatedResults = rotateRecipes<Recipe>(
+        result.summaries,
+        recipeHistory,
+        snoozeDays: 2,
+        maxFresh: 8,
+        getId: (r) => r.id.toString(),
+      );
+
+      // 3. Update Firestore with shown recipe IDs
+      await updateUserRecipeHistory(
+        userId,
+        rotatedResults.map((r) => r.id.toString()).toList(),
+        maxDaysOld: 5,      // <-- Clear any recipes last shown more than 5 days ago
+        trimTo: 300,        // <-- Still keep max 300 entries
+      );
+
       setState(() {
-        recipeResults = result.summaries;
+        recipeResults = rotatedResults;
         recipeDetails = result.details;
         processing = false;
       });
+
+      // ============ ROTATION LOGIC END ============
 
       lottieController.hide();
     } catch (e) {
