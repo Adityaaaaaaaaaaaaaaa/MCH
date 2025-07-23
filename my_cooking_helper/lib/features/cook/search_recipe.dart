@@ -1,13 +1,12 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
-import '../../models/recipe_detail.dart';
+import '/models/recipe_detail.dart';
 import '/theme/app_theme.dart';
 import '/utils/emoji_animation.dart';
 import '/models/recipe.dart';
@@ -18,8 +17,8 @@ import '/utils/colors.dart';
 import '/utils/loader.dart';
 import '/services/recipe_search_service.dart';
 import '/utils/lottie_animation.dart';
-import '/widgets/recipe_card.dart';
-import '/widgets/recipe_detail_modal.dart';
+import '/widgets/recipe/recipe_card.dart';
+import '/widgets/recipe/recipe_detail_modal.dart';
 import '/utils/recipe_webview_dialog.dart';
 
 class SearchRecipeScreen extends StatefulWidget {
