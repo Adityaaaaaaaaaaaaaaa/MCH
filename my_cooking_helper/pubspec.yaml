@@ -48,6 +48,7 @@ dependencies:
   webview_flutter: ^4.13.0
   flutter_widget_from_html: ^0.17.0
   youtube_player_iframe: ^5.2.1
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:
