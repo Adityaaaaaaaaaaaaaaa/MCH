@@ -693,157 +693,570 @@ Future<Set<String>?> selectIngredients(
   List<String> initialIngredients,
 ) {
   final Set<String> unwanted = {};
+  final ScrollController scrollController = ScrollController();
+
   return showDialog<Set<String>>(
     context: context,
     barrierDismissible: false,
+    barrierColor: Colors.black.withOpacity(0.5),
     builder: (ctx) => StatefulBuilder(
-      builder: (context, setState) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          width: 400.w,
-          padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 15.w),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28.r),
-            gradient: LinearGradient(
-              colors: [
-                Colors.white.withOpacity(0.25),
-                Colors.blueGrey.withOpacity(0.20),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(
-              color: Colors.tealAccent.withOpacity(0.5),
-              width: 1.2.w,
-            ),
-          ),
-          child: ConstrainedBox(
+      builder: (context, setState) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+          child: Container(
+            width: double.infinity,
             constraints: BoxConstraints(
-              maxHeight: 0.70 * MediaQuery.of(context).size.height,
-              minHeight: 0,
+              maxHeight: 0.8 * MediaQuery.of(context).size.height,
+              maxWidth: 400.w,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28.r),
+              gradient: LinearGradient(
+                colors: Theme.of(context).brightness == Brightness.dark
+                    ? [
+                        Color(0xFF1F2937).withOpacity(0.95),
+                        Color(0xFF111827).withOpacity(0.90),
+                      ]
+                    : [
+                        Colors.white.withOpacity(0.95),
+                        Color(0xFFF9FAFB).withOpacity(0.90),
+                      ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withOpacity(0.15)
+                    : Colors.grey[300]!.withOpacity(0.5),
+                width: 1.5.w,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 30,
+                  offset: Offset(0, 15),
+                ),
+              ],
             ),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  "Select Ingredients",
-                  style: TextStyle(
-                    fontSize: 21.sp,
-                    fontWeight: FontWeight.bold,
-                    color: textColor(context),
-                  ),
-                ),
-                SizedBox(height: 18.h),
+                // Header
+                _buildCleanHeader(context, initialIngredients.length, unwanted.length),
+
+                // Quick actions
+                _buildQuickActions(context, initialIngredients, unwanted, setState),
+
+                // Ingredient grid (use full list)
                 Expanded(
-                  child: SingleChildScrollView(
-                    child: Wrap(
-                      alignment: WrapAlignment.center, // <-- Center the chips
-                      spacing: 5.w, // chip gap
-                      runSpacing: 5.h,
-                      children: [
-                        for (final ing in initialIngredients)
-                          GestureDetector(
-                            onTap: () => setState(() {
-                              if (unwanted.contains(ing)) {
-                                unwanted.remove(ing);
-                              } else {
-                                unwanted.add(ing);
-                              }
-                            }),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 170),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 10.w, //chip size
-                                vertical: 5.h,
-                              ),
-                              margin: EdgeInsets.symmetric(vertical: 2.h),
-                              decoration: BoxDecoration(
-                                color: unwanted.contains(ing)
-                                    ? Colors.redAccent.shade100
-                                    : Colors.greenAccent.shade100,
-                                borderRadius: BorderRadius.circular(12.r), //chip border
-                                border: Border.all(
-                                  color: unwanted.contains(ing)
-                                      ? Colors.red.shade900
-                                      : Colors.green.shade900,
-                                  width: 2,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    unwanted.contains(ing)
-                                        ? Icons.close_rounded
-                                        : Icons.check_circle_rounded,
-                                    color: unwanted.contains(ing)
-                                        ? Colors.red[50]
-                                        : Colors.white,
-                                    size: 12.sp,
-                                  ),
-                                  SizedBox(width: 6.w),
-                                  Text(
-                                    ing,
-                                    style: TextStyle(
-                                      color: unwanted.contains(ing)
-                                          ? Colors.red[50]
-                                          : Colors.black,
-                                      fontSize: 11.sp, //chip font size
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ).asGlass(
-                              tintColor: unwanted.contains(ing)
-                                  ? Colors.red.shade100
-                                  : Colors.green.shade100,
-                              blurX: 10,
-                              blurY: 10,
-                              clipBorderRadius: BorderRadius.circular(12.r),
-                              frosted: true,
-                            ),
-                          ),
-                      ],
-                    ),
+                  child: _buildIngredientGrid(
+                    context,
+                    initialIngredients, // Always show all ingredients
+                    unwanted,
+                    setState,
+                    scrollController,
                   ),
                 ),
-                SizedBox(height: 18.h),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.redAccent.shade100,
-                        textStyle: TextStyle(fontSize: 15.sp),
-                      ),
-                      onPressed: () => Navigator.pop(ctx, null),
-                      child: const Text("Cancel"),
+
+                // Action buttons
+                _buildActionBar(context, unwanted, ctx),
+              ],
+            ),
+          ).asGlass(
+            blurX: 40,
+            blurY: 40,
+            tintColor: Theme.of(context).brightness == Brightness.dark
+                ? Color(0xFF1F2937).withOpacity(0.2)
+                : Colors.white.withOpacity(0.3),
+            clipBorderRadius: BorderRadius.circular(28.r),
+            frosted: true,
+          ),
+        );
+      },
+    ),
+  );
+}
+
+Widget _buildCleanHeader(BuildContext context, int totalCount, int excludedCount) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  
+  return Container(
+    width: double.infinity,
+    padding: EdgeInsets.fromLTRB(15.w, 10.h, 15.w, 10.h),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(28.r),
+        topRight: Radius.circular(28.r),
+      ),
+      gradient: LinearGradient(
+        colors: isDark
+            ? [
+                Color(0xFF3B82F6).withOpacity(0.3),
+                Color(0xFF1E40AF).withOpacity(0.1),
+              ]
+            : [
+                Color(0xFF3B82F6).withOpacity(0.15),
+                Color(0xFF60A5FA).withOpacity(0.05),
+              ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+    ),
+    child: Column(
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(10.w),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDark 
+                    ? Colors.blue.withOpacity(0.2)
+                    : Colors.blue.withOpacity(0.1),
+              ),
+              child: Icon(
+                Icons.restaurant_menu_rounded,
+                color: isDark ? Colors.blue[300] : Colors.blue[600],
+                size: 20.sp,
+              ),
+            ),
+            SizedBox(width: 16.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Select Ingredients",
+                    style: TextStyle(
+                      fontSize: 22.sp,
+                      fontWeight: FontWeight.w700,
+                      color: textColor(context),
+                      letterSpacing: -0.3,
                     ),
-                    SizedBox(width: 16.w),
-                    ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-                        backgroundColor: Colors.tealAccent.shade700,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-                        elevation: 0,
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    "Tap to exclude ingredients you don't want",
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w500,
+                      color: textColor(context).withOpacity(0.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 16.h),
+        Row(
+          children: [
+            _buildStatChip("Selected", (totalCount - excludedCount).toString(), Colors.green),
+            SizedBox(width: 12.w),
+            _buildStatChip("Excluded", excludedCount.toString(), Colors.red),
+            SizedBox(width: 12.w),
+            _buildStatChip("Total", totalCount.toString(), Colors.blue),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildStatChip(String label, String value, Color color) {
+  return Expanded(
+    child: Container(
+      padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 8.w),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12.r),
+        color: color.withOpacity(0.1),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1.w,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w900,
+              color: color,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w700,
+              color: color.withOpacity(0.8),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildQuickActions(BuildContext context, List<String> ingredients, Set<String> unwanted, StateSetter setState) {
+  return Container(
+    height: 40.h,
+    margin: EdgeInsets.symmetric(horizontal: 24.w, vertical: 8.h),
+    child: Row(
+      children: [
+        Expanded(
+          child: _buildQuickActionButton(
+            "Select All",
+            Icons.check_circle_outline_rounded,
+            Colors.green,
+            () {
+              setState(() {
+                unwanted.clear();
+              });
+            },
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: _buildQuickActionButton(
+            "Clear All",
+            Icons.remove_circle_outline_rounded,
+            Colors.red,
+            () {
+              setState(() {
+                unwanted.addAll(ingredients);
+              });
+            },
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: _buildQuickActionButton(
+            "Invert",
+            Icons.swap_horiz_rounded,
+            Colors.orange,
+            () {
+              setState(() {
+                final newUnwanted = <String>{};
+                for (final ing in ingredients) {
+                  if (!unwanted.contains(ing)) {
+                    newUnwanted.add(ing);
+                  }
+                }
+                unwanted.clear();
+                unwanted.addAll(newUnwanted);
+              });
+            },
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildQuickActionButton(String text, IconData icon, Color color, VoidCallback onTap) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: EdgeInsets.symmetric(vertical: 8.h),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12.r),
+        color: color.withOpacity(0.1),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1.w,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: 14.sp),
+          SizedBox(width: 4.w),
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildIngredientGrid(
+  BuildContext context,
+  List<String> ingredients,
+  Set<String> unwanted,
+  StateSetter setState,
+  ScrollController scrollController,
+) {
+  return Container(
+    margin: EdgeInsets.symmetric(horizontal: 20.w),
+    child: GridView.builder(
+      controller: scrollController,
+      physics: BouncingScrollPhysics(),
+      padding: EdgeInsets.symmetric(vertical: 12.h),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 2.5,
+        crossAxisSpacing: 12.w,
+        mainAxisSpacing: 10.h,
+      ),
+      itemCount: ingredients.length,
+      itemBuilder: (context, index) => _buildIngredientChip(
+        ingredients[index],
+        unwanted.contains(ingredients[index]),
+        context,
+        () => setState(() {
+          final ing = ingredients[index];
+          if (unwanted.contains(ing)) {
+            unwanted.remove(ing);
+          } else {
+            unwanted.add(ing);
+          }
+        }),
+        index,
+      ),
+    ),
+  );
+}
+
+Widget _buildIngredientChip(
+  String ingredient,
+  bool isUnwanted,
+  BuildContext context,
+  VoidCallback onTap,
+  int index,
+) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  
+  return TweenAnimationBuilder<double>(
+    duration: Duration(milliseconds: 200 + (index * 20)),
+    tween: Tween(begin: 0.0, end: 1.0),
+    builder: (context, value, child) {
+      return Transform.scale(
+        scale: 0.7 + (0.175 * value),
+        child: Opacity(
+          opacity: value,
+          child: GestureDetector(
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16.r),
+                gradient: LinearGradient(
+                  colors: isUnwanted
+                      ? isDark
+                          ? [
+                              Colors.red[800]!.withOpacity(0.3),
+                              Colors.red[900]!.withOpacity(0.2),
+                            ]
+                          : [
+                              Colors.red[50]!.withOpacity(0.9),
+                              Colors.red[100]!.withOpacity(0.6),
+                            ]
+                      : isDark
+                          ? [
+                              Colors.green[700]!.withOpacity(0.3),
+                              Colors.green[800]!.withOpacity(0.2),
+                            ]
+                          : [
+                              Colors.green[50]!.withOpacity(0.9),
+                              Colors.green[100]!.withOpacity(0.6),
+                            ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(
+                  color: isUnwanted
+                      ? isDark
+                          ? Colors.red[400]!.withOpacity(0.5)
+                          : Colors.red[300]!.withOpacity(0.7)
+                      : isDark
+                          ? Colors.green[400]!.withOpacity(0.5)
+                          : Colors.green[300]!.withOpacity(0.7),
+                  width: 1.5.w,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isUnwanted ? Colors.red : Colors.green)
+                        .withOpacity(0.15),
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 5.h),
+                child: Row(
+                  children: [
+                    AnimatedSwitcher(
+                      duration: Duration(milliseconds: 200),
+                      child: Icon(
+                        isUnwanted
+                            ? Icons.remove_circle_rounded
+                            : Icons.check_circle_rounded,
+                        key: ValueKey(isUnwanted),
+                        color: isUnwanted
+                            ? isDark ? Colors.red[300] : Colors.red[600]
+                            : isDark ? Colors.green[300] : Colors.green[600],
+                        size: 16.sp,
                       ),
-                      onPressed: () => Navigator.pop(ctx, unwanted),
-                      child: Text("Proceed", style: TextStyle(fontSize: 15.sp)),
+                    ),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        ingredient,
+                        style: TextStyle(
+                          color: isUnwanted
+                              ? isDark ? Colors.red[200] : Colors.red[700]
+                              : isDark ? Colors.green[200] : Colors.green[700],
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                      ),
                     ),
                   ],
                 ),
-              ],
+              ),
+            ).asGlass(
+              tintColor: isUnwanted
+                  ? Colors.red.withOpacity(0.05)
+                  : Colors.green.withOpacity(0.05),
+              blurX: 15,
+              blurY: 15,
+              clipBorderRadius: BorderRadius.circular(16.r),
+              frosted: true,
             ),
           ),
-        ).asGlass(
-          blurX: 17,
-          blurY: 17,
-          tintColor: Colors.white.withOpacity(0.09),
-          clipBorderRadius: BorderRadius.circular(20.r),
-          frosted: true,
         ),
+      );
+    },
+  );
+}
+
+Widget _buildActionBar(BuildContext context, Set<String> unwanted, BuildContext ctx) {  
+  return Container(
+    padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 10.h),
+    child: Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: _buildActionButton(
+            text: "Cancel",
+            isPrimary: false,
+            context: context,
+            onPressed: () => Navigator.pop(ctx, null),
+          ),
+        ),
+        SizedBox(width: 16.w),
+        Expanded(
+          flex: 3,
+          child: _buildActionButton(
+            text: "Continue",
+            isPrimary: true,
+            context: context,
+            onPressed: () => Navigator.pop(ctx, unwanted),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildActionButton({
+  required String text,
+  required bool isPrimary,
+  required BuildContext context,
+  required VoidCallback onPressed,
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  
+  return SizedBox(
+    height: 40.h,
+    child: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        padding: EdgeInsets.zero,
+      ),
+      onPressed: onPressed,
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16.r),
+          gradient: isPrimary
+              ? LinearGradient(
+                  colors: isDark
+                      ? [Colors.blue[600]!, Colors.blue[700]!]
+                      : [Colors.blue[500]!, Colors.blue[600]!],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                )
+              : LinearGradient(
+                  colors: isDark
+                      ? [
+                          Colors.grey[700]!.withOpacity(0.6),
+                          Colors.grey[800]!.withOpacity(0.4),
+                        ]
+                      : [
+                          Colors.grey[100]!.withOpacity(0.8),
+                          Colors.grey[200]!.withOpacity(0.6),
+                        ],
+                ),
+          border: Border.all(
+            color: isPrimary
+                ? Colors.transparent
+                : isDark
+                    ? Colors.grey[600]!.withOpacity(0.3)
+                    : Colors.grey[300]!.withOpacity(0.5),
+            width: 1.w,
+          ),
+          boxShadow: isPrimary
+              ? [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: Offset(0, 6),
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 15.sp,
+              fontWeight: FontWeight.w600,
+              color: isPrimary
+                  ? Colors.white
+                  : isDark ? Colors.grey[300] : Colors.grey[700],
+            ),
+          ),
+        ),
+      ).asGlass(
+        tintColor: isPrimary
+            ? Colors.transparent
+            : isDark
+                ? Colors.grey[700]!.withOpacity(0.1)
+                : Colors.white.withOpacity(0.4),
+        blurX: isPrimary ? 0 : 15,
+        blurY: isPrimary ? 0 : 15,
+        clipBorderRadius: BorderRadius.circular(16.r),
+        frosted: !isPrimary,
       ),
     ),
   );
