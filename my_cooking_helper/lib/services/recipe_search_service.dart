@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../models/recipe_detail.dart';
+import '/models/recipe_detail.dart';
 import '/config/backend_config.dart';
 import '/models/recipe.dart';
 
@@ -68,7 +68,7 @@ class RecipeSearchService {
     required int maxTime,
     List<String>? overrideIngredients,
   }) async {
-    // Fetch user data
+
     final prefs = await fetchUserPreferences(userId);
     final ingredients = overrideIngredients ?? await fetchUserIngredients(userId);
 
@@ -79,7 +79,6 @@ class RecipeSearchService {
     blueDebugPrint('SpiceLevel: ${prefs['spiceLevel']}');
     blueDebugPrint('MaxTime: $maxTime');
 
-    // Prepare payload
     final url = Uri.parse(spoonacularRecipeSearch); 
     final payload = {
       'ingredients': ingredients,
@@ -90,7 +89,6 @@ class RecipeSearchService {
       'spiceLevel': prefs['spiceLevel'],
     };
 
-    // Send to backend
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -103,9 +101,6 @@ class RecipeSearchService {
     if (data['recipes'] == null || data['recipes'] is! List) {
        throw Exception('Invalid response from backend');
     }
-    // return (data['recipes'] as List)
-    //     .map((e) => Recipe.fromJson(e as Map<String, dynamic>))
-    //     .toList();
 
     // Full detail list
     final List<RecipeDetail> recipeDetails = (data['recipes'] as List)
@@ -125,7 +120,6 @@ class RecipeSearchService {
     required String title,
     required String summary,
   }) async {
-    // Replace this with your actual backend endpoint for videos!
     final url = Uri.parse(spoonacularRecipeVideos);
     final payload = {
       "title": title,
