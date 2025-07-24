@@ -16,16 +16,37 @@ class HealthScoreCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
     final score = (healthScore ?? 0).clamp(0, 100);
     final grade = _getGradeData(score.toDouble());
-    final accent = score >= 80
-        ? colorScheme.primary
-        : score >= 60
-            ? colorScheme.secondary
-            : colorScheme.error;
+
+    final Color accent;
+    switch (score) {
+      case >= 95:
+        accent = isDark ? Colors.cyanAccent.shade400 : Colors.teal.shade700;
+      case >= 90:
+        accent = isDark ? Colors.lightBlueAccent.shade400 : Colors.blue.shade700;
+      case >= 85:
+        accent = isDark ? Colors.purpleAccent.shade400 : Colors.purple.shade700;
+      case >= 80:
+        accent = isDark ? Colors.lightGreenAccent.shade400 : Colors.green.shade700;
+      case >= 75:
+        accent = isDark ? Colors.limeAccent.shade400 : Colors.lime.shade900;
+      case >= 70:
+        accent = isDark ? Colors.amberAccent.shade400 : Colors.amber.shade300;
+      case >= 65:
+        accent = isDark ? Colors.orangeAccent.shade400 : Colors.orange.shade700;
+      case >= 60:
+        accent = isDark ? Colors.deepOrangeAccent.shade400 : Colors.deepOrange.shade700;
+      case >= 50:
+        accent = isDark ? Colors.brown.shade300 : Colors.brown.shade700;
+      case >= 30:
+        accent = isDark ? Colors.redAccent.shade200 : Colors.red.shade700;
+      default:
+        accent = isDark ? Colors.redAccent.shade400 : Colors.red.shade900;
+    }
+
 
     return Container(
       height: 150.h,
@@ -37,12 +58,8 @@ class HealthScoreCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            isDark
-                ? colorScheme.surface.withOpacity(0.83)
-                : colorScheme.surface.withOpacity(0.94),
-            isDark
-                ? colorScheme.background.withOpacity(0.83)
-                : colorScheme.background.withOpacity(0.94),
+            isDark ? Colors.grey.shade800 : Colors.grey.shade400, 
+            isDark ? Colors.grey.shade900 : Colors.grey.shade400, 
           ],
         ),
         border: Border.all(
@@ -114,7 +131,7 @@ class HealthScoreCard extends StatelessWidget {
                 Spacer(),
                 _divLine(context, "Health Score", accent, isDark, weight: FontWeight.w700),
                 SizedBox(height: 10.h),
-                _divLine(context, "${grade['emoji']} ${grade['label']}", accent, isDark),
+                _divLine(context, "${grade['emoji']}  ${grade['label']}", accent, isDark),
                 SizedBox(height: 10.h),
                 _divLine(context, "Higher scores = more good, less bad nutrients.", accent, isDark)
               ],
@@ -1145,4 +1162,144 @@ void showRecipeWebView(BuildContext context, String url) {
     barrierColor: Colors.black.withOpacity(0.12),
     builder: (context) => RecipeWebViewDialog(url: url),
   );
+}
+
+class DualActionButton extends StatelessWidget {
+  final bool isFavourited;
+  final bool cookedSuccess;
+  final VoidCallback onFavourite;
+  final VoidCallback onMarkCooked;
+
+  const DualActionButton({
+    Key? key,
+    required this.isFavourited,
+    required this.cookedSuccess,
+    required this.onFavourite,
+    required this.onMarkCooked,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      // Outer glass card
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(36.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8.r,
+            offset: Offset(0, 3.h),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // FAVOURITE BUTTON
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 260),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(34.r),
+              boxShadow: isFavourited
+                  ? [
+                      BoxShadow(
+                        color: Colors.pinkAccent.withOpacity(0.27),
+                        blurRadius: 16.r,
+                        spreadRadius: 3.r,
+                      )
+                    ]
+                  : [],
+              color: isFavourited
+                  ? Colors.pinkAccent.withOpacity(0.18)
+                  : Colors.white.withOpacity(0.13),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(34.r),
+              onTap: onFavourite,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 13.h),
+                child: Icon(
+                  isFavourited ? Icons.favorite : Icons.favorite_border,
+                  color: isFavourited ? Colors.pinkAccent : Colors.grey[400],
+                  size: 32.sp,
+                ),
+              ),
+            ),
+          ).asGlass(
+            tintColor: isFavourited ? Colors.pink : Colors.white,
+            frosted: true,
+            blurX: 2,
+            blurY: 2,
+            clipBorderRadius: BorderRadius.circular(34.r),
+          ),
+
+          // Divider
+          Container(
+            width: 1.5.w,
+            height: 32.h,
+            margin: EdgeInsets.symmetric(horizontal: 2.w),
+            color: Colors.black.withOpacity(0.09),
+          ),
+
+          // MARK AS COOKED BUTTON
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 260),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28.r),
+              boxShadow: cookedSuccess
+                  ? [
+                      BoxShadow(
+                        color: Colors.greenAccent.withOpacity(0.25),
+                        blurRadius: 14.r,
+                        spreadRadius: 2.r,
+                      )
+                    ]
+                  : [],
+              color: cookedSuccess
+                  ? Colors.green.withOpacity(0.15)
+                  : Colors.white.withOpacity(0.10),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(28.r),
+              onTap: onMarkCooked,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle_rounded,
+                      color: cookedSuccess ? Colors.green : Colors.grey[700],
+                      size: 25.sp,
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(
+                      "Mark as Cooked",
+                      style: TextStyle(
+                        color: cookedSuccess ? Colors.green[800] : Colors.black87,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15.sp,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ).asGlass(
+            tintColor: cookedSuccess ? Colors.green : Colors.white,
+            frosted: true,
+            blurX: 2,
+            blurY: 2,
+            clipBorderRadius: BorderRadius.circular(28.r),
+          ),
+        ],
+      ).asGlass(
+        tintColor: Colors.white,
+        frosted: true,
+        blurX: 5,
+        blurY: 5,
+        clipBorderRadius: BorderRadius.circular(36.r),
+      ),
+    );
+  }
 }
