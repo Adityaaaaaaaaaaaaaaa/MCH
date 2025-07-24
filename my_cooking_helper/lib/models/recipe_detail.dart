@@ -38,10 +38,152 @@ class RecipeDetail {
   final double? spoonacularScore;
   final String? spoonacularSourceUrl;
   final Nutrition? nutrition;
+  final String? aiSummary; 
+  final Map<String, dynamic>? geminiSummary; // or aiSummaryRaw
   final List<RecipeVideo>? videos; 
 
   // For future extensibility: any additional fields from backend
   final Map<String, dynamic> extra;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'image': image,
+      'imageType': imageType,
+      'readyInMinutes': readyInMinutes,
+      'servings': servings,
+      'sourceUrl': sourceUrl,
+      'vegetarian': vegetarian,
+      'vegan': vegan,
+      'glutenFree': glutenFree,
+      'dairyFree': dairyFree,
+      'veryHealthy': veryHealthy,
+      'cheap': cheap,
+      'veryPopular': veryPopular,
+      'sustainable': sustainable,
+      'lowFodmap': lowFodmap,
+      'weightWatcherSmartPoints': weightWatcherSmartPoints,
+      'gaps': gaps,
+      'preparationMinutes': preparationMinutes,
+      'cookingMinutes': cookingMinutes,
+      'aggregateLikes': aggregateLikes,
+      'healthScore': healthScore,
+      'creditsText': creditsText,
+      'license': license,
+      'sourceName': sourceName,
+      'pricePerServing': pricePerServing,
+      'extendedIngredients': extendedIngredients.map((e) => e.toJson()).toList(),
+      'summary': summary,
+      'cuisines': cuisines,
+      'dishTypes': dishTypes,
+      'diets': diets,
+      'occasions': occasions,
+      'winePairing': winePairing?.toJson(),
+      'instructions': instructions,
+      'analyzedInstructions': analyzedInstructions.map((e) => e.toJson()).toList(),
+      'originalId': originalId,
+      'spoonacularScore': spoonacularScore,
+      'spoonacularSourceUrl': spoonacularSourceUrl,
+      'nutrition': nutrition?.toJson(),
+      'aiSummary': aiSummary, 
+      'geminiSummary': geminiSummary,
+      'videos': videos?.map((v) => v.toJson()).toList(), 
+      ...extra,
+    };
+  }
+
+  RecipeDetail copyWith({
+    String? id,
+    String? title,
+    String? image,
+    String? imageType,
+    int? readyInMinutes,
+    int? servings,
+    String? sourceUrl,
+    bool? vegetarian,
+    bool? vegan,
+    bool? glutenFree,
+    bool? dairyFree,
+    bool? veryHealthy,
+    bool? cheap,
+    bool? veryPopular,
+    bool? sustainable,
+    bool? lowFodmap,
+    int? weightWatcherSmartPoints,
+    String? gaps,
+    int? preparationMinutes,
+    int? cookingMinutes,
+    int? aggregateLikes,
+    double? healthScore,
+    String? creditsText,
+    String? license,
+    String? sourceName,
+    double? pricePerServing,
+    List<ExtendedIngredient>? extendedIngredients,
+    String? summary,
+    List<String>? cuisines,
+    List<String>? dishTypes,
+    List<String>? diets,
+    List<String>? occasions,
+    WinePairing? winePairing,
+    String? instructions,
+    List<AnalyzedInstruction>? analyzedInstructions,
+    int? originalId,
+    double? spoonacularScore,
+    String? spoonacularSourceUrl,
+    Nutrition? nutrition,
+    String? aiSummary, 
+    Map<String, dynamic>? geminiSummary,
+    List<RecipeVideo>? videos,  
+    Map<String, dynamic>? extra,
+  }) {
+    return RecipeDetail(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      image: image ?? this.image,
+      imageType: imageType ?? this.imageType,
+      readyInMinutes: readyInMinutes ?? this.readyInMinutes,
+      servings: servings ?? this.servings,
+      sourceUrl: sourceUrl ?? this.sourceUrl,
+      vegetarian: vegetarian ?? this.vegetarian,
+      vegan: vegan ?? this.vegan,
+      glutenFree: glutenFree ?? this.glutenFree,
+      dairyFree: dairyFree ?? this.dairyFree,
+      veryHealthy: veryHealthy ?? this.veryHealthy,
+      cheap: cheap ?? this.cheap,
+      veryPopular: veryPopular ?? this.veryPopular,
+      sustainable: sustainable ?? this.sustainable,
+      lowFodmap: lowFodmap ?? this.lowFodmap,
+      weightWatcherSmartPoints: weightWatcherSmartPoints ?? this.weightWatcherSmartPoints,
+      gaps: gaps ?? this.gaps,
+      preparationMinutes: preparationMinutes ?? this.preparationMinutes,
+      cookingMinutes: cookingMinutes ?? this.cookingMinutes,
+      aggregateLikes: aggregateLikes ?? this.aggregateLikes,
+      healthScore: healthScore ?? this.healthScore,
+      creditsText: creditsText ?? this.creditsText,
+      license: license ?? this.license,
+      sourceName: sourceName ?? this.sourceName,
+      pricePerServing: pricePerServing ?? this.pricePerServing,
+      extendedIngredients: extendedIngredients ?? this.extendedIngredients,
+      summary: summary ?? this.summary,
+      cuisines: cuisines ?? this.cuisines,
+      dishTypes: dishTypes ?? this.dishTypes,
+      diets: diets ?? this.diets,
+      occasions: occasions ?? this.occasions,
+      winePairing: winePairing ?? this.winePairing,
+      instructions: instructions ?? this.instructions,
+      analyzedInstructions: analyzedInstructions ?? this.analyzedInstructions,
+      originalId: originalId ?? this.originalId,
+      spoonacularScore: spoonacularScore ?? this.spoonacularScore,
+      spoonacularSourceUrl: spoonacularSourceUrl ?? this.spoonacularSourceUrl,
+      nutrition: nutrition ?? this.nutrition,
+      aiSummary: aiSummary ?? this.aiSummary, 
+      geminiSummary: geminiSummary ?? this.geminiSummary, 
+      videos: videos ?? this.videos, 
+      extra: extra ?? this.extra,
+    );
+  }
 
   RecipeDetail({
     this.id,
@@ -84,7 +226,9 @@ class RecipeDetail {
     this.spoonacularSourceUrl,
     this.nutrition,
     this.extra = const {},
+    this.aiSummary,
     this.videos,
+    this.geminiSummary,
   });
 
   factory RecipeDetail.fromJson(Map<String, dynamic> json) {
@@ -129,6 +273,9 @@ class RecipeDetail {
       'originalId',
       'spoonacularScore',
       'spoonacularSourceUrl',
+      'aiSummary',
+      'geminiSummary',
+      'videos',
     };
     
     final Map<String, dynamic> extra = {};
@@ -182,6 +329,10 @@ class RecipeDetail {
       spoonacularScore: _parseDouble(json['spoonacularScore']),
       spoonacularSourceUrl: json['spoonacularSourceUrl']?.toString(),
       nutrition: json['nutrition'] != null ? Nutrition.fromJson(json['nutrition']) : null,
+      aiSummary: json['aiSummary']?.toString(),
+      geminiSummary: json['geminiSummary'] == null
+        ? null
+        : Map<String, dynamic>.from(json['geminiSummary']),
       videos: json['videos'] == null
         ? null
         : (json['videos'] as List).map((e) => RecipeVideo.fromJson(e)).toList(),
@@ -236,6 +387,21 @@ class ExtendedIngredient {
     this.measures,
   });
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'aisle': aisle,
+    'image': image,
+    'consistency': consistency,
+    'name': name,
+    'nameClean': nameClean,
+    'original': original,
+    'originalName': originalName,
+    'amount': amount,
+    'unit': unit,
+    'meta': meta,
+    'measures': measures?.toJson(),
+  };
+
   factory ExtendedIngredient.fromJson(Map<String, dynamic> json) {
     return ExtendedIngredient(
       id: _parseInt(json['id']),
@@ -260,6 +426,11 @@ class IngredientMeasures {
 
   IngredientMeasures({this.us, this.metric});
 
+  Map<String, dynamic> toJson() => {
+    'us': us?.toJson(),
+    'metric': metric?.toJson(),
+  };
+
   factory IngredientMeasures.fromJson(Map<String, dynamic> json) {
     return IngredientMeasures(
       us: json['us'] != null ? IngredientMeasure.fromJson(json['us']) : null,
@@ -274,6 +445,12 @@ class IngredientMeasure {
   final String? unitLong;
 
   IngredientMeasure({this.amount, this.unitShort, this.unitLong});
+
+  Map<String, dynamic> toJson() => {
+    'amount': amount,
+    'unitShort': unitShort,
+    'unitLong': unitLong,
+  };
 
   factory IngredientMeasure.fromJson(Map<String, dynamic> json) {
     return IngredientMeasure(
@@ -401,6 +578,12 @@ class WinePairing {
     this.productMatches = const [],
   });
 
+  Map<String, dynamic> toJson() => {
+    'pairedWines': pairedWines,
+    'pairingText': pairingText,
+    'productMatches': productMatches,
+  };
+
   factory WinePairing.fromJson(Map<String, dynamic> json) {
     return WinePairing(
       pairedWines: (json['pairedWines'] as List<dynamic>? ?? []).map((e) => e.toString()).toList(),
@@ -417,6 +600,11 @@ class AnalyzedInstruction {
   final List<InstructionStep> steps;
 
   AnalyzedInstruction({this.name, this.steps = const []});
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'steps': steps.map((e) => e.toJson()).toList(),
+  };
 
   factory AnalyzedInstruction.fromJson(Map<String, dynamic> json) {
     return AnalyzedInstruction(
@@ -442,6 +630,14 @@ class InstructionStep {
     this.equipment = const [],
     this.length,
   });
+
+  Map<String, dynamic> toJson() => {
+    'number': number,
+    'step': step,
+    'ingredients': ingredients,
+    'equipment': equipment,
+    'length': length,
+  };
 
   factory InstructionStep.fromJson(Map<String, dynamic> json) {
     return InstructionStep(
