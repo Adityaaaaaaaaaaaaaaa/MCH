@@ -410,7 +410,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
 
     lottieController.show(
       context: context,
-      assetPath: 'assets/animations/Animation_scanReceipt.json',
+      assetPath: 'assets/animations/Animation_Food_Choice.json',
       backgroundColor: bgColor(context),
       repeat: true,
       barrierDismissible: false,
