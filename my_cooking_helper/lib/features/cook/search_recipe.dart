@@ -905,18 +905,35 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                         ),
                       ),
                       if (selectedRecipes.isNotEmpty)
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(16.r),
-                          ),
-                          child: Text(
-                            '${selectedRecipes.length} selected',
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.green,
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedRecipes.clear();
+                            });
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16.r),
+                              border: Border.all(
+                                color: Colors.green.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.cancel_rounded, color: Colors.redAccent, size: 16.sp),
+                                SizedBox(width: 6.w),
+                                Text(
+                                  '${selectedRecipes.length} selected',
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -945,7 +962,8 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                                 recipe: recipeResults[index],
                                 isSelected: false,
                                 formatTime: formatTime,
-                                onTap: () => showRecipeDetails(recipeResults[index]),
+                                //onTap: () => showRecipeDetails(recipeResults[index]),
+                                onLongPress: () => toggleRecipeSelection(recipeResults[index].id),
                                 onSelect: () => toggleRecipeSelection(recipeResults[index].id),
                                 onViewRecipe: () => showRecipeDetails(recipeResults[index]),
                               ),
@@ -968,7 +986,8 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                             recipe: recipeResults[index],
                             isSelected: isSelected,
                             formatTime: formatTime,
-                            onTap: () => showRecipeDetails(recipeResults[index]),
+                            //onTap: () => showRecipeDetails(recipeResults[index]),
+                            onLongPress: () => toggleRecipeSelection(recipeResults[index].id),
                             onSelect: () => toggleRecipeSelection(recipeResults[index].id),
                             onViewRecipe: () => showRecipeDetails(recipeResults[index]),
                           );

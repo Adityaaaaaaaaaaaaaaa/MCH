@@ -10,18 +10,20 @@ class RecipeCard extends StatelessWidget {
   final Recipe recipe;
   final bool isSelected;
   final String Function(int) formatTime;
-  final VoidCallback onTap;
+  //final VoidCallback onTap;
   final VoidCallback onSelect;
   final VoidCallback onViewRecipe;
+  final VoidCallback? onLongPress;
 
   const RecipeCard({
     Key? key,
     required this.recipe,
     required this.isSelected,
     required this.formatTime,
-    required this.onTap,
+    //required this.onTap,
     required this.onSelect,
     required this.onViewRecipe,
+    this.onLongPress,
   }) : super(key: key);
 
   @override
@@ -36,7 +38,8 @@ class RecipeCard extends StatelessWidget {
       scale: 1.0,
       duration: const Duration(milliseconds: 200),
       child: GestureDetector(
-        onTap: onTap,
+        //onTap: onTap,
+        onLongPress: onLongPress,
         child: Container(
           margin: EdgeInsets.only(bottom: 20.h), 
           child: Stack(
