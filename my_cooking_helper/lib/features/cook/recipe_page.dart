@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +18,24 @@ final recipeSearchServiceProvider = Provider<RecipeSearchService>((ref) {
   return RecipeSearchService();
 });
 
+final favouriteStatusProvider = StreamProvider.family<bool, String>((ref, recipeId) {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return Stream<bool>.value(false);
+
+  final doc = FirebaseFirestore.instance
+      .collection('users')
+      .doc(userId)
+      .collection('recipeHistory')
+      .doc(recipeId);
+
+  return doc.snapshots().map((snapshot) {
+    if (snapshot.exists && snapshot.data()?['isFavourite'] == true) {
+      return true;
+    }
+    return false;
+  });
+});
+
 final recipeVideosProvider = FutureProvider.family<Map<String, dynamic>, RecipeDetail>((ref, recipe) async {
   final service = ref.read(recipeSearchServiceProvider);
   return await service.fetchRecipeVideosAndSummary(
@@ -30,7 +49,7 @@ final userProvider = Provider<String?>((ref) {
 });
 
 final cookedSuccessProvider = StateProvider.autoDispose.family<bool, String>((ref, recipeId) => false);
-final favouriteProvider = StateProvider.autoDispose.family<bool, String>((ref, recipeId) => false);
+//final favouriteProviderX = StateProvider.autoDispose.family<bool, String>((ref, recipeId) => false);
 
 String extractSummaryText(Map<String, dynamic>? summaryData) {
   if (summaryData == null) return '';
@@ -269,80 +288,167 @@ class RecipePage extends ConsumerWidget {
                   ),
                 ),
               ),
+              // Positioned(
+              //   bottom: 20,
+              //   right: 15,
+              //   child: Consumer(
+              //     builder: (context, ref, _) {
+              //       //final isFavourite = ref.watch(favouriteProvider(recipeId));
+              //       final cookedSuccess = ref.watch(cookedSuccessProvider(recipeId));
+              //       final favAsync = ref.watch(favouriteStatusProvider(recipeId));
+
+              //       return DualActionButton(
+              //         isFavourited: isFavourite,
+              //         cookedSuccess: cookedSuccess,
+              //         onFavourite: () async {
+              //           if (userId == null) {
+              //             ScaffoldMessenger.of(context).showSnackBar(
+              //               SnackBar(
+              //                 content: Text("Please log in to use Favourites."),
+              //                 backgroundColor: Colors.red[600],
+              //               ),
+              //             );
+              //             return;
+              //           }
+              //           final newValue = !isFavourite;
+              //           ref.read(favouriteProvider(recipeId).notifier).state = newValue;
+              //           await RecipeSaveService.updateFavouriteStatus(
+              //             recipeId: recipeId,
+              //             userId: userId,
+              //             isFavourite: newValue,
+              //           );
+              //           ScaffoldMessenger.of(context).showSnackBar(
+              //             SnackBar(
+              //               content: Text(
+              //                 newValue ? "Added to Favourites!" : "Removed from Favourites.",
+              //               ),
+              //               backgroundColor: newValue ? Colors.pink[400] : Colors.grey[600],
+              //             ),
+              //           );
+              //         },
+              //         onMarkCooked: () async {
+              //           if (userId == null) {
+              //             ScaffoldMessenger.of(context).showSnackBar(
+              //               SnackBar(
+              //                 content: Text("Please log in to mark as cooked."),
+              //                 backgroundColor: Colors.red[600],
+              //               ),
+              //             );
+              //             return;
+              //           }
+              //           // add ai summary and yt videos 
+              //           final aiSummary = extractSummaryText(geminiSummaryData);
+              //           final List<RecipeVideo> videos = (videosAndSummaryAsync.value?['videos'] as List?)
+              //             ?.map((e) => RecipeVideo.fromJson(e as Map<String, dynamic>))
+              //             .toList() ?? [];
+
+              //           final enrichedRecipe = recipe.copyWith(
+              //             geminiSummary: geminiSummaryData,
+              //             aiSummary: aiSummary,
+              //             videos: videos,
+              //           );
+
+              //           await RecipeSaveService.markRecipeAsCooked(
+              //             context: context,
+              //             recipe: enrichedRecipe,
+              //             userId: userId,
+              //             isFavourite: isFavourite,
+              //           );
+
+              //           ref.read(cookedSuccessProvider(recipeId).notifier).state = true;
+              //           ScaffoldMessenger.of(context).showSnackBar(
+              //             SnackBar(
+              //               content: Text("Marked as cooked!"),
+              //               backgroundColor: Colors.green[600],
+              //             ),
+              //           );
+              //         },
+              //       );
+              //     },
+              //   ),
+              // ),
               Positioned(
                 bottom: 20,
                 right: 15,
                 child: Consumer(
                   builder: (context, ref, _) {
-                    final isFavourite = ref.watch(favouriteProvider(recipeId));
+                    final favAsync = ref.watch(favouriteStatusProvider(recipeId));
                     final cookedSuccess = ref.watch(cookedSuccessProvider(recipeId));
 
-                    return DualActionButton(
-                      isFavourited: isFavourite,
-                      cookedSuccess: cookedSuccess,
-                      onFavourite: () async {
-                        if (userId == null) {
+                    return favAsync.when(
+                      data: (isFavourite) => DualActionButton(
+                        isFavourited: isFavourite,
+                        cookedSuccess: cookedSuccess,
+                        onFavourite: () async {
+                          if (userId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Please log in to use Favourites."),
+                                backgroundColor: Colors.red[600],
+                              ),
+                            );
+                            return;
+                          }
+                          // Toggle favourite, and Firestore will trigger the stream update!
+                          await RecipeSaveService.updateFavouriteStatus(
+                            recipeId: recipeId,
+                            userId: userId,
+                            isFavourite: !isFavourite,
+                          );
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text("Please log in to use Favourites."),
-                              backgroundColor: Colors.red[600],
+                              content: Text(
+                                !isFavourite ? "Added to Favourites!" : "Removed from Favourites.",
+                              ),
+                              backgroundColor: !isFavourite ? Colors.pink[400] : Colors.grey[600],
                             ),
                           );
-                          return;
-                        }
-                        final newValue = !isFavourite;
-                        ref.read(favouriteProvider(recipeId).notifier).state = newValue;
-                        await RecipeSaveService.updateFavouriteStatus(
-                          recipeId: recipeId,
-                          userId: userId,
-                          isFavourite: newValue,
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              newValue ? "Added to Favourites!" : "Removed from Favourites.",
-                            ),
-                            backgroundColor: newValue ? Colors.pink[400] : Colors.grey[600],
-                          ),
-                        );
-                      },
-                      onMarkCooked: () async {
-                        if (userId == null) {
+                        },
+                        onMarkCooked: () async {
+                          if (userId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Please log in to mark as cooked."),
+                                backgroundColor: Colors.red[600],
+                              ),
+                            );
+                            return;
+                          }
+                          // add ai summary and yt videos 
+                          final aiSummary = extractSummaryText(geminiSummaryData);
+                          final List<RecipeVideo> videos = (videosAndSummaryAsync.value?['videos'] as List?)
+                            ?.map((e) => RecipeVideo.fromJson(e as Map<String, dynamic>))
+                            .toList() ?? [];
+
+                          final enrichedRecipe = recipe.copyWith(
+                            geminiSummary: geminiSummaryData,
+                            aiSummary: aiSummary,
+                            videos: videos,
+                          );
+
+                          await RecipeSaveService.markRecipeAsCooked(
+                            context: context,
+                            recipe: enrichedRecipe,
+                            userId: userId,
+                            isFavourite: isFavourite,
+                          );
+
+                          ref.read(cookedSuccessProvider(recipeId).notifier).state = true;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text("Please log in to mark as cooked."),
-                              backgroundColor: Colors.red[600],
+                              content: Text("Marked as cooked!"),
+                              backgroundColor: Colors.green[600],
                             ),
                           );
-                          return;
-                        }
-                        // add ai summary and yt videos 
-                        final aiSummary = extractSummaryText(geminiSummaryData);
-                        final List<RecipeVideo> videos = (videosAndSummaryAsync.value?['videos'] as List?)
-                          ?.map((e) => RecipeVideo.fromJson(e as Map<String, dynamic>))
-                          .toList() ?? [];
-
-                        final enrichedRecipe = recipe.copyWith(
-                          geminiSummary: geminiSummaryData,
-                          aiSummary: aiSummary,
-                          videos: videos,
-                        );
-
-                        await RecipeSaveService.markRecipeAsCooked(
-                          context: context,
-                          recipe: enrichedRecipe,
-                          userId: userId,
-                          isFavourite: isFavourite,
-                        );
-
-                        ref.read(cookedSuccessProvider(recipeId).notifier).state = true;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("Marked as cooked!"),
-                            backgroundColor: Colors.green[600],
-                          ),
-                        );
-                      },
+                        },
+                      ),
+                      loading: () => DualActionButton(
+                        isFavourited: false,
+                        cookedSuccess: cookedSuccess,
+                        onFavourite: () {}, //does nothing 
+                        onMarkCooked: () {},
+                      ),
+                      error: (err, stack) => Icon(Icons.error, color: Colors.red),
                     );
                   },
                 ),
