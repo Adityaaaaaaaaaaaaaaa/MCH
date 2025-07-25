@@ -40,6 +40,7 @@ class RecipeSaveService {
           'isFavourite': isFavourite,
           'lastCookedAt': FieldValue.serverTimestamp(),
           'timesCooked': FieldValue.increment(1),
+          'imageUrl': recipe.image,
         });
       } else {
         transaction.set(historyRef, {
@@ -48,6 +49,7 @@ class RecipeSaveService {
           'isFavourite': isFavourite,
           'lastCookedAt': FieldValue.serverTimestamp(),
           'timesCooked': 1,
+          'imageUrl': recipe.image,
         });
       }
     });
@@ -59,11 +61,18 @@ class RecipeSaveService {
     required bool isFavourite,
   }) async {
     final firestore = FirebaseFirestore.instance;
+
+    // If marking as favourite, set timestamp; if unmarking, clear it (or keep, as per your use-case)
+    final favUpdate = {
+      'isFavourite': isFavourite,
+      'markFavOn': isFavourite ? FieldValue.serverTimestamp() : null,
+    };
+
     await firestore
-        .collection('users')
-        .doc(userId)
-        .collection('recipeHistory')
-        .doc(recipeId)
-        .set({'isFavourite': isFavourite}, SetOptions(merge: true));
+      .collection('users')
+      .doc(userId)
+      .collection('recipeHistory')
+      .doc(recipeId)
+      .set(favUpdate, SetOptions(merge: true));
   }
 }

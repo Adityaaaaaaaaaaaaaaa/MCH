@@ -7,6 +7,8 @@ class RecipeHistoryEntry {
   final bool isFavourite;
   final DateTime? lastCookedAt;
   final int timesCooked;
+  final String? imageUrl;
+  final DateTime? markFavOn;
 
   RecipeHistoryEntry({
     required this.recipeId,
@@ -14,6 +16,8 @@ class RecipeHistoryEntry {
     required this.isFavourite,
     this.lastCookedAt,
     required this.timesCooked,
+    this.imageUrl,
+    this.markFavOn,
   });
 
   factory RecipeHistoryEntry.fromFirestore(Map<String, dynamic> data) {
@@ -25,6 +29,29 @@ class RecipeHistoryEntry {
           ? (data['lastCookedAt'] as Timestamp).toDate()
           : null,
       timesCooked: data['timesCooked'] ?? 0,
+      imageUrl: data['imageUrl'] as String?,
+      markFavOn: data['markFavOn'] is Timestamp ? (data['markFavOn'] as Timestamp).toDate() : null,
     );
   }
+
+  // Update fromJson and toJson:
+  factory RecipeHistoryEntry.fromJson(Map<String, dynamic> json) => RecipeHistoryEntry(
+    recipeId: json['recipeId'] as String,
+    recipeTitle: json['recipeTitle'] as String,
+    timesCooked: json['timesCooked'] as int,
+    lastCookedAt: (json['lastCookedAt'] as Timestamp?)?.toDate(),
+    isFavourite: json['isFavourite'] ?? false,
+    imageUrl: json['imageUrl'] as String?,     
+    markFavOn: (json['markFavOn'] as Timestamp?)?.toDate(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'recipeId': recipeId,
+    'recipeTitle': recipeTitle,
+    'timesCooked': timesCooked,
+    'lastCookedAt': lastCookedAt,
+    'isFavourite': isFavourite,
+    'imageUrl': imageUrl, 
+    'markFavOn': markFavOn,
+  };
 }
