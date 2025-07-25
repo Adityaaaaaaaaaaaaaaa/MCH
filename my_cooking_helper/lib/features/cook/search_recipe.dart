@@ -20,7 +20,7 @@ import '/utils/lottie_animation.dart';
 import '/widgets/recipe/recipe_card.dart';
 import '/widgets/recipe/recipe_detail_modal.dart';
 import '/utils/recipe_webview_dialog.dart';
-import '/services/recipe_rotation.dart'; 
+import '/services/recipe_rotation_service.dart'; 
 class SearchRecipeScreen extends StatefulWidget {
   const SearchRecipeScreen({Key? key}) : super(key: key);
 
@@ -1084,7 +1084,6 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                     }
 
                     context.push('/recipePage', extra: {'recipe': selectedRecipeDetail});
-                    //context.push('/recipePage', extra: {'recipe': selectedRecipe});
                   }
                 : startFlow,
               icon: Icon(

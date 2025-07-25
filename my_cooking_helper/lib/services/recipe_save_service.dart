@@ -18,19 +18,39 @@ class RecipeSaveService {
       await recipeDoc.set(recipe.toJson());
     }
 
-    // 2. Save/update user recipe tracker
-    await firestore
+    // 2. Add a new cook event
+    final historyRef = firestore
         .collection('users')
         .doc(userId)
         .collection('recipeHistory')
-        .doc(recipe.id)
-        .set({
-          'recipeId': recipe.id,           
-          'recipeTitle': recipe.title,  
+        .doc(recipe.id);
+
+    await firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(historyRef);
+
+      // Always add a new cookEvent
+      final cookEventsRef = historyRef.collection('cookEvents').doc();
+      transaction.set(cookEventsRef, {
+        'cookedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Update the main doc (for quick queries)
+      if (snapshot.exists) {
+        transaction.update(historyRef, {
           'isFavourite': isFavourite,
           'lastCookedAt': FieldValue.serverTimestamp(),
           'timesCooked': FieldValue.increment(1),
-        }, SetOptions(merge: true));
+        });
+      } else {
+        transaction.set(historyRef, {
+          'recipeId': recipe.id,
+          'recipeTitle': recipe.title,
+          'isFavourite': isFavourite,
+          'lastCookedAt': FieldValue.serverTimestamp(),
+          'timesCooked': 1,
+        });
+      }
+    });
   }
 
   static Future<void> updateFavouriteStatus({
