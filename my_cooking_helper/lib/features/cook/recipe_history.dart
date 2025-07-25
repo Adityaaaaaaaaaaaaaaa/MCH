@@ -102,7 +102,10 @@ class RecipeHistoryPage extends ConsumerWidget {
 
                                 // 4. Check and route
                                 if (detail != null) {
-                                  context.push('/recipePage', extra: detail); // <--- Pass directly!
+                                  context.push('/recipePage', extra: {
+                                    'recipe': detail,
+                                    'fromHistory': true, // Set true when coming from history
+                                  });
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text('Recipe details not found.'))
