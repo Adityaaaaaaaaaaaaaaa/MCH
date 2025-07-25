@@ -128,39 +128,3 @@ class RecipeHistoryPage extends ConsumerWidget {
     );
   }
 }
-
-// --- Grouping logic, but now for RecipeHistoryEntry (not CookedRecipeHistory) ---
-class CookedRecipeGroup {
-  final String label;
-  final List<RecipeHistoryEntry> recipes;
-  CookedRecipeGroup({required this.label, required this.recipes});
-}
-
-List<CookedRecipeGroup> groupRecipesByRecency(List<RecipeHistoryEntry> recipes) {
-  final now = DateTime.now();
-  final today = <RecipeHistoryEntry>[];
-  final yesterday = <RecipeHistoryEntry>[];
-  final week = <RecipeHistoryEntry>[];
-  final older = <RecipeHistoryEntry>[];
-
-  for (final r in recipes) {
-    if (r.lastCookedAt == null) continue;
-    final daysAgo = now.difference(r.lastCookedAt!).inDays;
-    if (daysAgo == 0) {
-      today.add(r);
-    } else if (daysAgo == 1) {
-      yesterday.add(r);
-    } else if (daysAgo < 7) {
-      week.add(r);
-    } else {
-      older.add(r);
-    }
-  }
-
-  final groups = <CookedRecipeGroup>[];
-  if (today.isNotEmpty) groups.add(CookedRecipeGroup(label: "Today", recipes: today));
-  if (yesterday.isNotEmpty) groups.add(CookedRecipeGroup(label: "Yesterday", recipes: yesterday));
-  if (week.isNotEmpty) groups.add(CookedRecipeGroup(label: "Earlier this week", recipes: week));
-  if (older.isNotEmpty) groups.add(CookedRecipeGroup(label: "Earlier", recipes: older));
-  return groups;
-}
