@@ -11,10 +11,10 @@ import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
 import '/utils/colors.dart';
 
-final cookedRecipesProvider = FutureProvider<List<RecipeHistoryEntry>>((ref) async {
+final cookedRecipesProvider = StreamProvider<List<RecipeHistoryEntry>>((ref) {
   final userId = FirebaseAuth.instance.currentUser?.uid;
-  if (userId == null) return [];
-  return await RecipeTrackerService.fetchCookedRecipes(userId);
+  if (userId == null) return const Stream.empty();
+  return RecipeTrackerService.cookedRecipesStream(userId);
 });
 
 class RecipeHistoryPage extends ConsumerWidget {
@@ -85,6 +85,7 @@ class RecipeHistoryPage extends ConsumerWidget {
                           SizedBox(height: 6.h),
                           ...group.recipes.map(
                             (r) => CookedRecipeCard(
+                              imageUrl: r.imageUrl, 
                               recipe: r,
                               onTap: () async {
                                 // 1. Show loader if you want (optional)

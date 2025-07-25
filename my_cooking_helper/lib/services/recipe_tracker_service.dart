@@ -16,6 +16,20 @@ class RecipeTrackerService {
         .toList();
   }
 
+  static Stream<List<RecipeHistoryEntry>> cookedRecipesStream(String userId) {
+    final ref = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('recipeHistory')
+        .orderBy('lastCookedAt', descending: true);
+
+    return ref.snapshots().map((snapshot) =>
+      snapshot.docs
+        .map((doc) => RecipeHistoryEntry.fromFirestore(doc.data()))
+        .toList()
+    );
+  }
+
   static Future<RecipeDetail?> fetchFullRecipeDetail(String recipeId) async {
     final doc = await FirebaseFirestore.instance.collection('recipes').doc(recipeId).get();
     if (doc.exists && doc.data() != null) {
