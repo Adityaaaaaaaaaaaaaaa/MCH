@@ -37,4 +37,17 @@ class RecipeTrackerService {
     }
     return null;
   }
+
+  static Stream<List<RecipeHistoryEntry>> favouriteRecipesStream(String userId) {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('recipeHistory')
+        .where('isFavourite', isEqualTo: true)
+        .orderBy('markFavOn', descending: true) // Show most recently favourited first
+        .snapshots()
+        .map((snapshot) =>
+          snapshot.docs.map((doc) => RecipeHistoryEntry.fromFirestore(doc.data())).toList()
+        );
+  }
 }

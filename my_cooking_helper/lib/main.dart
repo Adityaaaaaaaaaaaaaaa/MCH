@@ -26,8 +26,9 @@ import 'features/settings/settings.dart';
 import 'features/cook/recipe_page.dart';
 import 'features/cook/cook.dart';
 import 'features/cook/recipe_history.dart';
-import 'features/cook/search_recipe.dart';
+import 'features/cook/recipe_search.dart';
 import 'features/inventory/inventory.dart';
+import 'features/cook/recipe_favourites.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -120,6 +121,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/history',
       builder: (context, state) => const RecipeHistoryPage(),
+    ),
+    GoRoute(
+      path: '/favourites',
+      builder: (context, state) => const RecipeFavouritesPage(),
     )
   ],
 );
