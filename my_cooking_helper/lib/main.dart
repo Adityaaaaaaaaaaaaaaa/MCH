@@ -102,16 +102,19 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/recipePage',
       builder: (context, state) {
-        late RecipeDetail recipe;
-        // Accept either a Map or RecipeDetail directly
-        if (state.extra is Map<String, dynamic> && (state.extra as Map<String, dynamic>).containsKey('recipe')) {
-          recipe = (state.extra as Map<String, dynamic>)['recipe'] as RecipeDetail;
-        } else if (state.extra is RecipeDetail) {
-          recipe = state.extra as RecipeDetail;
+        final extra = state.extra;
+        if (extra is RecipeDetail) {
+          // fallback for older navigation
+          return RecipePage(recipe: extra, fromHistory: false);
+        } else if (extra is Map<String, dynamic>) {
+          return RecipePage(
+            recipe: extra['recipe'] as RecipeDetail,
+            fromHistory: extra['fromHistory'] == true,
+          );
         } else {
-          throw Exception('No recipe detail found in route extra');
+          // error fallback
+          return Scaffold(body: Center(child: Text('Invalid data')));
         }
-        return RecipePage(recipe: recipe);
       },
     ),
     GoRoute(

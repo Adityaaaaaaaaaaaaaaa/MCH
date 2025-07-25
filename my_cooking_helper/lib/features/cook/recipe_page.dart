@@ -25,10 +25,6 @@ final recipeVideosProvider = FutureProvider.family<Map<String, dynamic>, RecipeD
   );
 });
 
-// Favourites (default false)
-// final favouriteProvider = StateProvider.family<bool, String>((ref, recipeId) => false);
-
-// User ID provider (implement your own logic)
 final userProvider = Provider<String?>((ref) {
   return FirebaseAuth.instance.currentUser?.uid;
 });
@@ -44,9 +40,34 @@ String extractSummaryText(Map<String, dynamic>? summaryData) {
   return summaryData.toString();
 }
 
+List<RecipeYoutubeVideo> normalizeVideoList(dynamic videosRaw) {
+  if (videosRaw == null) return [];
+  if (videosRaw is List<RecipeYoutubeVideo>) return videosRaw;
+  if (videosRaw is List) {
+    return videosRaw.map((e) {
+      if (e is RecipeYoutubeVideo) return e;
+      if (e is Map<String, dynamic>) return RecipeYoutubeVideo.fromJson(e);
+      if (e is RecipeVideo) {
+        // Convert RecipeVideo to Map and then to RecipeYoutubeVideo if possible
+        try {
+          // Assumes RecipeVideo has a toJson() method compatible with RecipeYoutubeVideo.fromJson
+          return RecipeYoutubeVideo.fromJson(e.toJson());
+        } catch (_) {
+          // fallback or skip
+          return null;
+        }
+      }
+      return null; // skip unconvertible entries
+    }).whereType<RecipeYoutubeVideo>().toList();
+  }
+  return [];
+}
+
+
 class RecipePage extends ConsumerWidget {
   final RecipeDetail recipe;
-  const RecipePage({Key? key, required this.recipe}) : super(key: key);
+  final bool fromHistory;
+  const RecipePage({Key? key, required this.recipe, this.fromHistory = false}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,7 +79,13 @@ class RecipePage extends ConsumerWidget {
     final website = recipe.sourceUrl ?? '';
     final dishTypes = recipe.dishTypes;
     final servings = recipe.servings ?? 0;
-    final videosAndSummaryAsync = ref.watch(recipeVideosProvider(recipe));
+
+    final AsyncValue<Map<String, dynamic>> videosAndSummaryAsync = fromHistory
+    ? AsyncValue.data({
+        'summary': recipe.geminiSummary ?? recipe.summary,
+        'videos': recipe.videos ?? [],
+      })
+    : ref.watch(recipeVideosProvider(recipe));
 
     Map<String, dynamic>? geminiSummaryData;
     if (videosAndSummaryAsync.hasValue && videosAndSummaryAsync.value != null) {
@@ -228,10 +255,11 @@ class RecipePage extends ConsumerWidget {
                               SectionHeader(title: 'Youtube Videos', icon: Icons.video_collection, isDark: isDark),
                               SizedBox(height: 10.h),
                               RecipeVideosSection(
-                                videos: (videosAndSummaryAsync.value!['videos'] as List)
-                                    .map((e) => RecipeYoutubeVideo.fromJson(e as Map<String, dynamic>))
-                                    .toList(),
-                              )
+                                videos: (() {
+                                  final videosRaw = videosAndSummaryAsync.value!['videos'];
+                                  return normalizeVideoList(videosRaw);
+                                })(),
+                              ),
                             ],
                             SizedBox(height: 10.h),
                           ],
@@ -288,7 +316,7 @@ class RecipePage extends ConsumerWidget {
                           );
                           return;
                         }
-                        // ---- Enrich recipe ----
+                        // add ai summary and yt videos 
                         final aiSummary = extractSummaryText(geminiSummaryData);
                         final List<RecipeVideo> videos = (videosAndSummaryAsync.value?['videos'] as List?)
                           ?.map((e) => RecipeVideo.fromJson(e as Map<String, dynamic>))
@@ -306,10 +334,8 @@ class RecipePage extends ConsumerWidget {
                           userId: userId,
                           isFavourite: isFavourite,
                         );
+
                         ref.read(cookedSuccessProvider(recipeId).notifier).state = true;
-                        // Future.delayed(Duration(seconds: 2), () {
-                        //   ref.read(cookedSuccessProvider(recipeId).notifier).state = false;
-                        // });
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text("Marked as cooked!"),
@@ -324,7 +350,7 @@ class RecipePage extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const RecipePageSkeleton(),   // <-- ADD YOUR SKELETON HERE
+        loading: () => const RecipePageSkeleton(),
         error: (err, stack) => Center(
           child: Text("Error loading recipe videos/summary: $err"),
         ),

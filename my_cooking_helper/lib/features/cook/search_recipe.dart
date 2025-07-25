@@ -444,7 +444,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
         userId,
         rotatedResults.map((r) => r.id.toString()).toList(),
         maxDaysOld: 5,      // <-- Clear any recipes last shown more than 5 days ago
-        trimTo: 300,        // <-- Still keep max 300 entries
+        trimTo: 200,        // <-- Still keep max 300 entries
       );
 
       setState(() {
@@ -1055,21 +1055,9 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
             child: FloatingActionButton.extended(
               onPressed: isRecipeSelected
                 ? () async { 
-                    // final selectedRecipe = recipeResults.firstWhere(
-                    //   (r) => selectedRecipes.contains(r.title),
-                    // );
-                    // context.push('/recipePage', extra: {
-                    //   'recipeId': selectedRecipe.id,
-                    //   'recipe': selectedRecipe, // Pass the full Recipe object (must be serializable)
-                    // });
-
                     final selectedSummary = recipeResults.firstWhere(
                       (r) => selectedRecipes.contains(r.id),
                     );
-
-                    // final selectedRecipeDetail = recipeDetails.firstWhere(
-                    //   (d) => d.id == selectedSummary.id,
-                    // );
 
                     RecipeDetail? selectedRecipeDetail;
                     try {
@@ -1083,7 +1071,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                       return;
                     }
 
-                    context.push('/recipePage', extra: {'recipe': selectedRecipeDetail});
+                    context.push('/recipePage', extra: {'recipe': selectedRecipeDetail, 'fromHistory': false});
                   }
                 : startFlow,
               icon: Icon(
