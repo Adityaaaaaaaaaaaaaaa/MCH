@@ -49,17 +49,15 @@ Future<void> updateUserRecipeHistory(
   String userId,
   List<String> shownIds, {
   int trimTo = 300,
-  int? maxDaysOld, // e.g., 5 means remove anything last shown >5 days ago
+  int maxDaysOld = 5, // e.g., 5 means remove anything last shown >5 days ago
 }) async {
   // Fetch current history
   final currentHistory = await fetchUserRecipeHistory(userId);
 
   final now = DateTime.now().toUtc();
 
-  // 1. Remove old entries if maxDaysOld is set
-  if (maxDaysOld != null) {
-    currentHistory.removeWhere((id, dt) => now.difference(dt).inDays > maxDaysOld);
-  }
+  // 1. Remove old entries if maxDaysOld after 5 days
+  currentHistory.removeWhere((id, dt) => now.difference(dt).inDays > maxDaysOld);
 
   // 2. Add new shownIds
   for (var id in shownIds) {
