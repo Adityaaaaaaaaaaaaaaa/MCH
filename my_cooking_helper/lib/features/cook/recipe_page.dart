@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '/services/recipe_save.dart';
+import '/services/recipe_save_service.dart';
 import '/widgets/recipe/recipe_common_widgets.dart';
 import '/theme/app_theme.dart';
 import '/models/recipe_detail.dart';

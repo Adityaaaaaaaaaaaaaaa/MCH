@@ -1220,7 +1220,7 @@ class DualActionButton extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 13.h),
                 child: Icon(
                   isFavourited ? Icons.favorite : Icons.favorite_border,
-                  color: isFavourited ? Colors.pinkAccent : Colors.grey[400],
+                  color: isFavourited ? Colors.pinkAccent : Colors.grey[500],
                   size: 32.sp,
                 ),
               ),
@@ -1236,9 +1236,9 @@ class DualActionButton extends StatelessWidget {
           // Divider
           Container(
             width: 1.5.w,
-            height: 32.h,
-            margin: EdgeInsets.symmetric(horizontal: 2.w),
-            color: Colors.black.withOpacity(0.09),
+            height: 35.h,
+            margin: EdgeInsets.symmetric(horizontal: 3.w),
+            color: Colors.white,
           ),
 
           // MARK AS COOKED BUTTON
@@ -1263,13 +1263,13 @@ class DualActionButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(28.r),
               onTap: onMarkCooked,
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 13.h),
                 child: Row(
                   children: [
                     Icon(
                       Icons.check_circle_rounded,
                       color: cookedSuccess ? Colors.green : Colors.grey[700],
-                      size: 25.sp,
+                      size: 32.sp,
                     ),
                     SizedBox(width: 8.w),
                     Text(

@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
-import 'package:my_cooking_helper/features/cook/cook.dart';
-import 'package:my_cooking_helper/features/cook/search_recipe.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -17,6 +15,8 @@ import 'theme/app_theme.dart';
 import 'features/smart_scan/scan_food.dart';
 import 'features/smart_scan/scan_receipt.dart';
 import 'features/smart_scan/smart_scan.dart';
+import 'features/smart_scan/manual_input.dart';
+import 'features/smart_scan/review_screen.dart';
 import 'features/home/home.dart';
 import 'features/onboarding/onboarding_page.dart';
 import 'features/auth/sign_in_page.dart';
@@ -24,9 +24,10 @@ import 'features/preferences/preferences_flow.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/settings/settings.dart'; 
 import 'features/cook/recipe_page.dart';
+import 'features/cook/cook.dart';
+import 'features/cook/recipe_history.dart';
+import 'features/cook/search_recipe.dart';
 import 'features/inventory/inventory.dart';
-import 'features/smart_scan/manual_input.dart';
-import 'features/smart_scan/review_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -101,11 +102,22 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/recipePage',
       builder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>;
-        final recipe = extra['recipe'] as RecipeDetail;
+        late RecipeDetail recipe;
+        // Accept either a Map or RecipeDetail directly
+        if (state.extra is Map<String, dynamic> && (state.extra as Map<String, dynamic>).containsKey('recipe')) {
+          recipe = (state.extra as Map<String, dynamic>)['recipe'] as RecipeDetail;
+        } else if (state.extra is RecipeDetail) {
+          recipe = state.extra as RecipeDetail;
+        } else {
+          throw Exception('No recipe detail found in route extra');
+        }
         return RecipePage(recipe: recipe);
       },
     ),
+    GoRoute(
+      path: '/history',
+      builder: (context, state) => const RecipeHistoryPage(),
+    )
   ],
 );
 
