@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '/models/recipe_detail.dart';
 import '/config/backend_config.dart';
 import '/models/recipe.dart';
 
@@ -62,33 +63,23 @@ class RecipeSearchService {
   /////////////////////////////////////////////////////////////////////////////////////////////
 
   /// Main search function: fetches all data, prints debug, sends to backend
-  Future<List<Recipe>> searchRecipesWithUserPrefs({
+  Future<RecipeSearchResults> searchRecipesWithUserPrefs({
     required String userId,
     required int maxTime,
-    List<String>? overrideIngredients, // For unit tests or future extensions
+    List<String>? overrideIngredients,
   }) async {
-    // Fetch user data
-    final prefs = await fetchUserPreferences(userId);
-    final ingredients =
-        overrideIngredients ?? await fetchUserIngredients(userId);
 
-    // print('\x1B[34m[DEBUG] Sending Search Request:\x1B[0m');
-    // print('\x1B[34m[DEBUG] Ingredients: $ingredients\x1B[0m');
-    // print('\x1B[34m[DEBUG] Allergies: ${prefs['allergies']}\x1B[0m');
-    // print('\x1B[34m[DEBUG] Diets: ${prefs['diets']}\x1B[0m');
-    // print('\x1B[34m[DEBUG] Cuisines: ${prefs['cuisines']}\x1B[0m');
-    // print('\x1B[34m[DEBUG] SpiceLevel: ${prefs['spiceLevel']}\x1B[0m');
-    // print('\x1B[34m[DEBUG] MaxTime: $maxTime\x1B[0m');
+    final prefs = await fetchUserPreferences(userId);
+    final ingredients = overrideIngredients ?? await fetchUserIngredients(userId);
+
     blueDebugPrint('Sending Search Request:');
-    //blueDebugPrint('Ingredients: $ingredients');
     blueDebugPrint('Allergies: ${prefs['allergies']}');
     blueDebugPrint('Diets: ${prefs['diets']}');
     blueDebugPrint('Cuisines: ${prefs['cuisines']}');
     blueDebugPrint('SpiceLevel: ${prefs['spiceLevel']}');
     blueDebugPrint('MaxTime: $maxTime');
 
-    // Prepare payload
-    final url = Uri.parse(agentRecipeSearch); 
+    final url = Uri.parse(spoonacularRecipeSearch); 
     final payload = {
       'ingredients': ingredients,
       'maxTime': maxTime,
@@ -98,7 +89,6 @@ class RecipeSearchService {
       'spiceLevel': prefs['spiceLevel'],
     };
 
-    // Send to backend
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -109,10 +99,48 @@ class RecipeSearchService {
     }
     final data = jsonDecode(response.body);
     if (data['recipes'] == null || data['recipes'] is! List) {
-      throw Exception('Invalid response from backend');
+       throw Exception('Invalid response from backend');
     }
-    return (data['recipes'] as List)
+
+    // Full detail list
+    final List<RecipeDetail> recipeDetails = (data['recipes'] as List)
+        .map((e) => RecipeDetail.fromJson(e as Map<String, dynamic>))
+        .toList();
+
+    // Summary list
+    final List<Recipe> recipeResults = (data['recipes'] as List)
         .map((e) => Recipe.fromJson(e as Map<String, dynamic>))
         .toList();
+
+    // Return both lists
+    return RecipeSearchResults(summaries: recipeResults, details: recipeDetails);
   }
+
+  Future<Map<String, dynamic>> fetchRecipeVideosAndSummary({
+    required String title,
+    required String summary,
+  }) async {
+    final url = Uri.parse(spoonacularRecipeVideos);
+    final payload = {
+      "title": title,
+      "summary": summary,
+    };
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch: ${response.body}');
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+}
+
+class RecipeSearchResults {
+  final List<Recipe> summaries;
+  final List<RecipeDetail> details;
+
+  RecipeSearchResults({required this.summaries, required this.details});
 }

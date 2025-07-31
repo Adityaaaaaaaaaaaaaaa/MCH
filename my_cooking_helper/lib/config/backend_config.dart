@@ -12,5 +12,6 @@ String get backendApiUrl => "http://$ip:$port";
 //Gemini API endpoints
 String get geminiScanReceipt => "$backendApiUrl/receipt/scanReceipt";
 String get geminiScanFood => "$backendApiUrl/food/scanFood";
-String get agentRecipeSearch => "$backendApiUrl/agent/recipes/searchByIngredients";
+String get spoonacularRecipeSearch => "$backendApiUrl/recipes/find/searchByIngredients";
+String get spoonacularRecipeVideos => "$backendApiUrl/recipes/search/searchVideosAndSummary";
 

@@ -1,47 +1,127 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:glass/glass.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '/widgets/recipe_common_widgets.dart';
+import '/services/recipe_save_service.dart';
+import '/widgets/recipe/recipe_common_widgets.dart';
 import '/theme/app_theme.dart';
-import '/models/recipe.dart';
+import '/models/recipe_detail.dart';
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
-// import '/utils/recipe_webview_dialog.dart';
+import '/services/recipe_search_service.dart';
+import '/widgets/recipe/recipe_page_widgets.dart';
+import '/widgets/recipe/recipe_page_skeleton.dart';
+
+final recipeSearchServiceProvider = Provider<RecipeSearchService>((ref) {
+  return RecipeSearchService();
+});
+
+final favouriteStatusProvider = StreamProvider.family<bool, String>((ref, recipeId) {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return Stream<bool>.value(false);
+
+  final doc = FirebaseFirestore.instance
+      .collection('users')
+      .doc(userId)
+      .collection('recipeHistory')
+      .doc(recipeId);
+
+  return doc.snapshots().map((snapshot) {
+    if (snapshot.exists && snapshot.data()?['isFavourite'] == true) {
+      return true;
+    }
+    return false;
+  });
+});
+
+final recipeVideosProvider = FutureProvider.family<Map<String, dynamic>, RecipeDetail>((ref, recipe) async {
+  final service = ref.read(recipeSearchServiceProvider);
+  return await service.fetchRecipeVideosAndSummary(
+    title: recipe.title ?? '',
+    summary: recipe.summary ?? '',
+  );
+});
+
+final userProvider = Provider<String?>((ref) {
+  return FirebaseAuth.instance.currentUser?.uid;
+});
+
+final cookedSuccessProvider = StateProvider.autoDispose.family<bool, String>((ref, recipeId) => false);
+//final favouriteProviderX = StateProvider.autoDispose.family<bool, String>((ref, recipeId) => false);
+
+String extractSummaryText(Map<String, dynamic>? summaryData) {
+  if (summaryData == null) return '';
+  if (summaryData['summary'] is String) return summaryData['summary'];
+  if (summaryData['summary'] is Map && summaryData['summary']['text'] != null) return summaryData['summary']['text'];
+  if (summaryData['text'] is String) return summaryData['text'];
+  return summaryData.toString();
+}
+
+List<RecipeYoutubeVideo> normalizeVideoList(dynamic videosRaw) {
+  if (videosRaw == null) return [];
+  if (videosRaw is List<RecipeYoutubeVideo>) return videosRaw;
+  if (videosRaw is List) {
+    return videosRaw.map((e) {
+      if (e is RecipeYoutubeVideo) return e;
+      if (e is Map<String, dynamic>) return RecipeYoutubeVideo.fromJson(e);
+      if (e is RecipeVideo) {
+        // Convert RecipeVideo to Map and then to RecipeYoutubeVideo if possible
+        try {
+          // Assumes RecipeVideo has a toJson() method compatible with RecipeYoutubeVideo.fromJson
+          return RecipeYoutubeVideo.fromJson(e.toJson());
+        } catch (_) {
+          // fallback or skip
+          return null;
+        }
+      }
+      return null; // skip unconvertible entries
+    }).whereType<RecipeYoutubeVideo>().toList();
+  }
+  return [];
+}
+
 
 class RecipePage extends ConsumerWidget {
-  const RecipePage({super.key});
+  final RecipeDetail recipe;
+  final bool fromHistory;
+  const RecipePage({Key? key, required this.recipe, this.fromHistory = false}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
-    final Recipe? recipe = args?['recipe'] as Recipe?;
-
-    if (recipe == null) {
-      return Scaffold(
-        backgroundColor: bgColor(context),
-        body: Center(
-          child: Text(
-            "No recipe data found.",
-            style: TextStyle(fontSize: 20.sp, color: Colors.red),
-          ),
-        ),
-      );
-    }
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    void openWebView(String url) {
-      showRecipeWebView(context, url);
+    final imageUrl = recipe.image ?? '';
+    final title = recipe.title ?? 'No Title';
+    final summary = recipe.summary ?? '';
+    final website = recipe.sourceUrl ?? '';
+    final dishTypes = recipe.dishTypes;
+    final servings = recipe.servings ?? 0;
+
+    final AsyncValue<Map<String, dynamic>> videosAndSummaryAsync = fromHistory
+    ? AsyncValue.data({
+        'summary': recipe.geminiSummary ?? recipe.summary,
+        'videos': recipe.videos ?? [],
+      })
+    : ref.watch(recipeVideosProvider(recipe));
+
+    Map<String, dynamic>? geminiSummaryData;
+    if (videosAndSummaryAsync.hasValue && videosAndSummaryAsync.value != null) {
+      final summaryData = videosAndSummaryAsync.value!['summary'];
+      if (summaryData is Map) {
+        geminiSummaryData = summaryData as Map<String, dynamic>;
+      }
     }
+
+    final recipeId = recipe.id ?? "default";
+    final userId = ref.watch(userProvider);
 
     return Scaffold(
       backgroundColor: bgColor(context),
       extendBody: true,
       extendBodyBehindAppBar: true,
-      drawer: const CustomDrawer(), 
+      drawer: const CustomDrawer(),
       appBar: CustomAppBar(
         title: "~ Recipe ~",
         showMenu: false,
@@ -50,197 +130,257 @@ class RecipePage extends ConsumerWidget {
         borderRadius: 26.r,
         topPadding: 40.h,
       ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 18.h, right: 12.w),
-        child: FloatingActionButton.extended(
-          heroTag: "markAsCooked",
-          backgroundColor: isDark ? Colors.green[700] : Colors.green[400],
-          foregroundColor: Colors.white,
-          elevation: 4,
-          icon: Icon(Icons.check_circle_rounded, size: 24.sp),
-          label: Text(
-            "Mark as Cooked",
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16.sp),
-          ),
-          onPressed: () {
-            // Implement Mark as Cooked logic later
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Marked as cooked! (Dummy action)"),
-                backgroundColor: Colors.green[600],
-              ),
-            );
-          },
-        ),
-      ),
-      body: Stack(
-        children: [
-          // Blurred background image
-          if (recipe.imageUrl.isNotEmpty)
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.25,
-                child: Image.network(
-                  recipe.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (c, e, s) => const SizedBox.shrink(),
-                ),
-              ),
-            ),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(0, 0, 0, 70.h),
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                children: [
-                  if (recipe.imageUrl.isNotEmpty)
-                    Padding(
-                      padding: EdgeInsets.all(10.w),
-                      child: RecipeImageCard(imageUrl: recipe.imageUrl, isDark: isDark,),
-                    ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 18.w),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Title
-                        RecipeTitle(title: recipe.title),
-                        SizedBox(height: 6.h),
-
-                        // Dish Type & Servings as Chips (separate rows)
-                        if (recipe.dishTypes.isNotEmpty)
-                          InfoChip(
-                            icon: Icons.restaurant_rounded, 
-                            text: recipe.dishTypes.join(', ').replaceFirstMapped(
-                                RegExp(r'^\w'),
-                                (m) => m.group(0)!.toUpperCase(),
-                              ), 
-                            isDark: isDark
-                          ),
-                        SizedBox(height: 7.h),
-
-                        if (recipe.servings > 0)
-                          InfoChip(
-                            icon: Icons.people_rounded, 
-                            text: 'Serves ${recipe.servings}', 
-                            isDark: isDark
-                          ),
-                        SizedBox(height: 10.h),
-
-                        // Times Row (Prep, Cook, Total)
-                        TimeRow(
-                          recipe: recipe, 
-                          isDark: isDark, 
-                          formatTime: formatTime
-                        ),
-                        SizedBox(height: 25.h),
-
-                        // Ingredients Section
-                        if (recipe.ingredients.isNotEmpty) ...[
-                          SectionHeader(
-                            title: 'Ingredients', 
-                            icon: Icons.list_alt_rounded, 
-                            isDark: isDark
-                          ),
-                          SizedBox(height: 10.h),
-                          IngredientsList(ingredients: recipe.ingredients, isDark: isDark),
-                          SizedBox(height: 25.h),
-                        ],
-
-                        // Instructions Section
-                        if (recipe.instructions.isNotEmpty) ...[
-                          SectionHeader(
-                            title: 'Instructions', 
-                            icon: Icons.format_list_numbered_rounded, 
-                            isDark: isDark
-                          ),
-                          SizedBox(height: 10.h),
-                          InstructionsList(instructions: recipe.instructions, isDark: isDark),
-                          SizedBox(height: 22.h),
-                        ],
-
-                        // Equipment Section
-                        if (recipe.equipment.isNotEmpty) ...[
-                          SectionHeader(
-                            title: 'Equipment', 
-                            icon: Icons.kitchen_rounded, 
-                            isDark: isDark
-                          ),
-                          SizedBox(height: 16.h),
-                          EquipmentChips(equipment: recipe.equipment, isDark: isDark),
-                          SizedBox(height: 25.h),
-                        ],
-
-                        // Nutrition Section
-                        if (recipe.nutrition != null && recipe.nutrition!.isNotEmpty)
-                          NutritionSection(nutrition: recipe.nutrition!),
-                        SizedBox(height: 21.h),
-
-                        // Website Link
-                        if (recipe.website.isNotEmpty) ...[
-                          WebsiteLinkCard(
-                            url: recipe.website,
-                            isDark: isDark,
-                            onTap: (url) => showRecipeWebView(context, url),
-                          ),
-                          if (recipe.website.startsWith('http://'))
-                            HttpWarningCard(isDark: isDark),
-                        ],
-
-                        // Videos Section
-                        if (recipe.videos.isNotEmpty) ...[
-                          SectionHeader(title: 'Videos', icon: Icons.play_circle_filled_rounded, isDark: isDark),
-                          SizedBox(height: 10.h),
-                          ...recipe.videos.map(
-                            (video) => Container(
-                              margin: EdgeInsets.only(bottom: 9.h),
-                              child: GestureDetector(
-                                onTap: () => openWebView(video),
-                                child: Container(
-                                  padding: EdgeInsets.all(13.w),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: isDark
-                                          ? [Colors.red[800]!.withOpacity(0.17), Colors.red[700]!.withOpacity(0.07)]
-                                          : [Colors.red.withOpacity(0.08), Colors.red.withOpacity(0.04)],
-                                    ),
-                                    borderRadius: BorderRadius.circular(14.r),
-                                    border: Border.all(
-                                      color: isDark ? Colors.red[400]!.withOpacity(0.23) : Colors.red.withOpacity(0.17),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.play_circle_fill_rounded, color: isDark ? Colors.red[300] : Colors.red[700], size: 23.sp),
-                                      SizedBox(width: 10.w),
-                                      Expanded(
-                                        child: Text(
-                                          video,
-                                          style: TextStyle(
-                                            color: isDark ? Colors.red[200] : Colors.red[700],
-                                            fontSize: 15.sp,
-                                            fontWeight: FontWeight.w600,
-                                            height: 1.4,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 2,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
+      body: videosAndSummaryAsync.when(
+        data: (_) {
+          return Stack(
+            children: [
+              if (imageUrl.isNotEmpty)
+                Positioned.fill(
+                  child: Opacity(
+                    opacity: 0.15,
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => const SizedBox.shrink(),
                     ),
                   ),
-                ],
+                ),
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, 70.h),
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (imageUrl.isNotEmpty)
+                        Padding(
+                          padding: EdgeInsets.all(10.w),
+                          child: RecipeImageCard(imageUrl: imageUrl, isDark: isDark),
+                        ),
+                  
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 18.w),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            RecipeTitle(title: title),
+                            SizedBox(height: 6.h),
+
+                            if (summary.isNotEmpty)
+                              RecipeSummaryText(
+                                geminiSummary: geminiSummaryData,
+                                originalHtmlSummary: summary,
+                              ),
+                            SizedBox(height: 10.h),
+
+                            if (recipe.healthScore != null)
+                              HealthScoreCard(healthScore: recipe.healthScore),
+                            SizedBox(height: 10.h),
+
+                            if (recipe.nutrition?.caloricBreakdown != null)
+                              Padding(
+                                padding: EdgeInsets.symmetric(vertical: 12.h),
+                                child: CaloricBreakdownWidget(
+                                  breakdown: recipe.nutrition?.caloricBreakdown,
+                                  glutenFree: recipe.glutenFree,
+                                  dairyFree: recipe.dairyFree,
+                                  weightPerServing: recipe.nutrition?.toJson()['weightPerServing'],
+                                  isDark: isDark,
+                                ),
+                              ),
+                            SizedBox(height: 10.h),
+                        
+                            if (dishTypes.isNotEmpty)
+                              Center(
+                                child: InfoChip(
+                                  icon: Icons.restaurant_rounded,
+                                  text: dishTypes.join(', ').replaceFirstMapped(RegExp(r'^\w'), (m) => m.group(0)!.toUpperCase()),
+                                  isDark: isDark,
+                                ),
+                              ),
+                            SizedBox(height: 7.h),
+
+                            if (servings > 0)
+                              Center(
+                                child: InfoChip(
+                                  icon: Icons.people_rounded,
+                                  text: 'Serves $servings',
+                                  isDark: isDark,
+                                ),
+                              ),
+                            SizedBox(height: 10.h),
+
+                            // INGREDIENTS
+                            if (recipe.extendedIngredients.isNotEmpty) ...[
+                              SectionHeader(title: 'Ingredients', icon: Icons.list_alt_rounded, isDark: isDark),
+                              SizedBox(height: 10.h),
+                              Column(
+                                children: recipe.extendedIngredients
+                                    .map((ingredient) => ExtendedIngredientCard(ingredient: ingredient, isDark: isDark))
+                                    .toList(),
+                              ),
+                            ],
+                            SizedBox(height: 25.h),
+
+                            // INSTRUCTIONS
+                            if (recipe.analyzedInstructions.isNotEmpty) ...[
+                              SectionHeader(title: 'Instructions', icon: Icons.format_list_numbered_rounded, isDark: isDark),
+                              SizedBox(height: 10.h),
+                              InstructionsList(
+                                instructions: recipe.analyzedInstructions.expand((instr) => instr.steps).toList(),
+                                isDark: isDark,
+                              ),
+                            ],
+                            SizedBox(height: 22.h),
+
+                            // EQUIPMENT
+                            if (recipe.analyzedInstructions.isNotEmpty) ...[
+                              SectionHeader(title: 'Equipment', icon: Icons.kitchen_rounded, isDark: isDark),
+                              SizedBox(height: 10.h),
+                              EquipmentChips(
+                                equipment: recipe.analyzedInstructions
+                                    .expand((instr) => instr.steps)
+                                    .expand((step) => step.equipment
+                                        .map((e) => e['name'])
+                                        .whereType<String>())
+                                    .toSet()
+                                    .toList(),
+                                isDark: isDark,
+                              ),
+                            ],
+                            SizedBox(height: 25.h),
+
+                            // NUTRITION
+                            if (recipe.nutrition != null) ...[
+                              NutritionSection(
+                                nutrition: recipe.nutrition!.toJson(),
+                              ),
+                            ],
+                            SizedBox(height: 25.h),
+
+                            // WEBSITE LINK
+                            if (website.isNotEmpty) ...[
+                              WebsiteLinkCard(
+                                url: website,
+                                isDark: isDark,
+                                onTap: (url) => showRecipeWebView(context, url),
+                              ),
+                              if (website.startsWith('http://'))
+                                HttpWarningCard(isDark: isDark),
+                            ],
+                            SizedBox(height: 25.h),
+
+                            if (videosAndSummaryAsync.hasValue && videosAndSummaryAsync.value!.isNotEmpty) ...[
+                              SectionHeader(title: 'Youtube Videos', icon: Icons.video_collection, isDark: isDark),
+                              SizedBox(height: 10.h),
+                              RecipeVideosSection(
+                                videos: (() {
+                                  final videosRaw = videosAndSummaryAsync.value!['videos'];
+                                  return normalizeVideoList(videosRaw);
+                                })(),
+                              ),
+                            ],
+                            SizedBox(height: 10.h),
+                          ],
+                        ),
+                      ),               
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
+              Positioned(
+                bottom: 20,
+                right: 15,
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final favAsync = ref.watch(favouriteStatusProvider(recipeId));
+                    final cookedSuccess = ref.watch(cookedSuccessProvider(recipeId));
+
+                    return favAsync.when(
+                      data: (isFavourite) => DualActionButton(
+                        isFavourited: isFavourite,
+                        cookedSuccess: cookedSuccess,
+                        onFavourite: () async {
+                          if (userId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Please log in to use Favourites."),
+                                backgroundColor: Colors.red[600],
+                              ),
+                            );
+                            return;
+                          }
+                          // Toggle favourite, and Firestore will trigger the stream update!
+                          await RecipeSaveService.updateFavouriteStatus(
+                            recipeId: recipeId,
+                            userId: userId,
+                            isFavourite: !isFavourite,
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                !isFavourite ? "Added to Favourites!" : "Removed from Favourites.",
+                              ),
+                              backgroundColor: !isFavourite ? Colors.pink[400] : Colors.grey[600],
+                            ),
+                          );
+                        },
+                        onMarkCooked: () async {
+                          if (userId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Please log in to mark as cooked."),
+                                backgroundColor: Colors.red[600],
+                              ),
+                            );
+                            return;
+                          }
+                          // add ai summary and yt videos 
+                          final aiSummary = extractSummaryText(geminiSummaryData);
+                          final List<RecipeVideo> videos = (videosAndSummaryAsync.value?['videos'] as List?)
+                            ?.map((e) => RecipeVideo.fromJson(e as Map<String, dynamic>))
+                            .toList() ?? [];
+
+                          final enrichedRecipe = recipe.copyWith(
+                            geminiSummary: geminiSummaryData,
+                            aiSummary: aiSummary,
+                            videos: videos,
+                          );
+
+                          await RecipeSaveService.markRecipeAsCooked(
+                            context: context,
+                            recipe: enrichedRecipe,
+                            userId: userId,
+                            isFavourite: isFavourite,
+                          );
+
+                          ref.read(cookedSuccessProvider(recipeId).notifier).state = true;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("Marked as cooked!"),
+                              backgroundColor: Colors.green[600],
+                            ),
+                          );
+                        },
+                      ),
+                      loading: () => DualActionButton(
+                        isFavourited: false,
+                        cookedSuccess: cookedSuccess,
+                        onFavourite: () {}, //does nothing 
+                        onMarkCooked: () {},
+                      ),
+                      error: (err, stack) => Icon(Icons.error, color: Colors.red),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+        loading: () => const RecipePageSkeleton(),
+        error: (err, stack) => Center(
+          child: Text("Error loading recipe videos/summary: $err"),
+        ),
       ),
     );
   }

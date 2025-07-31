@@ -202,7 +202,7 @@ SPICE_LEVEL_MAP = {
     )
     return prompt """
 
-# --- Spice Level Mappings ---
+""" # --- Spice Level Mappings ---
 SPICE_LEVEL_DESCRIPTIONS = {
     "No Spice (Plain Jane)":      "No spice (not spicy at all, suitable for children and sensitive palates)",
     "Gentle Warmth (Mild)":       "Mild (very gentle heat, just a little warmth)",
@@ -270,6 +270,7 @@ def build_recipe_agent_prompt(
         "Do NOT include any explanation, commentary, or extra output—just the result."
     )
     return prompt
+ """
 
 # For blue debug prints
 BLUE = "\033[94m"
@@ -320,3 +321,42 @@ def filter_recipes(
 
     print(f"{BLUE}[DEBUG] Recipes after filtering: {len(filtered)}{RESET}")
     return filtered
+
+YELLOW = "\033[93m"
+RESET = "\033[0m"
+
+def print_rate_limits(headers):
+    keys = [
+        "X-Ratelimit-Classifications-Limit",
+        "X-Ratelimit-Classifications-Remaining",
+        "X-Ratelimit-Requests-Limit",
+        "X-Ratelimit-Requests-Remaining",
+        "X-Ratelimit-Tinyrequests-Limit",
+        "X-Ratelimit-Tinyrequests-Remaining"
+    ]
+    print(f"{YELLOW}[RAPIDAPI RATE LIMITS]{RESET}")
+    for key in keys:
+        if key in headers:
+            print(f"{YELLOW}{key}: {headers[key]}{RESET}")
+
+RECIPE_SUMMARY_PROMPT = (
+    "You are a helpful cooking assistant. Summarize the following HTML recipe summary for end users in a cooking app.\n"
+    "Focus ONLY on these core details and ignore anything else:\n"
+    "• The main purpose or highlight of the recipe (e.g. unique style, health aspect, or target audience).\n"
+    "• Key nutrition information if available (e.g. calories, protein, fat, etc.).\n"
+    "• Number of servings.\n"
+    "• Preparation or cooking time, only if it is concise and clear.\n"
+    "• Up to 3-5 main highlights, e.g. if the dish is vegetarian, gluten-free, quick, high protein, etc.\n"
+    "\n"
+    "STRICTLY EXCLUDE the following from your summary:\n"
+    "• Cost, price, or any financial details.\n"
+    "• Spoonacular score, likes, popularity metrics, or other ratings.\n"
+    "• External website links or references to other recipes.\n"
+    "• Generic marketing phrases or irrelevant filler text.\n"
+    "\n"
+    "The summary should be concise (max 5 sentences), objective, and well-formatted for display in a recipe app UI.\n"
+    "Do not include any HTML tags in your output; return only clean text.\n"
+    "\n"
+    "Here is the recipe HTML summary to process:\n"
+    "{html_summary}\n"
+)

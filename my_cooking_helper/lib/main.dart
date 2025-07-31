@@ -4,17 +4,19 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
-import 'package:my_cooking_helper/features/cook/cook.dart';
-import 'package:my_cooking_helper/features/cook/search_recipe.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'config/firebase_options.dart';
+import 'models/recipe_detail.dart';
+// import 'models/recipe.dart';
 import 'theme/theme_provider.dart';  
 import 'theme/app_theme.dart';
 import 'features/smart_scan/scan_food.dart';
 import 'features/smart_scan/scan_receipt.dart';
 import 'features/smart_scan/smart_scan.dart';
+import 'features/smart_scan/manual_input.dart';
+import 'features/smart_scan/review_screen.dart';
 import 'features/home/home.dart';
 import 'features/onboarding/onboarding_page.dart';
 import 'features/auth/sign_in_page.dart';
@@ -22,9 +24,11 @@ import 'features/preferences/preferences_flow.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/settings/settings.dart'; 
 import 'features/cook/recipe_page.dart';
+import 'features/cook/cook.dart';
+import 'features/cook/recipe_history.dart';
+import 'features/cook/recipe_search.dart';
 import 'features/inventory/inventory.dart';
-import 'features/smart_scan/manual_input.dart';
-import 'features/smart_scan/review_screen.dart';
+import 'features/cook/recipe_favourites.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -98,8 +102,30 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/recipePage',
-      builder: (context, state) => const RecipePage(),
+      builder: (context, state) {
+        final extra = state.extra;
+        if (extra is RecipeDetail) {
+          // fallback for older navigation
+          return RecipePage(recipe: extra, fromHistory: false);
+        } else if (extra is Map<String, dynamic>) {
+          return RecipePage(
+            recipe: extra['recipe'] as RecipeDetail,
+            fromHistory: extra['fromHistory'] == true,
+          );
+        } else {
+          // error fallback
+          return Scaffold(body: Center(child: Text('Invalid data')));
+        }
+      },
     ),
+    GoRoute(
+      path: '/history',
+      builder: (context, state) => const RecipeHistoryPage(),
+    ),
+    GoRoute(
+      path: '/favourites',
+      builder: (context, state) => const RecipeFavouritesPage(),
+    )
   ],
 );
 
