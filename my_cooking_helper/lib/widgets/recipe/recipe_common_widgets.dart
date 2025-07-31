@@ -2,11 +2,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '/utils/recipe_webview_dialog.dart';
+// import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+// import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+// import 'package:glass/glass.dart';
+// import '/utils/recipe_webview_dialog.dart';
 import '/models/recipe.dart';
+// import '/models/recipe_detail.dart';
 import '/utils/colors.dart';
 
-/// Recipe Hero Image Card
+// Recipe Image Card
 class RecipeImageCard extends StatelessWidget {
   final String imageUrl;
   final bool isDark;
@@ -96,7 +100,7 @@ class RecipeImageCard extends StatelessWidget {
   }
 }
 
-/// Title Widget
+/// Title Widget, 2 file servi sa
 class RecipeTitle extends StatelessWidget {
   final String title;
   final double fontSize;
@@ -117,7 +121,7 @@ class RecipeTitle extends StatelessWidget {
   }
 }
 
-/// InfoChip for dish type/servings
+// InfoChip for dish type/servings 2 file servi sa
 class InfoChip extends StatelessWidget {
   final IconData icon;
   final String text;
@@ -177,7 +181,7 @@ class InfoChip extends StatelessWidget {
   }
 }
 
-/// Section Header Widget
+// Section Header Widget , shared 2
 class SectionHeader extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -306,14 +310,14 @@ class TimeCard extends StatelessWidget {
               )
             : LinearGradient(
                 colors: isDark
-                    ? [Colors.grey[800]!.withOpacity(0.5), Colors.grey[750]!.withOpacity(0.3)]
+                    ? [Colors.grey[800]!.withOpacity(0.5), Colors.grey[700]!.withOpacity(0.3)]
                     : [Colors.grey[100]!, Colors.grey[50]!],
               ),
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: isHighlighted
               ? (isDark ? Colors.deepPurple[400]! : Colors.deepPurple[300]!)
-              : (isDark ? Colors.grey[600]!.withOpacity(0.3) : Colors.grey[200]!),
+              : (isDark ? Colors.grey[600]!.withOpacity(0.3) : Colors.grey[500]!),
         ),
         boxShadow: [
           BoxShadow(
@@ -435,44 +439,158 @@ class InstructionsList extends StatelessWidget {
       children: instructions.asMap().entries.map((entry) {
         final idx = entry.key;
         final step = entry.value;
+
+        // --- Enhanced type detection ---
+        String stepText = '';
+        int? number;
+        List<dynamic> ingredients = [];
+        List<dynamic> equipment = [];
+        Map<String, dynamic>? length;
+
+        if (step is Map && step.containsKey('step')) {
+          // Map from API
+          stepText = step['step'] ?? '';
+          number = step['number'];
+          ingredients = step['ingredients'] ?? [];
+          equipment = step['equipment'] ?? [];
+          length = step['length'] is Map ? step['length'] : null;
+        } else if (step.runtimeType.toString().contains('InstructionStep')) {
+          // Likely a model object, use reflection-like access
+          try {
+            stepText = step.step ?? '';
+            number = step.number;
+            ingredients = step.ingredients ?? [];
+            equipment = step.equipment ?? [];
+            length = step.length as Map<String, dynamic>?;
+          } catch (_) {
+            stepText = step.toString();
+          }
+        } else if (step is String) {
+          stepText = step;
+        } else {
+          // Fallback
+          stepText = step.toString();
+        }
+
         return AnimatedContainer(
-          duration: Duration(milliseconds: 180 + idx * 60),
+          duration: Duration(milliseconds: 200 + idx * 70),
           curve: Curves.easeOutBack,
-          margin: EdgeInsets.only(bottom: 13.h),
-          padding: EdgeInsets.all(14.w),
+          margin: EdgeInsets.only(bottom: 14),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15.r),
-            color: isDark ? Colors.deepPurple[800]?.withOpacity(0.15) : Colors.deepPurple.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            color: isDark
+                ? Colors.deepPurple[800]?.withOpacity(0.15)
+                : Colors.deepPurple.withOpacity(0.07),
             border: Border.all(
-              color: isDark 
-              ? Colors.deepPurple[300]!.withOpacity(0.7) 
-              : Colors.deepPurple.withOpacity(0.7),
+              color: isDark
+                  ? Colors.deepPurple[300]!.withOpacity(0.7)
+                  : Colors.deepPurple.withOpacity(0.18),
+              width: 1.2,
             ),
           ),
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                backgroundColor: isDark ? Colors.deepPurple[500] : Colors.deepPurple[300],
-                radius: 16.w,
-                child: Text("${idx + 1}",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14.sp,
-                    )),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    backgroundColor: isDark ? Colors.deepPurple[400] : Colors.deepPurple[200],
+                    radius: 18,
+                    child: Text(
+                      (number ?? idx + 1).toString(),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      stepText,
+                      style: TextStyle(
+                        fontSize: 15.5,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        height: 1.6,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Text(
-                  step,
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    color: textColor(context),
-                    height: 1.5,
+              if (ingredients.isNotEmpty) ...[
+                SizedBox(height: 10),
+                Wrap(
+                  spacing: 9,
+                  children: ingredients.map<Widget>((ing) {
+                    final name = ing['name'] ?? ing.name ?? '';
+                    final imgUrl = ing['image'] != null
+                        ? (ing['image'] is String && ing['image'].startsWith('http')
+                            ? ing['image']
+                            : 'https://spoonacular.com/cdn/ingredients_100x100/${ing['image']}')
+                        : null;
+                    return Chip(
+                      avatar: imgUrl != null
+                          ? CircleAvatar(
+                              backgroundImage: NetworkImage(imgUrl),
+                              backgroundColor: Colors.transparent,
+                            )
+                          : null,
+                      label: Text(name),
+                      backgroundColor: isDark
+                          ? Colors.deepPurple[900]?.withOpacity(0.18)
+                          : Colors.deepPurple.withOpacity(0.11),
+                    );
+                  }).toList(),
+                ),
+              ],
+              if (equipment.isNotEmpty) ...[
+                SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: equipment.map<Widget>((eq) {
+                    final name = eq['name'] ?? eq.name ?? '';
+                    final imgUrl = eq['image'] != null
+                        ? (eq['image'] is String && eq['image'].startsWith('http')
+                            ? eq['image']
+                            : 'https://spoonacular.com/cdn/equipment_100x100/${eq['image']}')
+                        : null;
+                    return Chip(
+                      avatar: imgUrl != null
+                          ? CircleAvatar(
+                              backgroundImage: NetworkImage(imgUrl),
+                              backgroundColor: Colors.transparent,
+                            )
+                          : null,
+                      label: Text(name),
+                      backgroundColor: isDark
+                          ? Colors.blueGrey[900]?.withOpacity(0.18)
+                          : Colors.blueGrey.withOpacity(0.13),
+                    );
+                  }).toList(),
+                ),
+              ],
+              if (length != null && (length['number'] != null && length['unit'] != null))
+                Padding(
+                  padding: EdgeInsets.only(top: 10),
+                  child: Row(
+                    children: [
+                      Icon(Icons.timer_rounded, size: 18, color: isDark ? Colors.orange[300] : Colors.orange[700]),
+                      SizedBox(width: 6),
+                      Text(
+                        '${length['number']} ${length['unit']}',
+                        style: TextStyle(
+                          color: isDark ? Colors.orange[200] : Colors.orange[800],
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
             ],
           ),
         );
@@ -511,22 +629,33 @@ class EquipmentChips extends StatelessWidget {
 }
 
 // Nutrition Section (reuse your previous NutritionSection)
-class NutritionSection extends StatelessWidget {
+class NutritionSection extends StatefulWidget {
   final Map<String, dynamic> nutrition;
 
-  const NutritionSection({Key? key, required this.nutrition}) : super(key: key);
+  const NutritionSection({
+    Key? key,
+    required this.nutrition,
+  }) : super(key: key);
+
+  @override
+  State<NutritionSection> createState() => _NutritionSectionState();
+}
+
+class _NutritionSectionState extends State<NutritionSection> {
+  bool expanded = false; // Always start collapsed
 
   @override
   Widget build(BuildContext context) {
-    final nutrients = nutrition['nutrients'] as List<dynamic>? ?? [];
+    final nutrients = widget.nutrition['nutrients'] as List<dynamic>? ?? [];
     if (nutrients.isEmpty) return const SizedBox.shrink();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final important = [
       'Calories', 'Protein', 'Carbohydrates', 'Fat', 'Saturated Fat', 'Fiber', 'Sugar', 'Sodium'
     ];
-
-    final filtered = nutrients.where((n) => important.contains(n['name'])).toList();
+    final displayNutrientsDefault = nutrients.where((n) => important.contains(n['name'])).toList();
+    final displayNutrients = expanded ? nutrients : displayNutrientsDefault;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -538,8 +667,8 @@ class NutritionSection extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isDark
-                      ? [Colors.orange[600]!, Colors.orange[700]!]
-                      : [Colors.orange[600]!, Colors.orange[700]!],
+                      ? [Colors.orange.shade600, Colors.orange.shade700]
+                      : [Colors.orange.shade600, Colors.orange.shade700],
                 ),
                 borderRadius: BorderRadius.circular(12.r),
               ),
@@ -549,7 +678,7 @@ class NutritionSection extends StatelessWidget {
                 size: 18.sp,
               ),
             ),
-            SizedBox(width: 13.w),
+            SizedBox(width: 15.w),
             Text(
               'Nutrition',
               style: TextStyle(
@@ -561,9 +690,9 @@ class NutritionSection extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: 14.h),
+        SizedBox(height: 15.h),
         Container(
-          padding: EdgeInsets.all(16.w),
+          padding: EdgeInsets.all(20.w),
           decoration: BoxDecoration(
             color: isDark ? Colors.grey[850]?.withOpacity(0.47) : Colors.orange[50],
             borderRadius: BorderRadius.circular(16.r),
@@ -573,59 +702,80 @@ class NutritionSection extends StatelessWidget {
             ),
           ),
           child: Column(
-            children: filtered.asMap().entries.map((entry) {
-              final index = entry.key;
-              final nutrient = entry.value;
-              return Container(
-                margin: EdgeInsets.only(
-                  bottom: index < filtered.length - 1 ? 10.h : 0,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${nutrient['name'] ?? ''}',
-                      style: TextStyle(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w600,
-                        color: textColor(context),
-                      ),
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.orange[800]?.withOpacity(0.32) : Colors.orange[100],
-                        borderRadius: BorderRadius.circular(11.r),
-                      ),
-                      child: Text(
-                        '${nutrient['amount']?.toStringAsFixed(0) ?? ''} ${nutrient['unit'] ?? ''}',
+            children: [
+              ...displayNutrients.asMap().entries.map((entry) {
+                final index = entry.key;
+                final nutrient = entry.value;
+                return Container(
+                  margin: EdgeInsets.only(
+                    bottom: index < displayNutrients.length - 1 ? 10.h : 0,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${nutrient['name'] ?? ''}',
                         style: TextStyle(
-                          fontSize: 13.sp,
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.w600,
+                          color: textColor(context),
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.orange[800]?.withOpacity(0.32) : Colors.orange[100],
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        child: Text(
+                          '${_safeAmount(nutrient['amount'])} ${nutrient['unit'] ?? ''}',
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.orange[300] : Colors.orange[800],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              if (nutrients.length > displayNutrientsDefault.length)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      setState(() {
+                        expanded = !expanded;
+                      });
+                    },
+                    child: Center(
+                      child: Text(
+                        expanded ? 'Show Less' : 'Show More',
+                        style: TextStyle(
                           color: isDark ? Colors.orange[300] : Colors.orange[800],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15.sp,
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              );
-            }).toList(),
+            ],
           ),
         ),
       ],
     );
   }
+
+  String _safeAmount(dynamic amount) {
+    if (amount == null) return '';
+    if (amount is num) return amount.toStringAsFixed(0);
+    return amount.toString();
+  }
 }
 
 
-/// -- In-app WebView Dialog Helper -- ///
-void showRecipeWebView(BuildContext context, String url) {
-  showDialog(
-    context: context,
-    barrierColor: Colors.black.withOpacity(0.12),
-    builder: (context) => RecipeWebViewDialog(url: url),
-  );
-}
 
 /// -- Website Link Card Widget -- ///
 class WebsiteLinkCard extends StatelessWidget {
@@ -758,4 +908,38 @@ class HttpWarningCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class DietChips extends StatelessWidget {
+  final bool? vegetarian, vegan, glutenFree, dairyFree;
+  final List<String> diets;
+  final bool isDark;
+
+  const DietChips({
+    super.key,
+    required this.vegetarian,
+    required this.vegan,
+    required this.glutenFree,
+    required this.dairyFree,
+    required this.diets,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final chips = <Widget>[];
+    if (vegetarian == true) chips.add(_chip("Vegetarian"));
+    if (vegan == true) chips.add(_chip("Vegan"));
+    if (glutenFree == true) chips.add(_chip("Gluten Free"));
+    if (dairyFree == true) chips.add(_chip("Dairy Free"));
+    for (final diet in diets) {
+      chips.add(_chip(diet));
+    }
+    return Wrap(spacing: 8, children: chips);
+  }
+
+  Widget _chip(String label) => Chip(
+    label: Text(label),
+    backgroundColor: isDark ? Colors.green[900] : Colors.green[50],
+  );
 }

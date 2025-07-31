@@ -1,8 +1,12 @@
+// ignore_for_file: deprecated_member_use
+
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:glass/glass.dart';
 import '/utils/snackbar.dart';
 
 class SignInPage extends StatefulWidget {
@@ -12,41 +16,7 @@ class SignInPage extends StatefulWidget {
   State<SignInPage> createState() => _SignInPageState();
 }
 
-class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-  int _gradientIndex = 0;
-
-  final List<List<Color>> _gradients = [
-    [Color(0xFFB8E1FC), Color(0xFFE5F1FA)],
-    [Color(0xFFD0F2C7), Color(0xFFE5F1FA)],
-    [Color(0xFFF9D4C1), Color(0xFFE5F1FA)],
-    [Color(0xFFACE0F9), Color(0xFFD5E8FC)],
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 6),
-      vsync: this,
-    )..repeat(reverse: true);
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
-        setState(() {
-          _gradientIndex = (_gradientIndex + 1) % _gradients.length;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
+class _SignInPageState extends State<SignInPage> {
   Future<void> _signInWithGoogle(BuildContext context) async {
     try {
       // Always sign out any previous Google session.
@@ -70,7 +40,7 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
       context.go('/splash');
     } catch (e) {
       SnackbarUtils.alert(
-        context, 
+        context,
         "Sign in failed!",
         typeInfo: TypeInfo.error,
         position: MessagePosition.top,
@@ -79,143 +49,192 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
     }
   }
 
+  Widget _buildGlassButton({
+    required String text,
+    required String iconPath,
+    required VoidCallback onPressed,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        height: 52.h,
+        margin: EdgeInsets.symmetric(vertical: 8.h),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16.r),
+          gradient: LinearGradient(
+            colors: [Colors.white.withOpacity(0.10), Colors.blueGrey.withOpacity(0.25)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: Colors.black.withOpacity(0.15),
+            width: 1.2,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16.r),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(iconPath, width: 22.w, height: 22.h),
+                SizedBox(width: 10.w),
+                Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final nextGradient = _gradients[(_gradientIndex + 1) % _gradients.length];
-
     return Scaffold(
-      body: AnimatedBuilder(
-        animation: _animation,
-        builder: (context, child) {
-          return Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: List.generate(
-                  _gradients[_gradientIndex].length,
-                  (i) => Color.lerp(
-                    _gradients[_gradientIndex][i],
-                    nextGradient[i],
-                    _animation.value,
-                  )!,
-                ),
-              ),
-            ),
-            child: child,
-          );
-        },
-        child: SafeArea(
+      //backgroundColor: const Color(0xFF1F1B2E), // Deep base for contrast
+      body: SafeArea(
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              SizedBox(height: 56.h),
-              Text(
-                'My Cooking Helper',
-                style: TextStyle(
-                  fontFamily: 'DancingScript',
-                  fontSize: 30.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 26.h),
-              Image.asset(
-                "assets/images/loginSignup/signup.png",
-                height: 190.h,
-                fit: BoxFit.contain,
-              ),
-              const Spacer(),
-              Text(
-                'Login or Sign up to continue\nto My Cooking Helper',
-                style: TextStyle(
-                  fontSize: 17.sp,
-                  color: Colors.black,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 36.h),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0.w),
-                child: Column(
-                  children: [
-                    ElevatedButton.icon(
-                      icon: Image.asset(
-                        "assets/images/loginSignup/google_logo.png",
-                        width: 24.w,
-                        height: 24.h,
-                      ),
-                      label: Text(
-                        'Continue with Google',
-                        style: TextStyle(fontSize: 16.sp, color: Colors.black),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        minimumSize: Size(double.infinity, 45.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14.r),
-                        ),
-                        elevation: 1,
-                        side: const BorderSide(color: Color(0xFFE0E0E0)),
-                      ),
-                      onPressed: () => _signInWithGoogle(context),
+              SizedBox(height: 30.h),
+              Column(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24.r),
+                      //color: Colors.blueGrey.withOpacity(0.05),
+                      border: Border.all(color: Colors.white.withOpacity(0.3)),
                     ),
-                    SizedBox(height: 16.h),
-                    ElevatedButton.icon(
-                      icon: Image.asset(
-                        "assets/images/loginSignup/apple_logo.png",
-                        width: 24.w,
-                        height: 24.h,
+                    child: Text(
+                      'My Cooking Helper',
+                      style: TextStyle(
+                        fontFamily: 'DancingScript',
+                        fontSize: 32.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
                       ),
-                      label: Text(
-                        'Continue with Apple',
-                        style: TextStyle(fontSize: 16.sp, color: Colors.black),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        minimumSize: Size(double.infinity, 45.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14.r),
-                        ),
-                        elevation: 1,
-                        side: const BorderSide(color: Color(0xFFE0E0E0)),
-                      ),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Apple Sign-In not yet implemented.'),
-                          ),
-                        );
-                      },
                     ),
-                  ],
-                ),
+                  ).asGlass(
+                    blurX: 10,
+                    blurY: 10,
+                    tintColor: Colors.blueGrey,
+                    clipBorderRadius: BorderRadius.circular(24.r),
+                  ),
+                  SizedBox(height: 24.h),
+                  Image.asset(
+                    "assets/images/loginSignup/signup.png",
+                    height: 160.h,
+                    fit: BoxFit.contain,
+                  ),
+                ],
               ),
-              SizedBox(height: 25.h),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 22.0.w),
-                child: Text.rich(
-                  TextSpan(
-                    text: 'By clicking continue, you agree to our ',
+              Container(
+                padding: EdgeInsets.all(24.w),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24.r),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.blueGrey.withOpacity(0.4),
+                      Colors.black.withOpacity(0.1),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24.r),
+                  child: Column(
                     children: [
-                      TextSpan(
-                        text: 'Terms of Service',
-                        style: TextStyle(decoration: TextDecoration.underline),
+                      Text(
+                        'Welcome Back',
+                        style: TextStyle(
+                          fontSize: 22.sp,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                      const TextSpan(text: ' and '),
-                      TextSpan(
-                        text: 'Privacy Policy',
-                        style: TextStyle(decoration: TextDecoration.underline),
+                      SizedBox(height: 6.h),
+                      Text(
+                        'Sign in to continue your culinary journey',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 24.h),
+                      _buildGlassButton(
+                        text: 'Continue with Google',
+                        iconPath: "assets/images/loginSignup/google_logo.png",
+                        onPressed: () => _signInWithGoogle(context),
+                      ),
+                      _buildGlassButton(
+                        text: 'Continue with Apple',
+                        iconPath: "assets/images/loginSignup/apple_logo.png",
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                '<<< Apple Sign-In not yet implemented. >>>', 
+                                textAlign: TextAlign.center, 
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      SizedBox(height: 16.h),
+                      Container(
+                        padding: EdgeInsets.all(12.w),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        child: Text.rich(
+                          TextSpan(
+                            text: 'By continuing, you agree to our ',
+                            children: [
+                              TextSpan(
+                                text: 'Terms of Service',
+                                style: TextStyle(
+                                  decoration: TextDecoration.underline,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const TextSpan(text: ' and '),
+                              TextSpan(
+                                text: 'Privacy Policy',
+                                style: TextStyle(
+                                  decoration: TextDecoration.underline,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.sp,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ],
                   ),
-                  style: TextStyle(color: Colors.grey[700], fontSize: 12.sp),
-                  textAlign: TextAlign.center,
                 ),
               ),
-              SizedBox(height: 18.h),
+              SizedBox(height: 20.h),
             ],
           ),
         ),
