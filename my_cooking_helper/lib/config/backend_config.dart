@@ -6,8 +6,8 @@ final String port = dotenv.env['PORT'] ?? '';
 final String serverUrl = dotenv.env['SERVER_URL'] ?? '';
 
 //to be uncommented based on use 
-//String get backendApiUrl => serverUrl;
-String get backendApiUrl => "http://$ip:$port";
+String get backendApiUrl => serverUrl;
+//String get backendApiUrl => "http://$ip:$port";
 
 //Gemini API endpoints
 String get geminiScanReceipt => "$backendApiUrl/receipt/scanReceipt";
