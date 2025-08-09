@@ -29,6 +29,7 @@ import 'features/cook/recipe_history.dart';
 import 'features/cook/recipe_search.dart';
 import 'features/inventory/inventory.dart';
 import 'features/cook/recipe_favourites.dart';
+import 'features/meal_planner/planner.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -125,7 +126,11 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/favourites',
       builder: (context, state) => const RecipeFavouritesPage(),
-    )
+    ),
+    GoRoute(
+      path: '/planner',
+      builder: (context, state) => const PlannerScreen(),
+    ),
   ],
 );
 

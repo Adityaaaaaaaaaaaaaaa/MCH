@@ -14,4 +14,5 @@ String get geminiScanReceipt => "$backendApiUrl/receipt/scanReceipt";
 String get geminiScanFood => "$backendApiUrl/food/scanFood";
 String get spoonacularRecipeSearch => "$backendApiUrl/recipes/find/searchByIngredients";
 String get spoonacularRecipeVideos => "$backendApiUrl/recipes/search/searchVideosAndSummary";
+String get spoonacularMealplanner => "$backendApiUrl/mealPlanner/weekPlanner";
 
