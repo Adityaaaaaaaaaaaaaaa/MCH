@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:glass/glass.dart';
-import 'package:go_router/go_router.dart';
+//import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
@@ -25,6 +25,9 @@ class PlannerScreen extends ConsumerStatefulWidget {
 
 class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   bool loading = false;
+  String? _lastPlanId;
+  String? _lastPlanPath; // users/{uid}/mealPlans/{planId}
+  bool _lastSaved = false;
 
   Future<void> _generateMealPlan(BuildContext context) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -40,14 +43,29 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       final svc = ref.read(mealPlannerServiceProvider);
 
       print('\x1B[34m[DEBUG] PlannerScreen -> generating plan for uid=$uid\x1B[0m');
-      await svc.generateWeeklyPlan(userId: uid);
+      final result = await svc.generateWeeklyPlan(userId: uid);
 
-      // We’ll design the results view later.
+      // Expect: { planId, path, saved, data: {...} }
+      final planId = result['planId'] as String?;
+      final path   = result['path'] as String?;
+      final saved  = (result['saved'] as bool?) ?? true;
+
+      setState(() {
+        _lastPlanId  = planId;
+        _lastPlanPath = path;
+        _lastSaved = saved;
+      });
+
+      print('\x1B[34m[DEBUG] PlannerScreen <- planId=$_lastPlanId, path=$_lastPlanPath, saved=$_lastSaved\x1B[0m');
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Meal plan request sent.')),
+        SnackBar(content: Text(saved
+            ? 'Meal plan saved to Firestore: $_lastPlanId'
+            : 'Meal plan generated (not saved — Firestore not configured).')),
       );
-      // Example: navigate to a placeholder route later
-      // context.push('/mealPlanResults');
+
+      // (Later) navigate to a “week view” that reads Firestore:
+      // context.push('/mealPlan/${_lastPlanId}');
     } catch (e) {
       print('\x1B[34m[DEBUG] PlannerScreen error: $e\x1B[0m');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -191,6 +209,28 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                                 ),
                               ),
                             ),
+                          if (_lastPlanId != null) ...[
+                        SizedBox(height: 12.h),
+                        Text(
+                          _lastSaved
+                            ? 'Saved in Firestore as: ${_lastPlanId!}'
+                            : 'Generated (not saved)',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: textColor(context).withOpacity(0.65),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 8.h),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            // TODO: navigate to your week view screen (we’ll build later)
+                            // context.push('/mealPlan/${_lastPlanId}');
+                            print('\x1B[34m[DEBUG] Open plan at $_lastPlanPath\x1B[0m');
+                          },
+                          icon: const Icon(Icons.calendar_view_week_rounded),
+                          label: const Text('Open This Week’s Plan'),
+                        ),
+                      ]
                     ],
                   ),
                 ).asGlass(

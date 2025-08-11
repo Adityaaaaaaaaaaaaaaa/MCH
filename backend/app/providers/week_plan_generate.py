@@ -62,7 +62,8 @@ def generate_week_plan(
     resp = requests.get(url, headers=_headers(), params=params, timeout=timeout)
     _print_rate_limits(resp)
     
-    print(f"{BLUE}[DEBUG] Raw response text:\n{resp.text[:1000]}...[trimmed]{RESET}")
+    #print(f"{BLUE}[DEBUG] Raw response text:\n{resp.text[:1000]}...[trimmed]{RESET}")
+    print(f"{BLUE}[DEBUG] Raw response text:\n{resp.text}{RESET}")
 
     if resp.status_code != 200:
         print(f"{BLUE}[DEBUG] Spoonacular error {resp.status_code}: {resp.text[:400]}...[trimmed]{RESET}")
