@@ -1,90 +1,171 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:glass/glass.dart';
-//import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:glass/glass.dart';
+import 'package:go_router/go_router.dart';
+import '/models/meal_plan.dart';                  // MealPlanWeekLite, MealLite
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
-// ignore: unused_import
-import '/widgets/navigation/nav.dart';
 import '/services/meal_planner_service.dart';
+import '/widgets/meal_planner_widgets.dart';
 
-final mealPlannerServiceProvider = Provider<MealPlannerService>((ref) {
-  return MealPlannerService();
+// DI
+final mealPlannerServiceProvider =
+    Provider<MealPlannerService>((ref) => MealPlannerService());
+
+// Emits (weekLite, progress[0..1])
+final weekWithProgressProvider =
+    StreamProvider.family<(MealPlanWeekLite, double), String>((ref, userId) {
+  final svc = ref.watch(mealPlannerServiceProvider);
+  return svc.streamWeekWithProgress(userId: userId);
 });
-
 
 class PlannerScreen extends ConsumerStatefulWidget {
   const PlannerScreen({super.key});
-
   @override
   ConsumerState<PlannerScreen> createState() => _PlannerScreenState();
 }
 
 class _PlannerScreenState extends ConsumerState<PlannerScreen> {
-  bool loading = false;
-  String? _lastPlanId;
-  String? _lastPlanPath; // users/{uid}/mealPlans/{planId}
-  bool _lastSaved = false;
+  bool generating = false;
 
-  Future<void> _generateMealPlan(BuildContext context) async {
+  Future<void> _generateNow() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You need to be signed in to generate a meal plan.')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Please sign in.')));
       return;
     }
+    setState(() => generating = true);
+    try {
+      await ref.read(mealPlannerServiceProvider).generateWeeklyPlan(userId: uid);
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed: $e')));
+    } finally {
+      setState(() => generating = false);
+    }
+  }
 
-    setState(() => loading = true);
+  Future<void> _scrapPlan(String uid, String planId) async {
+    await ref.read(mealPlannerServiceProvider).deletePlan(userId: uid, planId: planId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Plan deleted.')));
+    }
+  }
+
+  Future<void> _regeneratePlan(String uid, String planId) async {
+    setState(() => generating = true);
+    try {
+      await ref.read(mealPlannerServiceProvider).regenerateWeek(userId: uid, planId: planId);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+    } finally {
+      setState(() => generating = false);
+    }
+  }
+
+  // Open full detail: pull from Firestore day doc and navigate
+  Future<void> _openRecipe({
+    required String recipeId,
+    required String? title,
+    required int dayIndex,
+    required String mealKey, // 'breakfast' | 'lunch' | 'dinner'
+  }) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || !mounted) return;
+
+    // Get the current week planId from the stream you already have
+    final tuple = ref.read(weekWithProgressProvider(uid)).valueOrNull;
+    if (tuple == null) return;
+    final planId = tuple.$1.planId;
+
+    // Optional: quick loading overlay
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
     try {
       final svc = ref.read(mealPlannerServiceProvider);
-
-      print('\x1B[34m[DEBUG] PlannerScreen -> generating plan for uid=$uid\x1B[0m');
-      final result = await svc.generateWeeklyPlan(userId: uid);
-
-      // Expect: { planId, path, saved, data: {...} }
-      final planId = result['planId'] as String?;
-      final path   = result['path'] as String?;
-      final saved  = (result['saved'] as bool?) ?? true;
-
-      setState(() {
-        _lastPlanId  = planId;
-        _lastPlanPath = path;
-        _lastSaved = saved;
-      });
-
-      print('\x1B[34m[DEBUG] PlannerScreen <- planId=$_lastPlanId, path=$_lastPlanPath, saved=$_lastSaved\x1B[0m');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(saved
-            ? 'Meal plan saved to Firestore: $_lastPlanId'
-            : 'Meal plan generated (not saved — Firestore not configured).')),
+      final detail = await svc.fetchRecipeForDayMeal(
+        userId: uid,
+        planId: planId,
+        dayIndex: dayIndex,
+        mealKey: mealKey,
       );
 
-      // (Later) navigate to a “week view” that reads Firestore:
-      // context.push('/mealPlan/${_lastPlanId}');
+      if (!mounted) return;
+      Navigator.of(context).pop(); // close loading
+
+      if (detail == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Recipe not found')),
+        );
+        return;
+      }
+
+      // Your GoRouter route accepts RecipeDetail directly (first branch in your screenshot).
+      context.push('/recipePage', extra: detail);
+
+      // If you prefer the map form your route also supports:
+      // context.push('/recipePage', extra: {'recipe': detail, 'fromHistory': false});
     } catch (e) {
-      print('\x1B[34m[DEBUG] PlannerScreen error: $e\x1B[0m');
+      if (!mounted) return;
+      Navigator.of(context).pop(); // close loading if open
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to generate meal plan: $e')),
+        SnackBar(content: Text('Failed to open recipe: $e')),
       );
-    } finally {
-      setState(() => loading = false);
     }
+  }
+
+  void _showChangeDaySheet(int dayIndex) {
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Change ${_dayName(dayIndex)}', style: theme.textTheme.titleMedium),
+                SizedBox(height: 12.h),
+                ListTile(
+                  leading: const Icon(Icons.shuffle_rounded),
+                  title: const Text('Swap this day'),
+                  subtitle: const Text('Generate new breakfast, lunch and dinner for this day'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    // (Optional) call your swapDay endpoint when ready
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Swap day ${_dayName(dayIndex)}: coming soon')),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
       backgroundColor: bgColor(context),
       extendBodyBehindAppBar: true,
       extendBody: true,
-      drawer: CustomDrawer(),
+      drawer: const CustomDrawer(),
       appBar: CustomAppBar(
         title: "Meal Planner",
         showMenu: false,
@@ -92,181 +173,278 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         borderRadius: 26.r,
         topPadding: 40.h,
       ),
-      body: Stack(
-        children: [
-          // --- Background aesthetics (kept consistent) ---
-          Positioned(
-            top: 40,
-            right: 60,
-            child: Transform.rotate(
-              angle: -0.6,
-              child: Image.asset(
-                'assets/images/home/salad.png',
-                width: 180,
-                height: 180,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 180,
-            left: 40,
-            child: Transform.rotate(
-              angle: 0.8,
-              child: Image.asset(
-                'assets/images/home/curry.png',
-                width: 140,
-                height: 140,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(height: 110.h),
-
-                // Headline
-                Text(
-                  "Plan your week's meals!",
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: textColor(context),
-                  ),
-                ),
-                SizedBox(height: 10.h),
-                Text(
-                  'We will use your preferences (diet & allergies) to generate a 7‑day plan.',
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(24.w, 110.h, 24.w, 24.h),
+        child: uid == null
+            ? Center(
+                child: Text(
+                  'Sign in to generate and view your weekly plan.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: textColor(context).withOpacity(0.7),
                   ),
                 ),
-
-                SizedBox(height: 36.h),
-
-                // CTA card (glass)
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 22.h),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24.r),
-                    border: Border.all(
-                      color: textColor(context).withOpacity(0.18),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(Icons.event_note_rounded,
-                          size: 34.sp, color: theme.colorScheme.primary),
-                      SizedBox(height: 14.h),
-                      Text(
-                        'Generate Weekly Meal Plan',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: textColor(context),
+              )
+            : Consumer(
+                builder: (context, ref, _) {
+                  final asyncWP = ref.watch(weekWithProgressProvider(uid));
+                  return asyncWP.when(
+                      loading: () => _WeekHeaderCard(
+                        title: 'Weekly Meal Plan',
+                        subtitle: 'Breakfast • Lunch • Dinner for 7 days',
+                        primaryAction: ElevatedButton.icon(
+                          onPressed: generating ? null : _generateNow,
+                          icon: const Icon(Icons.auto_awesome_rounded),
+                          label: const Text('Generate'),
                         ),
+                        // no progress bar while loading
                       ),
-                      SizedBox(height: 6.h),
-                      Text(
-                        'One tap to create 21 meals (breakfast, lunch, dinner) for the next 7 days.',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: textColor(context).withOpacity(0.65),
-                        ),
-                      ),
-                      SizedBox(height: 18.h),
-                      loading
-                          ? Padding(
-                              padding: EdgeInsets.symmetric(vertical: 6.h),
-                              child: CircularProgressIndicator(
-                                color: theme.colorScheme.primary,
-                              ),
-                            )
-                          : ElevatedButton.icon(
-                              icon: const Icon(Icons.auto_awesome_rounded),
-                              style: ElevatedButton.styleFrom(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 28.w, vertical: 14.h),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18.r),
-                                ),
-                                backgroundColor: theme.colorScheme.primary,
-                                foregroundColor: Colors.white,
-                                elevation: 8,
-                              ),
-                              onPressed: () => _generateMealPlan(context),
-                              label: Text(
-                                'Generate Now',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16.sp,
-                                ),
+                    error: (err, __) => Center(child: Text('Error: $err')),
+                    data: (wp) {
+                      final week = wp.$1;
+                      final progress = wp.$2;
+                      final hasAny = week.days.isNotEmpty;
+                      final range = ref.read(mealPlannerServiceProvider).weekRangeLabel(week.planId);
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _WeekHeaderCard(
+                            title: 'Weekly Meal Plan',
+                            subtitle: range,
+                            progress: hasAny ? progress : null,
+                            leadingHighlight: true,
+                            primaryAction: hasAny
+                                ? ElevatedButton.icon(
+                                    onPressed: generating
+                                        ? null
+                                        : () => _regeneratePlan(uid, week.planId),
+                                    icon: const Icon(Icons.refresh_rounded),
+                                    label: const Text('Regenerate'),
+                                  )
+                                : ElevatedButton.icon(
+                                    onPressed: generating ? null : _generateNow,
+                                    icon: const Icon(Icons.auto_awesome_rounded),
+                                    label: const Text('Generate'),
+                                  ),
+                            secondaryAction: hasAny
+                                ? OutlinedButton.icon(
+                                    onPressed: () => _scrapPlan(uid, week.planId),
+                                    icon: const Icon(Icons.delete_outline_rounded),
+                                    label: const Text('Scrap plan'),
+                                  )
+                                : null,
+                          ),
+                          SizedBox(height: 12.h),
+                          if (hasAny)
+                            Expanded(
+                              child: ListView.separated(
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: week.days.length,
+                                separatorBuilder: (_, __) => SizedBox(height: 10.h),
+                                itemBuilder: (context, i) {
+                                  final d = week.days[i];
+                                  final dateLabel = _dateFor(week.planId, d.dayIndex);
+                                  final isToday = _isToday(week.planId, d.dayIndex);
+
+                                  final cells = <MealCellLite>[
+                                    MealCellLite(
+                                      label: 'Breakfast',
+                                      id: d.breakfast?.id,
+                                      title: d.breakfast?.title,
+                                      image: d.breakfast?.image,
+                                      onTap: d.breakfast == null
+                                          ? null
+                                          : () => _openRecipe(
+                                                recipeId: d.breakfast!.id,
+                                                title: d.breakfast!.title,
+                                                dayIndex: d.dayIndex,
+                                                mealKey: 'breakfast',
+                                              ),
+                                    ),
+                                    MealCellLite(
+                                      label: 'Lunch',
+                                      id: d.lunch?.id,
+                                      title: d.lunch?.title,
+                                      image: d.lunch?.image,
+                                      onTap: d.lunch == null
+                                          ? null
+                                          : () => _openRecipe(
+                                                recipeId: d.lunch!.id,
+                                                title: d.lunch!.title,
+                                                dayIndex: d.dayIndex,
+                                                mealKey: 'lunch',
+                                              ),
+                                    ),
+                                    MealCellLite(
+                                      label: 'Dinner',
+                                      id: d.dinner?.id,
+                                      title: d.dinner?.title,
+                                      image: d.dinner?.image,
+                                      onTap: d.dinner == null
+                                          ? null
+                                          : () => _openRecipe(
+                                                recipeId: d.dinner!.id,
+                                                title: d.dinner!.title,
+                                                dayIndex: d.dayIndex,
+                                                mealKey: 'dinner',
+                                              ),
+                                    ),
+                                  ];
+
+                                  return DayRowCarousel(
+                                    dayLabel: '${d.dayName} — $dateLabel',
+                                    isToday: isToday,
+                                    meals: cells,
+                                    onLongPressDay: () => _showChangeDaySheet(d.dayIndex),
+                                  );
+                                },
                               ),
                             ),
-                          if (_lastPlanId != null) ...[
-                        SizedBox(height: 12.h),
-                        Text(
-                          _lastSaved
-                            ? 'Saved in Firestore as: ${_lastPlanId!}'
-                            : 'Generated (not saved)',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: textColor(context).withOpacity(0.65),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: 8.h),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            // TODO: navigate to your week view screen (we’ll build later)
-                            // context.push('/mealPlan/${_lastPlanId}');
-                            print('\x1B[34m[DEBUG] Open plan at $_lastPlanPath\x1B[0m');
-                          },
-                          icon: const Icon(Icons.calendar_view_week_rounded),
-                          label: const Text('Open This Week’s Plan'),
-                        ),
-                      ]
-                    ],
-                  ),
-                ).asGlass(
-                  blurX: 20,
-                  blurY: 20,
-                  tintColor: Colors.white,
-                  clipBorderRadius: BorderRadius.circular(24.r),
-                  frosted: true,
-                ),
-
-                SizedBox(height: 16.h),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.info_outline_rounded,
-                        size: 16.sp, color: textColor(context).withOpacity(0.6)),
-                    SizedBox(width: 6.w),
-                    Flexible(
-                      child: Text(
-                        'Tip: adjust your diet/allergies in Settings → Preferences.',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: textColor(context).withOpacity(0.6),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Reserved space for results (we’ll add later)
-                SizedBox(height: 40.h),
-              ],
-            ),
-          ),
-        ],
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
       ),
     );
   }
 }
+
+// ---------- Header Card (with range, actions, optional progress) ----------
+
+class _WeekHeaderCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool leadingHighlight;
+  final Widget? primaryAction;
+  final Widget? secondaryAction;
+  final double? progress;
+
+  const _WeekHeaderCard({
+    required this.title,
+    required this.subtitle,
+    this.leadingHighlight = false,
+    this.primaryAction,
+    this.secondaryAction,
+    this.progress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // Gather actions (skip nulls)
+    final actions = <Widget>[
+      if (secondaryAction != null) secondaryAction!,
+      if (primaryAction != null) primaryAction!,
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 22.h),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withOpacity(0.12),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row: avatar + text
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 26.r,
+                backgroundColor: leadingHighlight
+                    ? theme.colorScheme.primary.withOpacity(0.12)
+                    : theme.colorScheme.surfaceVariant.withOpacity(0.35),
+                child: Icon(Icons.calendar_month_rounded,
+                    color: theme.colorScheme.primary),
+              ),
+              SizedBox(width: 14.w),
+              // Make the text take remaining space
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.hintColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Progress (if any)
+          if (progress != null) ...[
+            SizedBox(height: 12.h),
+            LinearProgressIndicator(value: progress == 0 ? null : progress),
+          ],
+
+          // Actions under the header, right-aligned, wrapping when needed
+          if (actions.isNotEmpty) ...[
+            SizedBox(height: 12.h),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600), // keeps buttons tidy on tablets
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8.w,
+                  runSpacing: 8.h,
+                  children: actions,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    ).asGlass(
+      blurX: 20,
+      blurY: 20,
+      tintColor: Colors.white,
+      clipBorderRadius: BorderRadius.circular(24.r),
+      frosted: true,
+    );
+  }
+}
+
+// ---------- tiny helpers ----------
+
+bool _isToday(String planIdMonday, int dayIndex) {
+  // Compare today (local) to the computed date
+  final dStr = _dateFor(planIdMonday, dayIndex);
+  final now = DateTime.now();
+  final todayStr = '${now.day}/${now.month}';
+  return dStr == todayStr;
+}
+
+String _dateFor(String planIdMonday, int dayIndex) {
+  final p = planIdMonday.split('-').map(int.parse).toList();
+  final mon = DateTime.utc(p[0], p[1], p[2]);
+  final d = mon.add(Duration(days: dayIndex - 1)).toLocal();
+  return '${d.day}/${d.month}';
+}
+
+String _dayName(int dayIndex) =>
+    const ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][dayIndex - 1];
