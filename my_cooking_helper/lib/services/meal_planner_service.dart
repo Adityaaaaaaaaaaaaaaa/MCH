@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:intl/intl.dart';
 import '/config/backend_config.dart';
+import '/models/meal_plan.dart';       // MealPlanDay/MealPlanDayLite/MealPlanWeek/MealPlanWeekLite
+import '/models/recipe_detail.dart';   // RecipeDetail
 
 class MealPlannerService {
   final FirebaseFirestore firestore;
@@ -9,18 +12,8 @@ class MealPlannerService {
   MealPlannerService({FirebaseFirestore? firestore})
       : firestore = firestore ?? FirebaseFirestore.instance;
 
-  /// Fetch main user preferences (diet & allergies)
-  Future<Map<String, dynamic>> fetchUserMealPrefs(String userId) async {
-    final doc = await firestore.collection('users').doc(userId).get();
-    if (!doc.exists) throw Exception('User document not found');
-    final prefs = doc.data()?['preferences'] ?? {};
-    return {
-      'allergies': (prefs['allergies'] as List<dynamic>?)?.cast<String>() ?? <String>[],
-      'diets': (prefs['diets'] as List<dynamic>?)?.cast<String>() ?? <String>[],
-    };
-  }
+  // ------------------------- Utilities -------------------------
 
-  // Blue debug printer
   void blueDebugPrint(Object msg) {
     dynamic enc(dynamic v) {
       if (v is Set) return v.map(enc).toList();
@@ -31,15 +24,46 @@ class MealPlannerService {
     final e = enc(msg);
     final s = (e is String) ? e : const JsonEncoder.withIndent('  ').convert(e);
     for (final line in s.split('\n')) {
+      // ignore: avoid_print
       print('\x1B[34m[DEBUG] $line\x1B[0m');
     }
   }
 
-  /// Calls backend /mealPlanner/weekPlanner
-  /// Sends userId (required by backend) + diet/exclude derived from Firestore.
+  /// Compute the ISO-Monday planId the backend uses (YYYY-MM-DD).
+  String currentWeekPlanId([DateTime? now]) {
+    final dt = now?.toUtc() ?? DateTime.now().toUtc();
+    final monday = dt.subtract(Duration(days: dt.weekday - 1));
+    final dateOnly = DateTime.utc(monday.year, monday.month, monday.day);
+    return DateFormat('yyyy-MM-dd').format(dateOnly);
+  }
+
+  /// Return "Mon d – Sun d" for a given planId (YYYY-MM-DD, Monday).
+  String weekRangeLabel(String planId) {
+    final p = planId.split('-').map(int.parse).toList();
+    final mon = DateTime.utc(p[0], p[1], p[2]);
+    final sun = mon.add(const Duration(days: 6));
+    final fmt = DateFormat('MMM d');
+    return '${fmt.format(mon)} – ${fmt.format(sun)}';
+  }
+
+  // -------------------- User prefs (diet/allergies) --------------------
+
+  Future<Map<String, dynamic>> fetchUserMealPrefs(String userId) async {
+    final doc = await firestore.collection('users').doc(userId).get();
+    if (!doc.exists) throw Exception('User document not found');
+    final prefs = doc.data()?['preferences'] ?? {};
+    return {
+      'allergies': (prefs['allergies'] as List<dynamic>?)?.cast<String>() ?? <String>[],
+      'diets': (prefs['diets'] as List<dynamic>?)?.cast<String>() ?? <String>[],
+    };
+  }
+
+  // ----------------------- Backend calls -----------------------
+
+  /// POST /mealPlanner/weekPlanner (creates & saves plan in Firestore)
   Future<Map<String, dynamic>> generateWeeklyPlan({
     required String userId,
-    String? planId, // optional override; usually omit and let backend compute ISO Monday
+    String? planId,
   }) async {
     final prefs = await fetchUserMealPrefs(userId);
 
@@ -55,12 +79,11 @@ class MealPlannerService {
         .toList();
 
     final payload = <String, dynamic>{
-      "userId": userId,              // <<< REQUIRED
+      "userId": userId,
       "timeFrame": "week",
       if (diet.isNotEmpty) "diet": diet,
       if (filteredAllergies.isNotEmpty) "exclude": filteredAllergies.join(","),
       if (planId != null && planId.isNotEmpty) "planId": planId,
-      // targetCalories intentionally omitted (use Spoonacular default)
     };
 
     final url = Uri.parse(spoonacularMealplanner);
@@ -82,9 +105,135 @@ class MealPlannerService {
     if (response.statusCode != 200) {
       throw Exception('Backend error: ${response.body}');
     }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    blueDebugPrint('Parsed backend JSON keys: ${data.keys.toList()}');
-    return data; // includes planId, path, saved flag, and the full structured week
+  // ----------------------- Firestore streams -----------------------
+
+  /// Stream the 7 day docs for a given user + planId (defaults to current week).
+  Stream<MealPlanWeek> streamWeek({
+    required String userId,
+    String? planId,
+  }) {
+    final pid = (planId?.trim().isNotEmpty ?? false) ? planId!.trim() : currentWeekPlanId();
+    blueDebugPrint('[MealPlannerService] streamWeek -> uid=$userId, planId=$pid');
+
+    final col = firestore
+        .collection('users').doc(userId)
+        .collection('mealPlans').doc(pid)
+        .collection('days');
+
+    return col.orderBy('dayIndex').snapshots().map((snap) {
+      final days = snap.docs.map((d) {
+        final data = d.data();
+        return MealPlanDay.fromFirestore(data);
+      }).toList();
+
+      if (days.length != 7) {
+        blueDebugPrint('[MealPlannerService] days fetched: ${days.length} (expected 7)');
+      }
+      return MealPlanWeek(planId: pid, days: days);
+    });
+  }
+
+  /// Stream days + compute % complete based on number of day docs (0..7).
+  Stream<(MealPlanWeekLite, double)> streamWeekWithProgress({
+    required String userId,
+    String? planId,
+  }) {
+    final pid = (planId != null && planId.trim().isNotEmpty)
+        ? planId.trim()
+        : currentWeekPlanId();
+
+    final col = firestore
+        .collection('users').doc(userId)
+        .collection('mealPlans').doc(pid)
+        .collection('days');
+
+    return col.orderBy('dayIndex').snapshots().map((snap) {
+      final days = snap.docs
+          .map((d) => MealPlanDayLite.fromFirestore(d.data()))
+          .toList();
+
+      final progress = (days.length.clamp(0, 7) / 7.0);
+      return (MealPlanWeekLite(planId: pid, days: days), progress);
+    });
+  }
+
+  // -------------------------- Mutations --------------------------
+
+  /// Delete the whole plan (plan doc + subcollection/7 day docs).
+  Future<void> deletePlan({required String userId, required String planId}) async {
+    final planRef = firestore
+        .collection('users').doc(userId)
+        .collection('mealPlans').doc(planId);
+
+    final days = await planRef.collection('days').get();
+    for (final d in days.docs) {
+      await d.reference.delete();
+    }
+    await planRef.delete();
+  }
+
+  /// Regenerate this week (same planId). The backend overwrites day docs.
+  Future<Map<String, dynamic>> regenerateWeek({
+    required String userId,
+    required String planId,
+  }) {
+    return generateWeeklyPlan(userId: userId, planId: planId);
+  }
+
+  /// Temporary stub for swapping a day – replace with backend call later.
+  Future<void> swapDay({
+    required String userId,
+    required String planId,
+    required int dayIndex, // 1..7
+  }) async {
+    final dayName = const [
+      'monday','tuesday','wednesday','thursday','friday','saturday','sunday'
+    ][dayIndex - 1];
+    await firestore
+        .collection('users').doc(userId)
+        .collection('mealPlans').doc(planId)
+        .collection('days').doc(dayName)
+        .delete();
+  }
+
+  // ---------------------- Fetch single recipe ----------------------
+
+  /// Fetch a **single** meal’s full details from Firestore day doc.
+  /// [mealKey] must be 'breakfast' | 'lunch' | 'dinner'
+  Future<RecipeDetail?> fetchRecipeForDayMeal({
+    required String userId,
+    required String planId,
+    required int dayIndex, // 1..7
+    required String mealKey,
+  }) async {
+    assert(dayIndex >= 1 && dayIndex <= 7);
+    if (!['breakfast', 'lunch', 'dinner'].contains(mealKey)) {
+      throw ArgumentError('mealKey must be breakfast|lunch|dinner');
+    }
+
+    const dayNames = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+    final docId = dayNames[dayIndex - 1];
+
+    final daySnap = await firestore
+        .collection('users').doc(userId)
+        .collection('mealPlans').doc(planId)
+        .collection('days').doc(docId)
+        .get();
+
+    if (!daySnap.exists) return null;
+    final data = daySnap.data()!;
+    final mealJson = data[mealKey];
+    if (mealJson == null) return null;
+
+    try {
+      final map = Map<String, dynamic>.from(mealJson as Map);
+      return RecipeDetail.fromJson(map);
+    } catch (e) {
+      blueDebugPrint('Failed to parse RecipeDetail for $mealKey on $docId: $e');
+      return null;
+    }
   }
 }
