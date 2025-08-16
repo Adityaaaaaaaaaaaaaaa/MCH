@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+// ignore: unused_import
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
+import '/theme/app_theme.dart';
 import '/models/meal_plan.dart';                  // MealPlanWeekLite, MealLite
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
@@ -67,12 +69,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     }
   }
 
-  // Open full detail: pull from Firestore day doc and navigate
   Future<void> _openRecipe({
     required String recipeId,
     required String? title,
     required int dayIndex,
-    required String mealKey, // 'breakfast' | 'lunch' | 'dinner'
+    required String mealKey, //breakfast lunch dinner
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || !mounted) return;
@@ -108,11 +109,8 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         return;
       }
 
-      // Your GoRouter route accepts RecipeDetail directly (first branch in your screenshot).
       context.push('/recipePage', extra: detail);
 
-      // If you prefer the map form your route also supports:
-      // context.push('/recipePage', extra: {'recipe': detail, 'fromHistory': false});
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context).pop(); // close loading if open
@@ -122,7 +120,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     }
   }
 
-  void _showChangeDaySheet(int dayIndex) {
+  void _showChangeDay(int dayIndex) {
     final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
@@ -134,7 +132,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Change ${_dayName(dayIndex)}', style: theme.textTheme.titleMedium),
+                Text('Change ${_dayName(dayIndex)}\'s meal plan ?', style: theme.textTheme.titleMedium),
                 SizedBox(height: 12.h),
                 ListTile(
                   leading: const Icon(Icons.shuffle_rounded),
@@ -172,9 +170,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         height: 70.h,
         borderRadius: 26.r,
         topPadding: 40.h,
+        themeToggleWidget: ThemeToggleButton(),
       ),
       body: Padding(
-        padding: EdgeInsets.fromLTRB(24.w, 110.h, 24.w, 24.h),
+        padding: EdgeInsets.fromLTRB(24.w, 120.h, 24.w, 24.h),
         child: uid == null
             ? Center(
                 child: Text(
@@ -187,9 +186,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               )
             : Consumer(
                 builder: (context, ref, _) {
-                  final asyncWP = ref.watch(weekWithProgressProvider(uid));
+                  final asyncWP = ref.watch(weekWithProgressProvider(uid)); // wp = week plan 
                   return asyncWP.when(
-                      loading: () => _WeekHeaderCard(
+                      loading: () => WeekHeaderCard(
                         title: 'Weekly Meal Plan',
                         subtitle: 'Breakfast • Lunch • Dinner for 7 days',
                         primaryAction: ElevatedButton.icon(
@@ -197,22 +196,19 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                           icon: const Icon(Icons.auto_awesome_rounded),
                           label: const Text('Generate'),
                         ),
-                        // no progress bar while loading
                       ),
                     error: (err, __) => Center(child: Text('Error: $err')),
                     data: (wp) {
                       final week = wp.$1;
-                      final progress = wp.$2;
                       final hasAny = week.days.isNotEmpty;
                       final range = ref.read(mealPlannerServiceProvider).weekRangeLabel(week.planId);
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _WeekHeaderCard(
+                          WeekHeaderCard(
                             title: 'Weekly Meal Plan',
                             subtitle: range,
-                            progress: hasAny ? progress : null,
                             leadingHighlight: true,
                             primaryAction: hasAny
                                 ? ElevatedButton.icon(
@@ -296,7 +292,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                                     dayLabel: '${d.dayName} — $dateLabel',
                                     isToday: isToday,
                                     meals: cells,
-                                    onLongPressDay: () => _showChangeDaySheet(d.dayIndex),
+                                    onLongPressDay: () => _showChangeDay(d.dayIndex),
                                   );
                                 },
                               ),
@@ -308,123 +304,6 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 },
               ),
       ),
-    );
-  }
-}
-
-// ---------- Header Card (with range, actions, optional progress) ----------
-
-class _WeekHeaderCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final bool leadingHighlight;
-  final Widget? primaryAction;
-  final Widget? secondaryAction;
-  final double? progress;
-
-  const _WeekHeaderCard({
-    required this.title,
-    required this.subtitle,
-    this.leadingHighlight = false,
-    this.primaryAction,
-    this.secondaryAction,
-    this.progress,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    // Gather actions (skip nulls)
-    final actions = <Widget>[
-      if (secondaryAction != null) secondaryAction!,
-      if (primaryAction != null) primaryAction!,
-    ];
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 22.h),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withOpacity(0.12),
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header row: avatar + text
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                radius: 26.r,
-                backgroundColor: leadingHighlight
-                    ? theme.colorScheme.primary.withOpacity(0.12)
-                    : theme.colorScheme.surfaceVariant.withOpacity(0.35),
-                child: Icon(Icons.calendar_month_rounded,
-                    color: theme.colorScheme.primary),
-              ),
-              SizedBox(width: 14.w),
-              // Make the text take remaining space
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.hintColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          // Progress (if any)
-          if (progress != null) ...[
-            SizedBox(height: 12.h),
-            LinearProgressIndicator(value: progress == 0 ? null : progress),
-          ],
-
-          // Actions under the header, right-aligned, wrapping when needed
-          if (actions.isNotEmpty) ...[
-            SizedBox(height: 12.h),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600), // keeps buttons tidy on tablets
-                child: Wrap(
-                  alignment: WrapAlignment.end,
-                  spacing: 8.w,
-                  runSpacing: 8.h,
-                  children: actions,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    ).asGlass(
-      blurX: 20,
-      blurY: 20,
-      tintColor: Colors.white,
-      clipBorderRadius: BorderRadius.circular(24.r),
-      frosted: true,
     );
   }
 }
@@ -446,5 +325,4 @@ String _dateFor(String planIdMonday, int dayIndex) {
   return '${d.day}/${d.month}';
 }
 
-String _dayName(int dayIndex) =>
-    const ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][dayIndex - 1];
+String _dayName(int dayIndex) => const ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][dayIndex - 1];
