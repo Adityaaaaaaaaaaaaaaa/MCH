@@ -140,10 +140,27 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   subtitle: const Text('Generate new breakfast, lunch and dinner for this day'),
                   onTap: () async {
                     Navigator.pop(context);
-                    // (Optional) call your swapDay endpoint when ready
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Swap day ${_dayName(dayIndex)}: coming soon')),
-                    );
+                    final uid = FirebaseAuth.instance.currentUser?.uid;
+                    if (uid == null) return;
+
+                    // grab current planId from stream
+                    final tuple = ref.read(weekWithProgressProvider(uid)).valueOrNull;
+                    final planId = tuple?.$1.planId;
+
+                    try {
+                      await ref.read(mealPlannerServiceProvider).changeDay(
+                        userId: uid,
+                        dayIndex: dayIndex,
+                        planId: planId,  // optional; backend will default if null
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Updated ${_dayName(dayIndex)}')),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to change day: $e')),
+                      );
+                    }
                   },
                 ),
               ],

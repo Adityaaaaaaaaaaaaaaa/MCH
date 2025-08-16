@@ -186,17 +186,30 @@ class MealPlannerService {
   /// Temporary stub for swapping a day – replace with backend call later.
   Future<void> swapDay({
     required String userId,
-    required String planId,
-    required int dayIndex, // 1..7
+    required String planId, // you can still pass currentWeekPlanId() if needed
+    required int dayIndex,  // 1..7
+    String? diet,
+    String? excludeCsv,
+    int? targetCalories,
   }) async {
-    final dayName = const [
-      'monday','tuesday','wednesday','thursday','friday','saturday','sunday'
-    ][dayIndex - 1];
-    await firestore
-        .collection('users').doc(userId)
-        .collection('mealPlans').doc(planId)
-        .collection('days').doc(dayName)
-        .delete();
+    final url = Uri.parse(spoonacularChangeDay); // <- adjust base
+    final payload = <String, dynamic>{
+      'userId': userId,
+      'planId': planId,
+      'dayIndex': dayIndex,
+      if (diet != null && diet.isNotEmpty) 'diet': diet,
+      if (excludeCsv != null && excludeCsv.isNotEmpty) 'exclude': excludeCsv,
+      if (targetCalories != null) 'targetCalories': targetCalories,
+    };
+    final res = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode != 200) {
+      throw Exception('swapDay failed: ${res.body}');
+    }
+    // Firestore stream will refresh automatically.
   }
 
   // ---------------------- Fetch single recipe ----------------------
@@ -234,6 +247,36 @@ class MealPlannerService {
     } catch (e) {
       blueDebugPrint('Failed to parse RecipeDetail for $mealKey on $docId: $e');
       return null;
+    }
+  }
+
+  /// Change (regenerate) a single day in the current (or given) plan.
+  Future<void> changeDay({
+    required String userId,
+    required int dayIndex,       // 1..7
+    String? planId,              // usually omit; backend computes current week
+    String? diet,
+    String? excludeCsv,
+    int? targetCalories,
+  }) async {
+    final url = Uri.parse(spoonacularChangeDay);
+    final payload = <String, dynamic>{
+      'userId': userId,
+      'dayIndex': dayIndex,
+      if (planId != null && planId.isNotEmpty) 'planId': planId,
+      if (diet != null && diet.isNotEmpty) 'diet': diet,
+      if (excludeCsv != null && excludeCsv.isNotEmpty) 'exclude': excludeCsv,
+      if (targetCalories != null) 'targetCalories': targetCalories,
+    };
+
+    final resp = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+
+    if (resp.statusCode != 200) {
+      throw Exception('changeDay failed: ${resp.statusCode} ${resp.body}');
     }
   }
 }
