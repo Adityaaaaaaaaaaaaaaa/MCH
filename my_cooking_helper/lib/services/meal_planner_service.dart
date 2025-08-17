@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import '/config/backend_config.dart';
-import '/models/meal_plan.dart';       // MealPlanDay/MealPlanDayLite/MealPlanWeek/MealPlanWeekLite
-import '/models/recipe_detail.dart';   // RecipeDetail
+import '/models/meal_plan.dart';
+import '/models/recipe_detail.dart';
 
 class MealPlannerService {
   final FirebaseFirestore firestore;
@@ -24,7 +24,6 @@ class MealPlannerService {
     final e = enc(msg);
     final s = (e is String) ? e : const JsonEncoder.withIndent('  ').convert(e);
     for (final line in s.split('\n')) {
-      // ignore: avoid_print
       print('\x1B[34m[DEBUG] $line\x1B[0m');
     }
   }
@@ -277,6 +276,27 @@ class MealPlannerService {
 
     if (resp.statusCode != 200) {
       throw Exception('changeDay failed: ${resp.statusCode} ${resp.body}');
+    }
+  }
+
+  // in meal_planner_service.dart
+  Future<void> pingBackend({required String userId}) async {
+    final url = Uri.parse(spoonacularPing); // add this in backend_config.dart
+    final body = jsonEncode(<String, dynamic>{
+      "userId": userId,
+      // You may also include diet/exclude/targetCalories if you want heartbeat to respect prefs:
+      // "diet": "...", "exclude": "...", "targetCalories": 2000,
+    });
+    final resp = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: body,
+    );
+    if (resp.statusCode != 200) {
+      blueDebugPrint('Heartbeat failed: ${resp.statusCode} ${resp.body}');
+      // Not throwing: we want it to be silent.
+    } else {
+      blueDebugPrint('Heartbeat ok: ${resp.body}');
     }
   }
 }

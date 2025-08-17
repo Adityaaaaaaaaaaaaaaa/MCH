@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '/widgets/shimmer/meal_planner_skeleton.dart';
 import '/widgets/navigation/nav.dart';
 import '/theme/app_theme.dart';
@@ -33,6 +35,35 @@ class PlannerScreen extends ConsumerStatefulWidget {
 
 class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   bool generating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pingBackendOnce();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Optional: also try on dependencies to catch route returns
+    _pingBackendOnce();
+  }
+
+  Future<void> _pingBackendOnce() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'meal_ping_last_$uid';
+    final today = DateTime.now();
+    final todayKey = '${today.year}-${today.month}-${today.day}';
+
+    if (prefs.getString(key) == todayKey) return; // already pinged today
+
+    // fire and forget; no UI
+    unawaited(ref.read(mealPlannerServiceProvider).pingBackend(userId: uid));
+    await prefs.setString(key, todayKey);
+  }
 
   Future<void> _generateNow() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
