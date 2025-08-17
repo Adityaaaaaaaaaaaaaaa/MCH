@@ -131,7 +131,7 @@ class AnimatedSingleSelectBig extends StatelessWidget {
 class AnimatedMultiSelectSmall extends StatelessWidget {
   final String title;
   final List<PreferenceOption> options;
-  final List<String> values;
+  final List<String> values; // keep as-is to avoid breaking callers
   final ValueChanged<List<String>> onChanged;
   final VoidCallback? onNext;
   final VoidCallback? onBack;
@@ -187,13 +187,14 @@ class AnimatedMultiSelectSmall extends StatelessWidget {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(14.r),
                         onTap: () {
-                          final newVals = List<String>.from(values);
+                          // --- SINGLE-SELECT LOGIC ---
                           if (selected) {
-                            newVals.remove(opt.label);
+                            // tapping the selected chip -> deselect all
+                            onChanged(<String>[]);
                           } else {
-                            newVals.add(opt.label);
+                            // tapping a new chip -> replace any existing selection
+                            onChanged(<String>[opt.label]);
                           }
-                          onChanged(newVals);
                         },
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
@@ -201,7 +202,7 @@ class AnimatedMultiSelectSmall extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              SmartPreferenceEmojiRow(option: opt, size: 24, repeat: true,), // or 22 for smaller, as you wish
+                              SmartPreferenceEmojiRow(option: opt, size: 24, repeat: true),
                               SizedBox(width: 8.w),
                               Text(
                                 opt.label,
