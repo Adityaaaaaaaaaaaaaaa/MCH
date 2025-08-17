@@ -16,4 +16,4 @@ String get spoonacularRecipeSearch => "$backendApiUrl/recipes/find/searchByIngre
 String get spoonacularRecipeVideos => "$backendApiUrl/recipes/search/searchVideosAndSummary";
 String get spoonacularMealplanner => "$backendApiUrl/mealPlanner/week/weekPlanner";
 String get spoonacularChangeDay => "$backendApiUrl/mealPlanner/day/changeDay";
-
+String get spoonacularPing => "$backendApiUrl/mealPlanner/ping";
