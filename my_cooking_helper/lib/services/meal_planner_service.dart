@@ -281,11 +281,9 @@ class MealPlannerService {
 
   // in meal_planner_service.dart
   Future<void> pingBackend({required String userId}) async {
-    final url = Uri.parse(spoonacularPing); // add this in backend_config.dart
+    final url = Uri.parse(spoonacularPing);
     final body = jsonEncode(<String, dynamic>{
       "userId": userId,
-      // You may also include diet/exclude/targetCalories if you want heartbeat to respect prefs:
-      // "diet": "...", "exclude": "...", "targetCalories": 2000,
     });
     final resp = await http.post(
       url,
@@ -293,10 +291,10 @@ class MealPlannerService {
       body: body,
     );
     if (resp.statusCode != 200) {
-      blueDebugPrint('Heartbeat failed: ${resp.statusCode} ${resp.body}');
+      blueDebugPrint('Ping failed: ${resp.statusCode} ${resp.body}');
       // Not throwing: we want it to be silent.
     } else {
-      blueDebugPrint('Heartbeat ok: ${resp.body}');
+      blueDebugPrint('Ping ok: ${resp.body}');
     }
   }
 }

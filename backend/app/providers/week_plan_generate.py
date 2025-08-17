@@ -38,7 +38,7 @@ def generate_week_plan(
     *,
     time_frame: str = "week",
     diet: Optional[str] = None,
-    exclude_csv: Optional[str] = None,
+    exclude: Optional[str] = None,
     target_calories: Optional[int] = None,
     timeout: int = 30,
 ) -> Dict[str, Any]:
@@ -52,8 +52,8 @@ def generate_week_plan(
     # Only include meaningful parameters
     if diet:
         params["diet"] = diet
-    if exclude_csv:
-        params["exclude"] = exclude_csv
+    if exclude:
+        params["exclude"] = exclude
     if target_calories is not None:
         params["targetCalories"] = target_calories
 
