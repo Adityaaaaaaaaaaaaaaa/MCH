@@ -90,19 +90,19 @@ def week_planner(req: WeekPlannerRequest):
 
     # --- Normalise optional inputs (empty → None) ---
     diet = (req.diet or "").strip() or None
-    exclude_csv = (req.exclude or "").strip() or None
+    exclude = (req.exclude or "").strip() or None
 
     print(
         f"{BLUE}[DEBUG] /mealPlanner/weekPlanner payload -> "
         f"userId={req.userId}, timeFrame={req.timeFrame}, diet={diet}, "
-        f"exclude={exclude_csv}, targetCalories={req.targetCalories}{RESET}"
+        f"exclude={exclude}, targetCalories={req.targetCalories}{RESET}"
     )
 
     # --- Step 1: Generate raw week from Spoonacular ---
     upstream = generate_week_plan(
         time_frame=req.timeFrame,
         diet=diet,
-        exclude_csv=exclude_csv,
+        exclude=exclude,
         target_calories=req.targetCalories,
     )
     if not upstream.get("ok"):
@@ -159,7 +159,7 @@ def week_planner(req: WeekPlannerRequest):
     plan_id = (req.planId or _default_plan_id(now_utc)).strip()
     meta = {
         "diet": diet,
-        "exclude": exclude_csv,
+        "exclude": exclude,
         "targetCalories": req.targetCalories,
         "sourceName": source_name,
         "generatedAt": now_utc.isoformat(),
