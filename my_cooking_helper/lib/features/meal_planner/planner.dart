@@ -213,7 +213,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 builder: (context, ref, _) {
                   final asyncWP = ref.watch(weekWithProgressProvider(uid));
                   return asyncWP.when(
-                    loading: () => const PlannerPageSkeleton(rows: 5),
+                    loading: () => const PlannerSliverSkeleton(rows: 7),
                     error: (err, __) => Center(child: Text('Error: $err')),
                     data: (wp) {
                       final week = wp.$1;

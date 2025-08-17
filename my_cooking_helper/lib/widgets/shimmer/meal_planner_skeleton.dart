@@ -243,3 +243,27 @@ class PlannerPageSkeleton extends StatelessWidget {
     );
   }
 }
+
+class PlannerSliverSkeleton extends StatelessWidget {
+  final int rows;
+  const PlannerSliverSkeleton({super.key, this.rows = 5});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        const SliverToBoxAdapter(child: WeekHeaderSkeleton()),
+        SliverToBoxAdapter(child: SizedBox(height: 12.h)),
+        SliverList.separated(
+          itemCount: rows,
+          separatorBuilder: (_, __) => SizedBox(height: 10.h),
+          itemBuilder: (_, i) =>
+              DayRowCarouselSkeleton(titleHint: 'Day ${i + 1} — 00/00'),
+        ),
+        // spacer so it can scroll "under" bottom nav area cleanly
+        SliverToBoxAdapter(child: SizedBox(height: 90.h)),
+      ],
+    );
+  }
+}
