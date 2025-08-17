@@ -12,7 +12,7 @@ import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
 import '/services/recipe_search_service.dart';
 import '/widgets/recipe/recipe_page_widgets.dart';
-import '/widgets/recipe/recipe_page_skeleton.dart';
+import '/widgets/shimmer/recipe_page_skeleton.dart';
 
 final recipeSearchServiceProvider = Provider<RecipeSearchService>((ref) {
   return RecipeSearchService();

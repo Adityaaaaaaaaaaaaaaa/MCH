@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-// ignore: unused_import
-import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '/widgets/shimmer/meal_planner_skeleton.dart';
+import '/widgets/navigation/nav.dart';
 import '/theme/app_theme.dart';
-import '/models/meal_plan.dart';                  // MealPlanWeekLite, MealLite
+import '/models/meal_plan.dart';             
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
@@ -54,7 +55,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   Future<void> _scrapPlan(String uid, String planId) async {
     await ref.read(mealPlannerServiceProvider).deletePlan(userId: uid, planId: planId);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Plan deleted.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Plan deleted.')),
+      );
     }
   }
 
@@ -63,7 +66,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     try {
       await ref.read(mealPlannerServiceProvider).regenerateWeek(userId: uid, planId: planId);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed: $e')),
+      );
     } finally {
       setState(() => generating = false);
     }
@@ -73,7 +78,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     required String recipeId,
     required String? title,
     required int dayIndex,
-    required String mealKey, //breakfast lunch dinner
+    required String mealKey,
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || !mounted) return;
@@ -110,7 +115,6 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       }
 
       context.push('/recipePage', extra: detail);
-
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context).pop(); // close loading if open
@@ -132,7 +136,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Change ${_dayName(dayIndex)}\'s meal plan ?', style: theme.textTheme.titleMedium),
+                Text(
+                  'Change ${_dayName(dayIndex)}\'s meal plan ?',
+                  style: theme.textTheme.titleMedium,
+                ),
                 SizedBox(height: 12.h),
                 ListTile(
                   leading: const Icon(Icons.shuffle_rounded),
@@ -181,16 +188,17 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       extendBodyBehindAppBar: true,
       extendBody: true,
       drawer: const CustomDrawer(),
+      bottomNavigationBar: CustomNavBar(currentIndex: 4),
       appBar: CustomAppBar(
         title: "Meal Planner",
-        showMenu: false,
+        showMenu: true,
         height: 70.h,
         borderRadius: 26.r,
         topPadding: 40.h,
         themeToggleWidget: ThemeToggleButton(),
       ),
       body: Padding(
-        padding: EdgeInsets.fromLTRB(24.w, 120.h, 24.w, 24.h),
+        padding: EdgeInsets.fromLTRB(24.w, 120.h, 24.w, 0.h),
         child: uid == null
             ? Center(
                 child: Text(
@@ -203,117 +211,110 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               )
             : Consumer(
                 builder: (context, ref, _) {
-                  final asyncWP = ref.watch(weekWithProgressProvider(uid)); // wp = week plan 
+                  final asyncWP = ref.watch(weekWithProgressProvider(uid));
                   return asyncWP.when(
-                      loading: () => WeekHeaderCard(
-                        title: 'Weekly Meal Plan',
-                        subtitle: 'Breakfast • Lunch • Dinner for 7 days',
-                        primaryAction: ElevatedButton.icon(
-                          onPressed: generating ? null : _generateNow,
-                          icon: const Icon(Icons.auto_awesome_rounded),
-                          label: const Text('Generate'),
-                        ),
-                      ),
+                    loading: () => const PlannerPageSkeleton(rows: 5),
                     error: (err, __) => Center(child: Text('Error: $err')),
                     data: (wp) {
                       final week = wp.$1;
                       final hasAny = week.days.isNotEmpty;
-                      final range = ref.read(mealPlannerServiceProvider).weekRangeLabel(week.planId);
+                      final range = ref
+                          .read(mealPlannerServiceProvider)
+                          .weekRangeLabel(week.planId);
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          WeekHeaderCard(
-                            title: 'Weekly Meal Plan',
-                            subtitle: range,
-                            leadingHighlight: true,
-                            primaryAction: hasAny
-                                ? ElevatedButton.icon(
-                                    onPressed: generating
-                                        ? null
-                                        : () => _regeneratePlan(uid, week.planId),
-                                    icon: const Icon(Icons.refresh_rounded),
-                                    label: const Text('Regenerate'),
-                                  )
-                                : ElevatedButton.icon(
-                                    onPressed: generating ? null : _generateNow,
-                                    icon: const Icon(Icons.auto_awesome_rounded),
-                                    label: const Text('Generate'),
-                                  ),
-                            secondaryAction: hasAny
-                                ? OutlinedButton.icon(
-                                    onPressed: () => _scrapPlan(uid, week.planId),
-                                    icon: const Icon(Icons.delete_outline_rounded),
-                                    label: const Text('Scrap plan'),
-                                  )
-                                : null,
-                          ),
-                          SizedBox(height: 12.h),
-                          if (hasAny)
-                            Expanded(
-                              child: ListView.separated(
-                                physics: const BouncingScrollPhysics(),
-                                itemCount: week.days.length,
-                                separatorBuilder: (_, __) => SizedBox(height: 10.h),
-                                itemBuilder: (context, i) {
-                                  final d = week.days[i];
-                                  final dateLabel = _dateFor(week.planId, d.dayIndex);
-                                  final isToday = _isToday(week.planId, d.dayIndex);
-
-                                  final cells = <MealCellLite>[
-                                    MealCellLite(
-                                      label: 'Breakfast',
-                                      id: d.breakfast?.id,
-                                      title: d.breakfast?.title,
-                                      image: d.breakfast?.image,
-                                      onTap: d.breakfast == null
-                                          ? null
-                                          : () => _openRecipe(
-                                                recipeId: d.breakfast!.id,
-                                                title: d.breakfast!.title,
-                                                dayIndex: d.dayIndex,
-                                                mealKey: 'breakfast',
-                                              ),
+                      return CustomScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: WeekHeaderCard(
+                              title: 'Weekly Meal Plan',
+                              subtitle: range,
+                              leadingHighlight: true,
+                              primaryAction: hasAny
+                                  ? ElevatedButton.icon(
+                                      onPressed: generating ? null : () => _regeneratePlan(uid, week.planId),
+                                      icon: const Icon(Icons.refresh_rounded),
+                                      label: const Text('Regenerate'),
+                                    )
+                                  : ElevatedButton.icon(
+                                      onPressed: generating ? null : _generateNow,
+                                      icon: const Icon(Icons.auto_awesome_rounded),
+                                      label: const Text('Generate'),
                                     ),
-                                    MealCellLite(
-                                      label: 'Lunch',
-                                      id: d.lunch?.id,
-                                      title: d.lunch?.title,
-                                      image: d.lunch?.image,
-                                      onTap: d.lunch == null
-                                          ? null
-                                          : () => _openRecipe(
-                                                recipeId: d.lunch!.id,
-                                                title: d.lunch!.title,
-                                                dayIndex: d.dayIndex,
-                                                mealKey: 'lunch',
-                                              ),
-                                    ),
-                                    MealCellLite(
-                                      label: 'Dinner',
-                                      id: d.dinner?.id,
-                                      title: d.dinner?.title,
-                                      image: d.dinner?.image,
-                                      onTap: d.dinner == null
-                                          ? null
-                                          : () => _openRecipe(
-                                                recipeId: d.dinner!.id,
-                                                title: d.dinner!.title,
-                                                dayIndex: d.dayIndex,
-                                                mealKey: 'dinner',
-                                              ),
-                                    ),
-                                  ];
-
-                                  return DayRowCarousel(
-                                    dayLabel: '${d.dayName} — $dateLabel',
-                                    isToday: isToday,
-                                    meals: cells,
-                                    onLongPressDay: () => _showChangeDay(d.dayIndex),
-                                  );
-                                },
-                              ),
+                              secondaryAction: hasAny
+                                  ? OutlinedButton.icon(
+                                      onPressed: () => _scrapPlan(uid, week.planId),
+                                      icon: const Icon(Icons.delete_outline_rounded),
+                                      label: const Text('Scrap plan'),
+                                    )
+                                  : null,
                             ),
+                          ),
+                          SliverToBoxAdapter(child: SizedBox(height: 12.h)),
+                          if (hasAny)
+                            SliverList.separated(
+                              itemCount: week.days.length,
+                              separatorBuilder: (_, __) => SizedBox(height: 10.h),
+                              itemBuilder: (context, i) {
+                                final d = week.days[i];
+                                final date = _dateFor(week.planId, d.dayIndex);
+                                final dateLabel = _dateLabel(date);
+                                final isToday = _isToday(week.planId, d.dayIndex);
+
+                                final cells = <MealCellLite>[
+                                  MealCellLite(
+                                    label: 'Breakfast',
+                                    id: d.breakfast?.id,
+                                    title: d.breakfast?.title,
+                                    image: d.breakfast?.image,
+                                    onTap: d.breakfast == null
+                                        ? null
+                                        : () => _openRecipe(
+                                              recipeId: d.breakfast!.id,
+                                              title: d.breakfast!.title,
+                                              dayIndex: d.dayIndex,
+                                              mealKey: 'breakfast',
+                                            ),
+                                  ),
+                                  MealCellLite(
+                                    label: 'Lunch',
+                                    id: d.lunch?.id,
+                                    title: d.lunch?.title,
+                                    image: d.lunch?.image,
+                                    onTap: d.lunch == null
+                                        ? null
+                                        : () => _openRecipe(
+                                              recipeId: d.lunch!.id,
+                                              title: d.lunch!.title,
+                                              dayIndex: d.dayIndex,
+                                              mealKey: 'lunch',
+                                            ),
+                                  ),
+                                  MealCellLite(
+                                    label: 'Dinner',
+                                    id: d.dinner?.id,
+                                    title: d.dinner?.title,
+                                    image: d.dinner?.image,
+                                    onTap: d.dinner == null
+                                        ? null
+                                        : () => _openRecipe(
+                                              recipeId: d.dinner!.id,
+                                              title: d.dinner!.title,
+                                              dayIndex: d.dayIndex,
+                                              mealKey: 'dinner',
+                                            ),
+                                  ),
+                                ];
+
+                                return DayRowCarousel(
+                                  dayLabel: dateLabel,
+                                  isToday: isToday,
+                                  meals: cells,
+                                  onLongPressDay: () => _showChangeDay(d.dayIndex),
+                                );
+                              },
+                            ),
+                          SliverToBoxAdapter(child: SizedBox(height: 90.h)),
                         ],
                       );
                     },
@@ -325,21 +326,25 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   }
 }
 
-// ---------- tiny helpers ----------
+// ---------- helpers ----------
 
 bool _isToday(String planIdMonday, int dayIndex) {
-  // Compare today (local) to the computed date
-  final dStr = _dateFor(planIdMonday, dayIndex);
+  final d = _dateFor(planIdMonday, dayIndex);
   final now = DateTime.now();
-  final todayStr = '${now.day}/${now.month}';
-  return dStr == todayStr;
+  return d.year == now.year && d.month == now.month && d.day == now.day;
 }
 
-String _dateFor(String planIdMonday, int dayIndex) {
-  final p = planIdMonday.split('-').map(int.parse).toList();
+DateTime _dateFor(String planIdMonday, int dayIndex) {
+  final p = planIdMonday.split('-').map(int.parse).toList(); // [year, month, day]
   final mon = DateTime.utc(p[0], p[1], p[2]);
-  final d = mon.add(Duration(days: dayIndex - 1)).toLocal();
-  return '${d.day}/${d.month}';
+  return mon.add(Duration(days: dayIndex - 1)).toLocal();
 }
 
-String _dayName(int dayIndex) => const ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][dayIndex - 1];
+/// Pretty string like "Monday, 13 August 2025"
+String _dateLabel(DateTime d) {
+  return DateFormat('EEEE, d MMMM y').format(d);
+}
+
+/// Still here if you need weekday-only text elsewhere
+String _dayName(int dayIndex) =>
+    const ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][dayIndex - 1];
