@@ -11,7 +11,7 @@ class CustomNavBar extends StatelessWidget {
 
   static final _navItems = [
     _NavItem(Icons.kitchen_rounded, "Inventory", "/inventory"),
-    _NavItem(Icons.camera_alt_rounded, "Cook", "/scan"),
+    _NavItem(Icons.camera_alt_rounded, "Scan", "/scan"),
     _NavItem(Icons.home_rounded, "Home", "/home"),
     _NavItem(Icons.fastfood_rounded, "Cravings", "/cravings"),
     _NavItem(Icons.calendar_month_rounded, "Planner", "/planner"),
