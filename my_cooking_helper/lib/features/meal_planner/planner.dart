@@ -21,10 +21,10 @@ final mealPlannerServiceProvider =
     Provider<MealPlannerService>((ref) => MealPlannerService());
 
 // Emits (weekLite, progress[0..1])
-final weekWithProgressProvider =
+final weekProvider =
     StreamProvider.family<(MealPlanWeekLite, double), String>((ref, userId) {
-  final svc = ref.watch(mealPlannerServiceProvider);
-  return svc.streamWeekWithProgress(userId: userId);
+  final week = ref.watch(mealPlannerServiceProvider);
+  return week.streamWeek2(userId: userId);
 });
 
 class PlannerScreen extends ConsumerStatefulWidget {
@@ -115,7 +115,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     if (uid == null || !mounted) return;
 
     // Get the current week planId from the stream you already have
-    final tuple = ref.read(weekWithProgressProvider(uid)).valueOrNull;
+    final tuple = ref.read(weekProvider(uid)).valueOrNull;
     if (tuple == null) return;
     final planId = tuple.$1.planId;
 
@@ -182,7 +182,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                     if (uid == null) return;
 
                     // grab current planId from stream
-                    final tuple = ref.read(weekWithProgressProvider(uid)).valueOrNull;
+                    final tuple = ref.read(weekProvider(uid)).valueOrNull;
                     final planId = tuple?.$1.planId;
 
                     try {
@@ -242,7 +242,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               )
             : Consumer(
                 builder: (context, ref, _) {
-                  final asyncWP = ref.watch(weekWithProgressProvider(uid));
+                  final asyncWP = ref.watch(weekProvider(uid));
                   return asyncWP.when(
                     loading: () => const PlannerSliverSkeleton(rows: 7),
                     error: (err, __) => Center(child: Text('Error: $err')),

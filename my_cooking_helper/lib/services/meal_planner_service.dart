@@ -136,7 +136,7 @@ class MealPlannerService {
   }
 
   /// Stream days + compute % complete based on number of day docs (0..7).
-  Stream<(MealPlanWeekLite, double)> streamWeekWithProgress({
+  Stream<(MealPlanWeekLite, double)> streamWeek2({
     required String userId,
     String? planId,
   }) {
@@ -163,15 +163,15 @@ class MealPlannerService {
 
   /// Delete the whole plan (plan doc + subcollection/7 day docs).
   Future<void> deletePlan({required String userId, required String planId}) async {
-    final planRef = firestore
-        .collection('users').doc(userId)
-        .collection('mealPlans').doc(planId);
-
-    final days = await planRef.collection('days').get();
-    for (final d in days.docs) {
-      await d.reference.delete();
+    final url = Uri.parse(deleteMealPlan);
+    final res = await http.delete(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'userId': userId, 'planId': planId}),
+    );
+    if (res.statusCode != 200) {
+      throw Exception('Server delete failed: ${res.body}');
     }
-    await planRef.delete();
   }
 
   /// Regenerate this week (same planId). The backend overwrites day docs.

@@ -6,6 +6,7 @@ from app.api.recipe_videos import router as recipe_vid_router
 from app.api.meal_planner import router as meal_planner_router
 from app.api.meal_planner_change_day import router as meal_planner_change_day_router
 from app.api.meal_planner_ping import router as meal_planner_ping_router
+from app.api.meal_planner_admin import router as meal_planner_admin_router
 from app.api.debug import router as debug_router
 from dotenv import load_dotenv
 
@@ -21,6 +22,7 @@ app.include_router(recipe_vid_router, prefix="/recipes/search")
 app.include_router(meal_planner_router, prefix="/mealPlanner/week")
 app.include_router(meal_planner_change_day_router, prefix="/mealPlanner/day")
 app.include_router(meal_planner_ping_router, prefix="/mealPlanner/ping")
+app.include_router(meal_planner_admin_router, prefix="/mealPlanner/userPlan")
 app.include_router(debug_router)
 
 @app.get("/")
