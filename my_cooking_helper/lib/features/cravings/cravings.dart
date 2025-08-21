@@ -1,19 +1,17 @@
 // /lib/features/cravings/cravings.dart
 // ignore_for_file: deprecated_member_use
 
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:go_router/go_router.dart';
-import 'package:glass/glass.dart';
 import 'package:lottie/lottie.dart';
-
+import '/services/cravings_service.dart';
 import '/theme/app_theme.dart';
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
 import '/widgets/navigation/nav.dart';
+import '/widgets/cravings_widget.dart';
 
 class CravingsScreen extends StatefulWidget {
   const CravingsScreen({super.key});
@@ -22,148 +20,120 @@ class CravingsScreen extends StatefulWidget {
 }
 
 class _CravingsScreenState extends State<CravingsScreen> {
-  // ---- Config: set your background Lottie asset path here ----
   static const String _bgLottie = 'assets/animations/Animation_wave.json';
 
-  // UI-only controllers
   final TextEditingController _queryCtrl = TextEditingController();
-  final TextEditingController _includeCtrl = TextEditingController();
-  final TextEditingController _excludeCtrl = TextEditingController();
+  final CravingsService _svc = CravingsService();
 
-  int _maxTime = 30;
-  String? _spiceLabel; // e.g. "Balanced Kick (Medium)"
+  // -------- Defaults from Firestore (spice/time) --------
+  // 1) Defaults: set time = 90 min, spice from Firestore (as before)
+  int _defaultSpice = 2; // 0..5 (fallback if Firestore missing)
+  int _defaultTime  = 90; // <-- 1 hour 30 minutes
+
+  // 2) Effective values (no change): if user didn't Apply, defaults are used
+  int? _overrideSpice; // null => use default
+  int? _overrideTime;  // null => use default
+  int get _effectiveSpice => _overrideSpice ?? _defaultSpice;
+  int get _effectiveTime  => _overrideTime  ?? _defaultTime;
+
+
+  @override
+  void initState() {
+    super.initState();
+    _primeDefaultsFromPrefs();
+  }
 
   @override
   void dispose() {
     _queryCtrl.dispose();
-    _includeCtrl.dispose();
-    _excludeCtrl.dispose();
     super.dispose();
   }
 
-  void _notWiredToast() {
-    // ignore: avoid_print
-    print('\x1B[34m[DEBUG] Generate tapped (service not wired yet)\x1B[0m');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Cravings service not wired yet.')),
-    );
+  // Fetch prefs + inventory; set default spice (0..5). Time default stays 30 unless you store it.
+  // 3) Keep this: load spice from Firestore; leave time default at 90 unless you add it in prefs
+  Future<void> _primeDefaultsFromPrefs() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      print('\x1B[34m[DEBUG][Cravings] Loading defaults from Firestore...\x1B[0m');
+      final ctx = await _svc.loadUserCravingsContext(uid);
+
+      final mapped = ctx.spiceLevel.clamp(0, 5);
+      setState(() {
+        _defaultSpice = mapped;
+        // _defaultTime stays at 90 unless you later read it from Firestore
+      });
+
+      print('\x1B[34m[DEBUG][Cravings] Defaults -> spice=$_defaultSpice, time=$_defaultTime\x1B[0m');
+    } catch (e) {
+      print('\x1B[34m[DEBUG][Cravings] Failed to load defaults: $e\x1B[0m');
+    }
   }
 
-  // ---- Glassy filters bottom sheet (UI only) ----
+
+  // For now, Generate just re-fetches (so you see blue logs). Later we’ll pass query + effective filters to backend.
+  // 4) Generate: ALWAYS use the effective (user override if any, otherwise defaults)
+  Future<void> _generate() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Please sign in to use cravings.')));
+      return;
+    }
+
+    final query = _queryCtrl.text.trim();
+    final spice = _effectiveSpice;   // <-- user-chosen if applied, else Firestore default
+    final time  = _effectiveTime;    // <-- user-chosen if applied, else 90
+
+    print('\x1B[34m[DEBUG][Cravings] Generate → query="$query", spice=$spice, time=$time min\x1B[0m');
+
+    try {
+      // For now just fetch context to show blue logs; next step: call your backend with {query, spice, time}
+      await _svc.loadUserCravingsContext(uid);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Using spice=$spice • time=$time min (see blue logs).')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to fetch user context: $e')),
+      );
+    }
+  }
+
+  // 5) Filters sheet commit (no change): only set overrides on Apply
   void _openFilters() {
-    final theme = Theme.of(context);
+    int tempSpice = _effectiveSpice;
+    int tempTime  = _effectiveTime;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       showDragHandle: true,
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            16.w,
-            0,
-            16.w,
-            24.h + MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          child: Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24.r),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Craving Filters', style: theme.textTheme.titleMedium),
-                SizedBox(height: 12.h),
-
-                // Must include
-                TextFormField(
-                  controller: _includeCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Must include (comma-separated)',
-                    hintText: 'garlic, tomato, egg',
-                  ),
-                ),
-                SizedBox(height: 10.h),
-
-                // Exclude / allergies
-                TextFormField(
-                  controller: _excludeCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Exclude (allergies/intolerances)',
-                    hintText: 'peanut, shellfish',
-                  ),
-                ),
-                SizedBox(height: 12.h),
-
-                // Spice + time
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _spiceLabel,
-                        items: const [
-                          'No Spice (Plain Jane)',
-                          'Gentle Warmth (Mild)',
-                          'Balanced Kick (Medium)',
-                          'Bring the Heat (Spicy)',
-                          'RIP (Super Spicy!)',
-                          'Spice? I\'m Open!',
-                        ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                        onChanged: (v) => setState(() => _spiceLabel = v),
-                        decoration: const InputDecoration(labelText: 'Spice level'),
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Max time: $_maxTime min', style: theme.textTheme.bodyMedium),
-                          Slider(
-                            value: _maxTime.toDouble(),
-                            min: 5,
-                            max: 120,
-                            divisions: 23,
-                            label: '$_maxTime',
-                            onChanged: (v) => setState(() => _maxTime = v.round()),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 14.h),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close_rounded),
-                      label: const Text('Close'),
-                    ),
-                    SizedBox(width: 10.w),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _notWiredToast();
-                      },
-                      icon: const Icon(Icons.tune_rounded),
-                      label: const Text('Apply'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ).asGlass(
-            tintColor: Colors.white,
-            clipBorderRadius: BorderRadius.circular(24.r),
-            blurX: 24,
-            blurY: 24,
-            frosted: true,
-          ),
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return CravingsFiltersSheet(
+              spiceLevel: tempSpice,
+              maxTime: tempTime,
+              onSpiceChanged: (v) => setModalState(() => tempSpice = v),
+              onTimeChanged:  (v) => setModalState(() => tempTime  = v),
+              onApply: () {
+                setState(() {
+                  _overrideSpice = (tempSpice == _defaultSpice) ? null : tempSpice;
+                  _overrideTime  = (tempTime  == _defaultTime)  ? null : tempTime;
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Filters set • spice=$tempSpice, time=$tempTime min')),
+                );
+              },
+            );
+          },
         );
       },
     );
@@ -191,10 +161,10 @@ class _CravingsScreenState extends State<CravingsScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // ---- Fullscreen Lottie background ----
+          // Background animation
           IgnorePointer(
             child: Align(
-              alignment: Alignment.center, // top, middle, or anywhere
+              alignment: Alignment.center,
               child: SizedBox(
                 width: 400.w,
                 height: 400.h,
@@ -207,22 +177,17 @@ class _CravingsScreenState extends State<CravingsScreen> {
               ),
             ),
           ),
-
-          // Soft gradient overlay (for readability)
+          // Readability gradient
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Colors.black.withOpacity(0.45),
-                  Colors.black.withOpacity(0.15),
-                ],
+                colors: [Colors.black.withOpacity(0.45), Colors.black.withOpacity(0.15)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
             ),
           ),
-
-          // ---- Foreground content ----
+          // Foreground
           Padding(
             padding: EdgeInsets.fromLTRB(24.w, 120.h, 24.w, 0.h),
             child: uid == null
@@ -251,89 +216,32 @@ class _CravingsScreenState extends State<CravingsScreen> {
                           ),
                           SizedBox(height: 18.h),
 
-                          // ---- Central glass search bar (Google-like) ----
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(28.r),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.search_rounded, color: Colors.white70),
-                                SizedBox(width: 8.w),
-                                Expanded(
-                                  child: TextField(
-                                    controller: _queryCtrl,
-                                    textInputAction: TextInputAction.search,
-                                    onSubmitted: (_) => _notWiredToast(),
-                                    style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white),
-                                    decoration: const InputDecoration(
-                                      hintText: "e.g., spicy cheesy pasta under 20 min",
-                                      hintStyle: TextStyle(color: Colors.white70),
-                                      border: InputBorder.none,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: 6.w),
-                                IconButton(
-                                  tooltip: 'Filters',
-                                  onPressed: _openFilters,
-                                  icon: const Icon(Icons.tune_rounded, color: Colors.white70),
-                                ),
-                                SizedBox(width: 6.w),
-                                ElevatedButton(
-                                  onPressed: _notWiredToast,
-                                  style: ElevatedButton.styleFrom(shape: const StadiumBorder()),
-                                  child: const Text('Generate'),
-                                ),
-                              ],
-                            ),
-                          ).asGlass(
-                            tintColor: Colors.white,
-                            clipBorderRadius: BorderRadius.circular(28.r),
-                            blurX: 24,
-                            blurY: 24,
-                            frosted: true,
+                          // Clean glass search bar (no buttons)
+                          GlassSearchBar(
+                            controller: _queryCtrl,
+                            onSubmit: _generate,
+                          ),
+
+                          SizedBox(height: 12.h),
+
+                          // Separate actions row (Filters + Generate)
+                          CravingsActions(
+                            onOpenFilters: _openFilters,
+                            onGenerate: _generate,
                           ),
 
                           SizedBox(height: 14.h),
 
-                          // ---- Caution banner (glass) ----
-                          Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16.r),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.info_outline_rounded, color: Colors.amber),
-                                SizedBox(width: 8.w),
-                                Expanded(
-                                  child: Text(
-                                    "AI‑generated results. Please review for accuracy and food safety.",
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: Colors.white.withOpacity(0.9),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ).asGlass(
-                            tintColor: Colors.white,
-                            clipBorderRadius: BorderRadius.circular(16.r),
-                            blurX: 20,
-                            blurY: 20,
-                            frosted: true,
-                          ),
+                          // Caution banner
+                          const CautionBannerGlass(),
 
                           SizedBox(height: 40.h),
 
-                          // Placeholder (results area to be implemented later)
+                          // Helper text showing current effective filters
                           Text(
-                            "Type a craving and tap Generate.",
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.white.withOpacity(0.9),
+                            "Effective filters → spice: $_effectiveSpice • time: $_effectiveTime min",
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withOpacity(0.85),
                             ),
                           ),
                         ],
