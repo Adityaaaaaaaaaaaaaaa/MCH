@@ -73,7 +73,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     //width/height of all feature cards!
     double cardWidth = 150.w;
     double cardHeight = 140.h;
-    double imgOpacity = 0.80;
+    double imgOpacity = 0.7;
 
     return Scaffold(
       backgroundColor: bgColor(context),
@@ -94,14 +94,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         children: [
           // --- BACKGROUND IMAGES (unchanged, but nicely arranged) ---
           Positioned(
-            top: 40,
-            left: 90,
+            top: 120,
+            left: -150,
             child: Transform.rotate(
-              angle: -0.6, // radians
+              angle: -0.8, // radians
               child: Opacity(
                 opacity: imgOpacity,
                 child: Image.asset(
-                  'assets/images/home/salad.png',
+                  //'assets/images/home/salad.png',
+                  'assets/images/home/food_plate_1.png',
                   width: 300,
                   height: 300,
                   fit: BoxFit.contain,
@@ -110,30 +111,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           ),
           Positioned(
-            bottom: 250,
-            left: 40,
+            top: 90,
+            right: -50,
             child: Transform.rotate(
-              angle: 0.9,
+              angle: -0.8, // radians
               child: Opacity(
                 opacity: imgOpacity,
                 child: Image.asset(
-                  'assets/images/home/curry.png',
-                  width: 300,
-                  height: 300,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 60,
-            right: 55,
-            child: Transform.rotate(
-              angle: 0.1,
-              child: Opacity(
-                opacity: imgOpacity,
-                child: Image.asset(
-                  'assets/images/home/burger.png',
+                  //'assets/images/home/salad.png',
+                  'assets/images/home/food_plate_5.png',
                   width: 150,
                   height: 150,
                   fit: BoxFit.contain,
@@ -142,14 +128,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           ),
           Positioned(
+            bottom: 240,
+            left: 80,
+            child: Transform.rotate(
+              angle: 0.9,
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  //'assets/images/home/curry.png',
+                  'assets/images/home/food_plate_3.png',
+                  width: 250,
+                  height: 250,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
             bottom: 40,
-            left: 15,
+            right: -90,
+            child: Transform.rotate(
+              angle: 0.1,
+              child: Opacity(
+                opacity: imgOpacity,
+                child: Image.asset(
+                  //'assets/images/home/burger.png',
+                  'assets/images/home/food_plate_2.png',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 20,
+            left: 0,
             child: Transform.rotate(
               angle: -0.4,
               child: Opacity(
                 opacity: imgOpacity,
                 child: Image.asset(
-                  'assets/images/home/tenders.png',
+                  //'assets/images/home/tenders.png',
+                  'assets/images/home/food_plate_4.png',
                   width: 150,
                   height: 150,
                   fit: BoxFit.contain,
