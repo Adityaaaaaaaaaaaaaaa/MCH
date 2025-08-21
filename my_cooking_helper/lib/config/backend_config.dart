@@ -18,3 +18,4 @@ String get spoonacularMealplanner => "$backendApiUrl/mealPlanner/week/weekPlanne
 String get spoonacularChangeDay => "$backendApiUrl/mealPlanner/day/changeDay";
 String get spoonacularPing => "$backendApiUrl/mealPlanner/ping";
 String get deleteMealPlan => "$backendApiUrl/mealPlanner/userPlan/deletePlan";
+String get aiRecipe => "$backendApiUrl/recipes/aiRecipe";
