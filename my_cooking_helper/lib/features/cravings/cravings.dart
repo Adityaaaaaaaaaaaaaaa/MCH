@@ -23,7 +23,7 @@ class CravingsScreen extends StatefulWidget {
 
 class _CravingsScreenState extends State<CravingsScreen> {
   // ---- Config: set your background Lottie asset path here ----
-  static const String _bgLottie = 'assets/animations/Animation_loading_glassmorphism.json';
+  static const String _bgLottie = 'assets/animations/Animation_wave.json';
 
   // UI-only controllers
   final TextEditingController _queryCtrl = TextEditingController();
@@ -179,7 +179,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
       extendBodyBehindAppBar: true,
       extendBody: true,
       drawer: const CustomDrawer(),
-      bottomNavigationBar: CustomNavBar(currentIndex: 3), // adjust as needed
+      bottomNavigationBar: CustomNavBar(currentIndex: 3),
       appBar: CustomAppBar(
         title: "My Cravings",
         showMenu: true,
@@ -193,15 +193,16 @@ class _CravingsScreenState extends State<CravingsScreen> {
         children: [
           // ---- Fullscreen Lottie background ----
           IgnorePointer(
-            child: Center(
+            child: Align(
+              alignment: Alignment.center, // top, middle, or anywhere
               child: SizedBox(
-                width: 400,   // <-- set your custom width
-                height: 400,  // <-- set your custom height
+                width: 400.w,
+                height: 400.h,
                 child: Lottie.asset(
                   _bgLottie,
                   frameRate: FrameRate.max,
                   repeat: true,
-                  fit: BoxFit.contain, // don’t stretch, just contain inside box
+                  fit: BoxFit.contain,
                 ),
               ),
             ),
