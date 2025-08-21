@@ -30,6 +30,7 @@ import 'features/cook/recipe_search.dart';
 import 'features/inventory/inventory.dart';
 import 'features/cook/recipe_favourites.dart';
 import 'features/meal_planner/planner.dart';
+import 'features/cravings/cravings.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -130,6 +131,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/planner',
       builder: (context, state) => const PlannerScreen(),
+    ),
+    GoRoute(
+      path: '/cravings',
+      builder: (context, state) => const CravingsScreen(),
     ),
   ],
 );
