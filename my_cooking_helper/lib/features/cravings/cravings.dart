@@ -256,7 +256,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
                                           controller: _queryCtrl,
                                           onSubmit: _generate,
                                         ),
-                                        SizedBox(height: 15.h),
+                                        SizedBox(height: 10.h),
 
                                         CravingsActions(
                                           onOpenFilters: _openFilters,
