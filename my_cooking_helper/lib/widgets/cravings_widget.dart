@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:glass/glass.dart';
+import '/utils/colors.dart';
 
 /// Clean glass search bar (no buttons)
 class GlassSearchBar extends StatelessWidget {
@@ -80,8 +81,8 @@ class GlassSearchBar extends StatelessWidget {
                     decoration: InputDecoration(
                       hintText: hintText ?? "Search your cravings or guilty pleasures ...",
                       hintStyle: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
-                        fontSize: 16.sp,
+                        color: textColor(context),
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.w300,
                       ),
                       border: InputBorder.none,
@@ -137,33 +138,247 @@ class GlassSearchBar extends StatelessWidget {
 }
 
 /// Separate action buttons row
-class CravingsActions extends StatelessWidget {
+class CravingsActions extends StatefulWidget {
   final VoidCallback onOpenFilters;
   final VoidCallback onGenerate;
+  final bool isGenerating;
 
   const CravingsActions({
     super.key,
     required this.onOpenFilters,
     required this.onGenerate,
+    this.isGenerating = false,
   });
 
   @override
+  State<CravingsActions> createState() => _CravingsActionsState();
+}
+
+class _CravingsActionsState extends State<CravingsActions>
+    with TickerProviderStateMixin {
+  late AnimationController _animationController;
+  late AnimationController _pulseController;
+  late Animation<double> _rotationAnimation;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Main gradient animation
+    _animationController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
+    
+    // Pulse animation for AI effect
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _rotationAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.linear,
+    ));
+    
+    _pulseAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.1,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        OutlinedButton.icon(
-          onPressed: onOpenFilters,
-          icon: const Icon(Icons.tune_rounded),
-          label: const Text("Filters"),
-        ),
-        SizedBox(width: 14.w),
-        ElevatedButton.icon(
-          onPressed: onGenerate,
-          icon: const Icon(Icons.auto_awesome_rounded),
-          label: const Text("Generate"),
-        ),
-      ],
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      child: Row(
+        children: [
+          // Filter Button - Clean Glass Style
+          Expanded(
+            flex: 2,
+            child: Container(
+              height: 48.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: widget.onOpenFilters,
+                  borderRadius: BorderRadius.circular(24.r),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24.r),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.tune_rounded,
+                          color: textColor(context),
+                          size: 18.sp,
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          "Filters",
+                          style: TextStyle(
+                            color: textColor(context),
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ).asGlass(
+              tintColor: Colors.white.withOpacity(0.05),
+              clipBorderRadius: BorderRadius.circular(24.r),
+              blurX: 20,
+              blurY: 20,
+              frosted: true,
+            ),
+          ),
+          
+          SizedBox(width: 12.w),
+          
+          // Generate Button - Animated AI Style
+          Expanded(
+            flex: 3,
+            child: AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: widget.isGenerating ? _pulseAnimation.value : 1.0,
+                  child: Container(
+                    height: 48.h,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF4285F4).withOpacity(0.3),
+                          blurRadius: 12,
+                          spreadRadius: 0,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: AnimatedBuilder(
+                      animation: _rotationAnimation,
+                      builder: (context, child) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(24.r),
+                            gradient: SweepGradient(
+                              center: Alignment.center,
+                              startAngle: _rotationAnimation.value * 2 * 3.14159,
+                              colors: const [
+                                Color(0xFF4285F4), // Google Blue
+                                Color(0xFFDB4437), // Google Red
+                                Color(0xFFF4B400), // Google Yellow
+                                Color(0xFF0F9D58), // Google Green
+                                Color(0xFF4285F4), // Back to Blue
+                              ],
+                              stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+                            ),
+                          ),
+                          child: Container(
+                            margin: EdgeInsets.all(1.5.w),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(22.5.r),
+                              color: Colors.black.withOpacity(0.8),
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: widget.isGenerating ? null : widget.onGenerate,
+                                borderRadius: BorderRadius.circular(22.5.r),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(22.5.r),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Colors.white.withOpacity(0.1),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 300),
+                                        child: widget.isGenerating
+                                            ? SizedBox(
+                                                width: 18.w,
+                                                height: 18.h,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                                    Colors.white.withOpacity(0.9),
+                                                  ),
+                                                ),
+                                              )
+                                            : Icon(
+                                                Icons.auto_awesome_rounded,
+                                                color: Colors.white.withOpacity(0.95),
+                                                size: 18.sp,
+                                              ),
+                                      ),
+                                      SizedBox(width: 8.w),
+                                      Text(
+                                        widget.isGenerating ? "Generating..." : "Generate AI",
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.95),
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -245,7 +460,7 @@ class CautionBannerGlass extends StatelessWidget {
                       Text(
                         "AI Generated",
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: Colors.amber.shade200,
+                          color: Colors.orange.shade500,
                           fontWeight: FontWeight.w600,
                           fontSize: 11.sp,
                           letterSpacing: 0.5,
@@ -255,7 +470,7 @@ class CautionBannerGlass extends StatelessWidget {
                       Text(
                         "Please review for accuracy and food safety",
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withOpacity(0.85),
+                          color: textColor(context).withOpacity(0.6),
                           fontSize: 13.sp,
                           height: 1.2,
                           fontWeight: FontWeight.w400,
