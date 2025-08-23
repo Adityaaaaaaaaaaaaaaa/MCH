@@ -2,11 +2,12 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
-import json   # <-- add
-import math   # <-- add
-
+import json
+import math 
 from app.providers.gemini_recipe_generator import generate_recipes
 from app.providers.gemini_image_generator import generate_image_for_title
+from app.utils.id_utils import make_mru_id
+from datetime import datetime
 
 router = APIRouter()
 
@@ -118,6 +119,22 @@ async def ai_recipe(req: AiRecipeRequest):
                 readyInMinutes=cand.get("readyInMinutes"),
                 reasons=cand.get("reasons", []),
             ))
+            
+        # Step 4: Overwrite IDs with Mauritius-time-based IDs
+        _blue("[AI-RECIPES] Step 4/4: Overwriting candidate IDs …")
+        base_id = make_mru_id()  # e.g., '230825_2012'
+        seen: set[str] = set()
+        suffix = ["A", "B", "C", "D", "E", "F"]  # enough for our 3 items
+
+        for idx, it in enumerate(items):
+            new_id = f"{base_id}_{suffix[idx]}" if idx < len(suffix) else f"{base_id}_{idx+1}"
+            # just-in-case uniqueness
+            while new_id in seen:
+                new_id = f"{base_id}_{idx+1}"
+            seen.add(new_id)
+            _blue(f"  id {it.id!r} -> {new_id!r}")
+            it.id = new_id
+
 
         _blue("[AI-RECIPES] Responding to client with items:")
         _blue(_pp([{"id": it.id, "title": it.title, "hasImage": bool(it.image)} for it in items]))

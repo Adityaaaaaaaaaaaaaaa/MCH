@@ -1,10 +1,12 @@
 # app/providers/gemini_recipe_generator.py
 import os, json
 from typing import List, Dict, Any, Optional, Literal
-
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from google import genai
 from app.utils.ai_prompt import build_gemini_recipe_prompt
+import json
+import re
+from typing import Tuple
 
 BLUE = "\x1B[34m"; YELLOW = "\x1B[33m"; RESET = "\x1B[0m"
 def _blue(msg: str) -> None:  print(f"{BLUE}{msg}{RESET}")
@@ -32,8 +34,8 @@ class _NutritionLite(BaseModel):
 class _RecipeCandidateLite(BaseModel):
     id: Optional[str] = None
     title: str
-    readyInMinutes: int = Field(..., gt=0)
-    servings: Optional[int] = Field(default=None, gt=0)
+    readyInMinutes: int = Field(..., description="Must be > 0")
+    servings: Optional[int] = None
     cuisines: List[str] = []
     diets: List[str] = []
     vegetarian: Optional[bool] = None
@@ -46,23 +48,104 @@ class _RecipeCandidateLite(BaseModel):
     instructions: List[str] = []
     summary: Optional[str] = None
     nutrition: Optional[_NutritionLite] = None
+    
+    @field_validator("readyInMinutes")
+    def check_ready(cls, v):
+        if v <= 0:
+            raise ValueError("readyInMinutes must be > 0")
+        return v
+
+    @field_validator("servings")
+    def check_servings(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError("servings must be > 0")
+        return v
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     _blue("[Gemini][recipes] WARNING: GOOGLE_API_KEY not set — will fall back to stub if called")
 
+# ... keep your existing classes & GOOGLE_API_KEY ...
+
+def _strip_code_fences(s: str) -> str:
+    s = s.strip()
+    # ```json ... ```
+    if s.startswith("```"):
+        s = re.sub(r"^```(?:json|JSON)?\s*", "", s, flags=re.IGNORECASE)
+        s = re.sub(r"\s*```$", "", s)
+    return s.strip()
+
+def _extract_json_array(text: str) -> str:
+    """
+    Find the first top-level JSON array [ ... ] with bracket matching.
+    Returns the substring or raises ValueError.
+    """
+    i = text.find("[")
+    if i == -1:
+        raise ValueError("No '[' found")
+    depth = 0
+    for j in range(i, len(text)):
+        c = text[j]
+        if c == "[":
+            depth += 1
+        elif c == "]":
+            depth -= 1
+            if depth == 0:
+                return text[i:j+1]
+    raise ValueError("Unbalanced brackets")
+
+def _common_fixes(s: str) -> str:
+    """
+    Fix a few common LLM JSON hiccups safely:
+    - remove BOM
+    - remove trailing commas before ] or }
+    """
+    s = s.replace("\ufeff", "")
+    # Trailing commas: ", ]" -> "]", ", }" -> "}"
+    s = re.sub(r",\s*([\]\}])", r"\1", s)
+    return s
+
+def _coerce_candidates_from_text(raw_text: str) -> list[dict]:
+    """
+    Try multiple strategies to turn Gemini text into a Python list[dict].
+    """
+    t = raw_text.strip()
+
+    # If Gemini returned a *quoted* JSON array string, unquote once.
+    if (t.startswith('"') and t.endswith('"')) or (t.startswith("'") and t.endswith("'")):
+        try:
+            t = json.loads(t)  # becomes the inner JSON string
+        except Exception:
+            pass
+
+    t = _strip_code_fences(t)
+
+    # Now extract the array portion (handles surrounding prose)
+    arr = _extract_json_array(t)
+    arr = _common_fixes(arr)
+    return json.loads(arr)
+
+def _minimal_validate_list(lst: list) -> bool:
+    if not isinstance(lst, list) or len(lst) == 0:
+        return False
+    for item in lst:
+        if not isinstance(item, dict):
+            return False
+        if "title" not in item or "readyInMinutes" not in item:
+            return False
+        if "required_ingredients" not in item:
+            return False
+    return True
+
 async def generate_recipes(
     *,
     query: str,
     max_time: int,
-    spice_level: int,            # 0..4 (resolved)
+    spice_level: int,
     allergies: List[str],
     cuisines: List[str],
     diets: List[str],
 ) -> Dict[str, Any]:
-    """
-    Ask Gemini for JSON (no response_schema). Then parse+validate locally.
-    """
     prompt = build_gemini_recipe_prompt(
         query=query,
         max_time=max_time,
@@ -80,46 +163,35 @@ async def generate_recipes(
             contents=prompt,
             config={
                 "response_mime_type": "application/json",
-                # 👇 NO response_schema — avoids Gemini’s validator issues
+                # Prefer schema (works when the model obeys it)
+                "response_schema": list[_RecipeCandidateLite],
             },
         )
 
-        # Log raw JSON
-        raw_text = getattr(resp, "text", None)
-        if raw_text is None or not raw_text.strip():
-            raise RuntimeError("Gemini returned empty JSON response")
+        # Path A: schema-parsed
+        if getattr(resp, "parsed", None):
+            parsed: List[_RecipeCandidateLite] = resp.parsed  # type: ignore
+            _blue(f"[Gemini][recipes] parsed via schema: {len(parsed)} candidates")
+            return {"candidates": [c.model_dump() for c in parsed]}
 
-        _yell("[Gemini][recipes][RAW text] ↓")
-        _yell(_pretty(raw_text, max_chars=2000))
+        # Path B: fallback parse from text
+        raw = getattr(resp, "text", "") or ""
+        _blue("[Gemini][recipes][RAW text] ↓")
+        _blue(raw[:1000] + ("…" if len(raw) > 1000 else ""))
 
-        # Parse JSON
-        data = json.loads(raw_text)
-        if not isinstance(data, list):
-            # Some prompts/models may wrap in an object — try a few common keys
-            if isinstance(data, dict) and "candidates" in data and isinstance(data["candidates"], list):
-                data = data["candidates"]
-            else:
-                raise ValueError("Expected a top-level JSON array (or {candidates: [...]})")
-
-        # Validate each candidate
-        validated: List[_RecipeCandidateLite] = []
-        for i, item in enumerate(data, start=1):
-            try:
-                validated.append(_RecipeCandidateLite.model_validate(item))
-            except ValidationError as ve:
-                _yell(f"[Gemini][recipes] item {i} failed validation:\n{ve}")
-
-        if not validated:
-            raise ValueError("No valid candidates after validation")
-
-        _blue(f"[Gemini][recipes] validated {len(validated)} candidates")
-        _yell("[Gemini][recipes][validated preview] ↓")
-        _yell(_pretty([c.model_dump() for c in validated][:1], max_chars=1000))
-
-        return {"candidates": [c.model_dump() for c in validated]}
+        try:
+            lst = _coerce_candidates_from_text(raw)
+            if not _minimal_validate_list(lst):
+                raise ValueError("Minimal validation failed")
+            _blue(f"[Gemini][recipes] parsed via fallback: {len(lst)} candidates")
+            return {"candidates": lst}
+        except Exception as pe:
+            _blue(f"[Gemini][recipes] fallback parse failed: {pe}")
+            raise
 
     except Exception as e:
         _blue(f"[Gemini][recipes] ERROR {e} — returning stub")
+        # … keep your existing stub exactly …
         return {
             "candidates": [
                 {
@@ -142,7 +214,8 @@ async def generate_recipes(
                         "Sauté garlic and tomatoes; season to taste.",
                         "Toss pasta with sauce and serve.",
                     ],
-                    "cuisines": [], "diets": [],
+                    "cuisines": [],
+                    "diets": [],
                 },
                 {
                     "id": "stub_r2",
@@ -160,7 +233,8 @@ async def generate_recipes(
                         "Fold and toast both sides until melted.",
                         "Slice and serve with salsa.",
                     ],
-                    "cuisines": [], "diets": [],
+                    "cuisines": [],
+                    "diets": [],
                 },
                 {
                     "id": "stub_r3",
@@ -178,7 +252,8 @@ async def generate_recipes(
                         "Stir-fry rice with pineapple and aromatics.",
                         "Return eggs, season; serve.",
                     ],
-                    "cuisines": [], "diets": [],
+                    "cuisines": [],
+                    "diets": [],
                 },
             ]
         }

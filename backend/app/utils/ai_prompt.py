@@ -80,6 +80,8 @@ def build_gemini_recipe_prompt(
       • Prefer "g" for solids.
     - Keep instructions concise and safe. No URLs, no markdown, no images.
     - Ensure the three recipes are meaningfully different.
+    - Output MUST be a raw JSON ARRAY, not a quoted string. Do NOT escape quotes.
+    - Do NOT wrap in markdown fences or add any text before/after.
 
     OUTPUT: Return ONLY the JSON array. No extra text.
     """).strip()
