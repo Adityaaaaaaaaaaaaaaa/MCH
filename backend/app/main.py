@@ -7,14 +7,18 @@ from app.api.meal_planner import router as meal_planner_router
 from app.api.meal_planner_change_day import router as meal_planner_change_day_router
 from app.api.meal_planner_ping import router as meal_planner_ping_router
 from app.api.meal_planner_admin import router as meal_planner_admin_router
+from app.api.ai_recipe_generator import router as ai_recipe_router
 from app.api.debug import router as debug_router
 from dotenv import load_dotenv
 
 load_dotenv()
 
-app = FastAPI()
+app = FastAPI(
+    title="My Cooking Helper API", 
+    version="0.1.0", 
+    description="Backend for My Cooking Helper app"
+)
 
-# Register routers
 app.include_router(food_router, prefix="/food")
 app.include_router(receipt_router, prefix="/receipt")
 app.include_router(recipe_ing_router, prefix="/recipes/find")
@@ -23,6 +27,7 @@ app.include_router(meal_planner_router, prefix="/mealPlanner/week")
 app.include_router(meal_planner_change_day_router, prefix="/mealPlanner/day")
 app.include_router(meal_planner_ping_router, prefix="/mealPlanner/ping")
 app.include_router(meal_planner_admin_router, prefix="/mealPlanner/userPlan")
+app.include_router(ai_recipe_router, prefix="/recipes/gemini")
 app.include_router(debug_router)
 
 @app.get("/")
