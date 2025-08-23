@@ -3,11 +3,11 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import json
-import math 
+
 from app.providers.gemini_recipe_generator import generate_recipes
 from app.providers.gemini_image_generator import generate_image_for_title
 from app.utils.id_utils import make_mru_id
-from datetime import datetime
+from app.utils.shopping import attach_shopping_to_candidates
 
 router = APIRouter()
 
@@ -22,8 +22,7 @@ def _pp(obj: Any, max_len: int = 1500) -> str:
     except Exception:
         return str(obj)
 
-
-# ---------- Models (mirror Flutter payload) ----------
+# ---------- Request models (mirror Flutter payload) ----------
 class InventoryItem(BaseModel):
     name: str
     quantity: float = 0.0
@@ -51,29 +50,64 @@ class AiRecipeRequest(BaseModel):
     inventory: List[InventoryItem] = []
 
 # ---------- Response models (UI-friendly) ----------
+class ShoppingItem(BaseModel):
+    name: str
+    need: float
+    unit: str
+    have: float
+    tag: str  # "buy" | "missing"
+
 class Candidate(BaseModel):
     id: str
     title: str
     image: Optional[str] = None
     readyInMinutes: Optional[int] = None
     reasons: List[str] = []
+    shopping: List[ShoppingItem] = []   # computed per-recipe
 
 class AiRecipeResponse(BaseModel):
     received: bool
     message: str
     items: List[Candidate]
 
+# ---------- Helpers for verbose previews ----------
+def _preview_candidates_short(cands: List[Dict[str, Any]]) -> None:
+    _blue(f"[AI-RECIPES] Candidates received: {len(cands)}")
+    for i, c in enumerate(cands, start=1):
+        _blue(f"  [{i}] id={c.get('id')} title={c.get('title')} mins={c.get('readyInMinutes')}")
+        rs = c.get("reasons", [])
+        if rs:
+            _blue("      reasons: " + "; ".join(rs[:3]) + ("" if len(rs) <= 3 else " …"))
+
+def _preview_shopping_lists(cands_with_shopping: List[Dict[str, Any]]) -> None:
+    _blue("[AI-RECIPES] Shopping list preview per candidate:")
+    for i, c in enumerate(cands_with_shopping, start=1):
+        title = c.get("title", f"Candidate #{i}")
+        shop = c.get("shopping", [])
+        _blue(f"  [{i}] {title} — shopping items: {len(shop)}")
+        if not shop:
+            _blue("       (no missing items ✅)")
+            continue
+        for s in shop:
+            name = s.get("name")
+            need = s.get("need")
+            have = s.get("have")
+            unit = s.get("unit")
+            tag  = s.get("tag")
+            _blue(f"       - {name}: need {need} {unit} (have {have}) [{tag}]")
+
 # ---------- Endpoint ----------
 @router.post("/aiRecipe", response_model=AiRecipeResponse)
 async def ai_recipe(req: AiRecipeRequest):
     try:
-        _blue("[AI-RECIPES] Step 1/3: Received bundle")
+        # ── Step 1: Get the data ─────────────────────────────────────────
+        _blue("[AI-RECIPES] Step 1/6: Received bundle")
         _blue(f"  user={req.userId} query='{req.query}' time={req.constraints.maxTimeMinutes}m spice={req.constraints.spice.resolvedLevel}")
         _blue(f"  prefs: allergies={req.preferences.allergies} cuisines={req.preferences.cuisines} diets={req.preferences.diets}")
         _blue(f"  inventory items={len(req.inventory)}")
 
-        # Step 2: Gemini recipe candidates
-        _blue("[AI-RECIPES] Step 2/3: Calling Gemini recipe generator…")
+        # ── Step 2: Call Gemini to generate 3 recipes ───────────────────
+        _blue("[AI-RECIPES] Step 2/6: Calling Gemini recipe generator…")
         gen = await generate_recipes(
             query=req.query,
             max_time=req.constraints.maxTimeMinutes,
@@ -82,62 +116,73 @@ async def ai_recipe(req: AiRecipeRequest):
             cuisines=req.preferences.cuisines,
             diets=req.preferences.diets,
         )
-
-        # Log raw response (truncated to avoid megaspam)
         _blue("[AI-RECIPES] Gemini raw candidates (truncated):")
         _blue(_pp(gen))
 
-        # Summaries per candidate
-        cands = gen.get("candidates", [])
-        _blue(f"[AI-RECIPES] Candidates received: {len(cands)}")
-        for i, c in enumerate(cands, start=1):
-            _blue(f"  [{i}] id={c.get('id')} title={c.get('title')} mins={c.get('readyInMinutes')}")
-            rs = c.get("reasons", [])
-            if rs:
-                _blue("      reasons: " + "; ".join(rs[:3]) + ("" if len(rs) <= 3 else " …"))
+        cands: List[Dict[str, Any]] = gen.get("candidates", [])
+        _preview_candidates_short(cands)
 
-        # Step 3: Image generation for each title (sequential; 3 calls)
-        _blue("[AI-RECIPES] Step 3/3: Generating images per candidate…")
-        items: List[Candidate] = []
+        # ── Step 3: Generate images (sequential; 1 per candidate) ───────
+        _blue("[AI-RECIPES] Step 3/6: Generating images per candidate…")
+        images: List[Optional[str]] = []
         for i, cand in enumerate(cands, start=1):
             title = cand.get("title", f"Candidate #{i}")
-
             try:
                 img_data_url = await generate_image_for_title(title=title)
-                # Log if image came back (don’t print the whole base64)
                 got_img = bool(img_data_url) and img_data_url.startswith("data:image/")
                 size_hint = len(img_data_url) if img_data_url else 0
                 _blue(f"  [img] {title!r}: {'OK' if got_img else 'TEXT-ONLY'} ({size_hint} chars)")
+                images.append(img_data_url if got_img else None)
             except Exception as img_err:
                 _blue(f"  [img] {title!r}: ERROR {img_err}")
-                img_data_url = None
+                images.append(None)
 
+        # ── Step 4: Compute shopping list per candidate ─────────────────
+        _blue("[AI-RECIPES] Step 4/6: Computing shopping lists…")
+        inv_for_utils = [i.dict() for i in req.inventory]
+        cands_with_shopping = attach_shopping_to_candidates(
+            candidates=cands,
+            inventory=inv_for_utils,
+        )
+        _preview_shopping_lists(cands_with_shopping)
+
+        # ── Step 5: Build final items (merge images + shopping) ─────────
+        _blue("[AI-RECIPES] Step 5/6: Building response items…")
+        items: List[Candidate] = []
+        for idx, cand in enumerate(cands_with_shopping):
+            title = cand.get("title", f"Candidate #{idx+1}")
             items.append(Candidate(
-                id=cand.get("id", f"cand_{i}"),
+                id=cand.get("id", f"cand_{idx+1}"),
                 title=title,
-                image=img_data_url,
+                image=images[idx] if idx < len(images) else None,
                 readyInMinutes=cand.get("readyInMinutes"),
                 reasons=cand.get("reasons", []),
+                shopping=[ShoppingItem(**s) for s in cand.get("shopping", [])],
             ))
-            
-        # Step 4: Overwrite IDs with Mauritius-time-based IDs
-        _blue("[AI-RECIPES] Step 4/4: Overwriting candidate IDs …")
+
+        # ── Step 6: Overwrite IDs with Mauritius-time-based IDs ─────────
+        _blue("[AI-RECIPES] Step 6/6: Overwriting candidate IDs …")
         base_id = make_mru_id()  # e.g., '230825_2012'
         seen: set[str] = set()
-        suffix = ["A", "B", "C", "D", "E", "F"]  # enough for our 3 items
+        suffix = ["A", "B", "C", "D", "E", "F"]
 
         for idx, it in enumerate(items):
             new_id = f"{base_id}_{suffix[idx]}" if idx < len(suffix) else f"{base_id}_{idx+1}"
-            # just-in-case uniqueness
             while new_id in seen:
                 new_id = f"{base_id}_{idx+1}"
-            seen.add(new_id)
             _blue(f"  id {it.id!r} -> {new_id!r}")
+            seen.add(new_id)
             it.id = new_id
 
-
         _blue("[AI-RECIPES] Responding to client with items:")
-        _blue(_pp([{"id": it.id, "title": it.title, "hasImage": bool(it.image)} for it in items]))
+        _blue(_pp([
+            {
+                "id": it.id,
+                "title": it.title,
+                "hasImage": bool(it.image),
+                "shoppingCount": len(it.shopping),
+            } for it in items
+        ]))
 
         return AiRecipeResponse(
             received=True,
