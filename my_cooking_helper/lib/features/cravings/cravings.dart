@@ -143,7 +143,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
     final timeMins  = _effectiveTime;
 
     // Build + log the final payload; this also resolves random 0..4 when needed.
-    _svc.buildFinalBundle(
+    await _svc.postAiRecipeBundle(
       userId: uid,
       query: query,
       defaults: defaults,
@@ -152,6 +152,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
       timeMinutes: timeMins,
     );
 
+    // Show a confirmation message
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Generating with '
