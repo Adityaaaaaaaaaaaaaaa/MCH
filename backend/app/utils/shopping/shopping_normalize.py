@@ -1,7 +1,9 @@
-# app/utils/normalize.py
+# app/utils/shopping/shopping_normalize.py
 from __future__ import annotations
-import re
+import os, json, re
+from pathlib import Path
 from typing import Iterable
+
 
 # -----------------------------
 # Pantry: skip-by-default items
@@ -12,7 +14,8 @@ PANTRY_SKIP: set[str] = {
 
     # — salts & peppers —
     "salt", "table salt", "kosher salt", "sea salt", "himalayan salt",
-    "black pepper", "white pepper", "pepper", "peppercorns", "ground black pepper", "ground white pepper",
+    "black pepper", "white pepper", "pepper", "peppercorns",
+    "ground black pepper", "ground white pepper",
 
     # — common oils & fats —
     "vegetable oil", "olive oil", "extra virgin olive oil", "canola oil",
@@ -193,8 +196,16 @@ SYNONYM_MAP: dict[str, str] = {
     "garlic cloves": "garlic",
     "broccoli florets": "broccoli",
     "button mushrooms": "mushroom",
+
+    # your extra fruit entries
+    "apples": "apple",
+    "granny smith apples": "apple",
+    "fuji apples": "apple",
 }
 
+# ----------------------
+# Core functions
+# ----------------------
 _whitespace_re = re.compile(r"\s+")
 
 def _strip_descriptors(tokens: Iterable[str]) -> list[str]:
@@ -244,3 +255,93 @@ def add_synonyms(pairs: dict[str, str]) -> None:
         if not k or not v:
             continue
         SYNONYM_MAP[normalize_name(k)] = normalize_name(v)
+        
+
+BLUE = "\x1B[34m"; RESET = "\x1B[0m"
+def _blue(x: str) -> None: print(f"{BLUE}{x}{RESET}")
+
+_whitespace_re = re.compile(r"\s+")
+
+def _strip_descriptors(tokens: Iterable[str]) -> list[str]:
+    return [t for t in tokens if t and t not in DESCRIPTOR_STOPWORDS]
+
+def normalize_name(raw: str) -> str:
+    s = raw.strip().lower()
+    s = re.sub(r"[^a-z0-9\s\-\']", " ", s)
+    s = _whitespace_re.sub(" ", s).strip()
+    tokens = _strip_descriptors(s.split(" "))
+    s = " ".join(tokens)
+    s = _whitespace_re.sub(" ", s).strip()
+    if s in SYNONYM_MAP:
+        s = SYNONYM_MAP[s]
+    return s
+
+def is_pantry(name_normalized: str) -> bool:
+    return name_normalized in PANTRY_SKIP
+
+def extend_pantry(extra: Iterable[str]) -> None:
+    for x in extra:
+        if not x:
+            continue
+        PANTRY_SKIP.add(normalize_name(x))
+
+def add_synonyms(pairs: dict[str, str]) -> None:
+    for k, v in pairs.items():
+        if not k or not v:
+            continue
+        SYNONYM_MAP[normalize_name(k)] = normalize_name(v)
+
+# --------------------------------------------------------------------
+# OFF alias loader (auto-merge large map without overriding your own)
+# --------------------------------------------------------------------
+_OFF_LOADED = False
+
+def _default_off_path() -> Path:
+    # this file lives at app/utils/shopping/shopping_normalize.py
+    # we want app/data/off_ingredients_alias_map.en.json
+    return Path(__file__).resolve().parents[2] / "data" / "off_ingredients_alias_map.en.json"
+
+def ensure_off_aliases_loaded(path: str | os.PathLike | None = None) -> None:
+    """
+    One-time merge of OFF alias map into SYNONYM_MAP.
+    - Skips if OFF_ALIASES_DISABLE=1
+    - Uses OFF_ALIASES_PATH if set, otherwise app/data/off_ingredients_alias_map.en.json
+    - Manual SYNONYM_MAP entries take precedence; OFF only fills gaps.
+    """
+    global _OFF_LOADED
+    if _OFF_LOADED:
+        return
+    if os.getenv("OFF_ALIASES_DISABLE", "").strip() in {"1", "true", "True"}:
+        _blue("[OFF] alias loading disabled via OFF_ALIASES_DISABLE")
+        _OFF_LOADED = True
+        return
+
+    p = Path(os.getenv("OFF_ALIASES_PATH") or path or _default_off_path())
+    try:
+        with p.open("r", encoding="utf-8") as f:
+            off_map: dict[str, str] = json.load(f)
+    except FileNotFoundError:
+        _blue(f"[OFF] alias file not found, skipping: {p}")
+        _OFF_LOADED = True
+        return
+    except Exception as e:
+        _blue(f"[OFF] error reading alias file ({p}): {e}; continuing without it")
+        _OFF_LOADED = True
+        return
+
+    # Merge (manual synonyms win)
+    added = 0
+    for k, v in off_map.items():
+        kk = (k or "").strip().lower()
+        vv = (v or "").strip().lower()
+        if not kk or not vv:
+            continue
+        if kk not in SYNONYM_MAP:
+            SYNONYM_MAP[kk] = vv
+            added += 1
+
+    _blue(f"[OFF] alias map merged: +{added} entries (manual kept: {len(SYNONYM_MAP)}) from {p}")
+    _OFF_LOADED = True
+
+# auto-load at import (safe & idempotent)
+ensure_off_aliases_loaded()

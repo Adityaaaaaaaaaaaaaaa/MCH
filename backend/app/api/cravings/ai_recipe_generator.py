@@ -1,9 +1,11 @@
-# app/api/ai_recipe_generator.py
+# app/api/cravings/ai_recipe_generator.py
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import json
-
+import anyio
+from app.utils.shopping.shopping_normalize import normalize_name
+from app.utils.shopping.firestore_inventory import fetch_inventory_once
 from app.providers.gemini.gemini_recipe_generator import generate_recipes
 from app.providers.gemini.gemini_image_generator import generate_image_for_title
 from app.utils.cravings.id_utils import make_mru_id
@@ -104,8 +106,16 @@ async def ai_recipe(req: AiRecipeRequest):
         _blue("[AI-RECIPES] Step 1/6: Received bundle")
         _blue(f"  user={req.userId} query='{req.query}' time={req.constraints.maxTimeMinutes}m spice={req.constraints.spice.resolvedLevel}")
         _blue(f"  prefs: allergies={req.preferences.allergies} cuisines={req.preferences.cuisines} diets={req.preferences.diets}")
-        _blue(f"  inventory items={len(req.inventory)}")
-
+        _blue(f"  inventory items (UI payload)={len(req.inventory)}")
+        
+        live_inventory = await anyio.to_thread.run_sync(fetch_inventory_once, req.userId)
+        _blue(f"[AI-RECIPES] Using Firestore inventory snapshot: {len(live_inventory)} items")
+        
+        allowed = sorted({ normalize_name(i["name"]) for i in live_inventory })
+        _blue(f"[AI-RECIPES] allowed_canonicals (from inventory): {len(allowed)}")
+        if allowed:
+            _blue("  e.g.: " + ", ".join(allowed[:15]) + (" …" if len(allowed) > 15 else ""))
+        
         # ── Step 2: Call Gemini to generate 3 recipes ───────────────────
         _blue("[AI-RECIPES] Step 2/6: Calling Gemini recipe generator…")
         gen = await generate_recipes(
@@ -115,6 +125,7 @@ async def ai_recipe(req: AiRecipeRequest):
             allergies=req.preferences.allergies,
             cuisines=req.preferences.cuisines,
             diets=req.preferences.diets,
+            allowed_canonicals=allowed,
         )
         _blue("[AI-RECIPES] Gemini raw candidates (truncated):")
         _blue(_pp(gen))
@@ -136,13 +147,12 @@ async def ai_recipe(req: AiRecipeRequest):
             except Exception as img_err:
                 _blue(f"  [img] {title!r}: ERROR {img_err}")
                 images.append(None)
-
+                
         # ── Step 4: Compute shopping list per candidate ─────────────────
         _blue("[AI-RECIPES] Step 4/6: Computing shopping lists…")
-        inv_for_utils = [i.dict() for i in req.inventory]
         cands_with_shopping = attach_shopping_to_candidates(
             candidates=cands,
-            inventory=inv_for_utils,
+            inventory=live_inventory, # use live inventory from Firestore
         )
         _preview_shopping_lists(cands_with_shopping)
 

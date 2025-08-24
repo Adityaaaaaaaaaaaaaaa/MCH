@@ -1,6 +1,5 @@
 # app/utils/ai_prompt.py
-# app/utils/ai_prompt.py
-from typing import List
+from typing import List, Optional
 from textwrap import dedent
 
 BLUE = "\x1B[34m"; RESET = "\x1B[0m"
@@ -11,30 +10,37 @@ def build_gemini_recipe_prompt(
     *,
     query: str,
     max_time: int,
-    spice_level: int,               # 0..4 (resolved)
+    spice_level: int,
     allergies: List[str],
     cuisines: List[str],
     diets: List[str],
+    allowed_canonicals: Optional[List[str]] = None,   # NEW (optional)
 ) -> str:
     """
     Prompt for EXACTLY 3 distinct recipes as a JSON ARRAY (no extra text).
-    Emphasizes: query has top priority; prefs are guidance only; desserts ignore spice.
+    Adds: canonical ingredient names + pantryLikely flags.
     """
     _blue("[Gemini][prompt] building prompt …")
 
     spice_scale = (
-        "Spice scale (0–4): 0=No spice, 1=Mild, 2=Medium, 3=Spicy, 4=Very spicy (no extreme hazards)."
+        "Spice scale (0-4): 0=No spice, 1=Mild, 2=Medium, 3=Spicy, 4=Very spicy (no extreme hazards)."
     )
     allergies_text = ", ".join(allergies) if allergies else "None"
     cuisines_text  = ", ".join(cuisines) if cuisines else "Any"
     diets_text     = ", ".join(diets)    if diets    else "Any"
-    query_text     = query.strip() or "(No free‑text preference provided)"
+    query_text     = query.strip() or "(No free-text preference provided)"
 
-    # Top-level MUST be a JSON array of 3 recipe objects, nothing else.
-    # Field names are fixed to match our response_schema in code.
+    canon_vocab = ""
+    if allowed_canonicals:
+        # keep it short & stable; you can cap length upstream if needed
+        unique = sorted(set(x.strip().lower() for x in allowed_canonicals if x.strip()))
+        canon_vocab = "\n    CANONICAL VOCABULARY (prefer these if applicable):\n    - " + ", ".join(unique)
+        
+    allowed_text = ", ".join(sorted(set(allowed_canonicals or []))) or "[]"
+
     return dedent(f"""
     You are a careful culinary assistant. Produce EXACTLY THREE distinct, home-cookable recipes as a JSON ARRAY.
-    Return ONLY JSON (no prose) that strictly follows the schema specified below.
+    Return ONLY JSON (no prose) that strictly follows the schema and rules below.
 
     PRIORITY & BEHAVIOR RULES
     - The USER QUERY has TOP PRIORITY. Never substitute a different dish type.
@@ -56,17 +62,39 @@ def build_gemini_recipe_prompt(
     User diets: {diets_text}
     Preferred cuisines: {cuisines_text}
     User free-text query: {query_text}
+    {canon_vocab}
+
+    INGREDIENT NORMALIZATION (VERY IMPORTANT)
+    - For each ingredient object, add:
+        "canonical": a short, lowercase canonical name for inventory matching.
+          • Singular nouns; no brands; collapse varieties to a base item.
+          • Examples:
+              "Granny Smith apples" → "apple"
+              "bell peppers"/"red bell pepper" → "bell pepper"
+              "green onions"/"spring onions"/"scallions" → "scallion"
+              "yoghurt" → "yogurt"
+              "red chili powder" → "chilli powder"
+          • If uncertain, repeat the original name in lowercase.
+        "pantryLikely": true if most households keep it as a staple (salt, sugar, oil, soy sauce, stock, etc.); false otherwise.
+    - Units must be normalized: "g" for solids, "ml" for liquids, "count" for whole items.
 
     OUTPUT RULES (STRICT)
     - Top-level: an ARRAY with exactly 3 objects.
     - Each object MUST have the following fields:
-        "id": string  // format: DDMMYY_HHMM (24h) in UTC+4 (Mauritius), e.g., "230825_2012"
+        "id": string,  // format DDMMYY_HHMM in UTC+4 (Mauritius), e.g. "230825_2012"
         "title": string,
         "readyInMinutes": integer > 0 (<= {max_time}),
         "reasons": array of short strings (why it matches query/time/prefs),
-        "required_ingredients": array of objects {{ "name": string, "quantity": number, "unit": "g"|"ml"|"count" }},
+        "required_ingredients": array of objects {{
+            "name": string,
+            "canonical": string
+            "quantity": number,
+            "unit": "g"|"ml"|"count",
+            "canonical": string,
+            "pantryLikely": boolean
+        }},
         "optional_ingredients": array of the same object schema (can be empty),
-        "instructions": array of clear, safe, step-by-step strings (no numbering needed),
+        "instructions": array of clear, safe, step-by-step strings,
         "cuisines": array of strings,
         "diets": array of strings,
         "vegetarian": boolean,
@@ -81,9 +109,10 @@ def build_gemini_recipe_prompt(
     - Keep instructions concise and safe. No URLs, no markdown, no images.
     - Ensure the three recipes are meaningfully different.
     - Output MUST be a raw JSON ARRAY, not a quoted string. Do NOT escape quotes.
-    - Do NOT wrap in markdown fences or add any text before/after.
 
-    OUTPUT: Return ONLY the JSON array. No extra text.
+    OUTPUT FORMAT
+    - Return ONLY valid JSON (no prose) as a raw JSON ARRAY (not a quoted string).
+    - Do NOT wrap in markdown fences or add any text before/after.
     """).strip()
 
 
