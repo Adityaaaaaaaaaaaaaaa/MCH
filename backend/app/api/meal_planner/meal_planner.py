@@ -5,8 +5,8 @@ from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 import os
 from datetime import datetime, timezone, timedelta
-from app.providers.week_plan_generate import generate_week_plan
-from app.providers.spoonacular_recipe_details import SpoonacularRecipeDetailsProvider
+from app.providers.spoonacular.week_plan_generate import generate_week_plan
+from app.providers.spoonacular.spoonacular_recipe_details import SpoonacularRecipeDetailsProvider
 from app.models.meal_plan import (
     build_week_lite_from_items,  # parses Spoonacular "items" into 7×3 lite meals + ids
     DayPlanLite,                 # lite day (ids only)

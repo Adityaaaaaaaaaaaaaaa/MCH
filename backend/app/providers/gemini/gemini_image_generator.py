@@ -4,7 +4,7 @@ import base64
 from typing import Optional
 from google import genai
 from google.genai import types
-from app.utils.ai_prompt import recipe_image_prompt
+from app.utils.cravings.ai_prompt import recipe_image_prompt
 
 BLUE = "\x1B[34m"; RESET = "\x1B[0m"
 def _blue(msg: str) -> None:

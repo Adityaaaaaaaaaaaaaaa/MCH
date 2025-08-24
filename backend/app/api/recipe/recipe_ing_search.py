@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Request
 from typing import List, Optional, Any
 from app.models.recipe import Recipe, RecipeSearchRequest, RecipeSearchResponse
-from app.providers.spoonacular import SpoonacularProvider
-from app.providers.spoonacular_recipe_details import SpoonacularRecipeDetailsProvider
+from app.providers.spoonacular.spoonacular import SpoonacularProvider
+from app.providers.spoonacular.spoonacular_recipe_details import SpoonacularRecipeDetailsProvider
 from app.utils.utils import filter_recipes, print_rate_limits
 import time
 

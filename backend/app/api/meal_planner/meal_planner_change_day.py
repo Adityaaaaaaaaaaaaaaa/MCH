@@ -7,8 +7,8 @@ from datetime import datetime, timezone
 import os
 
 from app.core.firestore_client import get_firestore_client
-from app.providers.day_plan_generate import generate_day_plan
-from app.providers.spoonacular_recipe_details import SpoonacularRecipeDetailsProvider
+from app.providers.spoonacular.day_plan_generate import generate_day_plan
+from app.providers.spoonacular.spoonacular_recipe_details import SpoonacularRecipeDetailsProvider
 from app.models.recipe import Recipe
 from app.models.meal_plan import MealPlanDay
 

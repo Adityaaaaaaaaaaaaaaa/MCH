@@ -1,6 +1,5 @@
 # app/providers/day_plan_generate.py
 import os
-import json
 import requests
 
 RAPIDAPI_HOST = "spoonacular-recipe-food-nutrition-v1.p.rapidapi.com"
