@@ -4,8 +4,8 @@ from pydantic import BaseModel
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from app.core.firestore_client import get_firestore_client
-from app.providers.week_plan_generate import generate_week_plan
-from app.providers.spoonacular_recipe_details import SpoonacularRecipeDetailsProvider
+from app.providers.spoonacular.week_plan_generate import generate_week_plan
+from app.providers.spoonacular.spoonacular_recipe_details import SpoonacularRecipeDetailsProvider
 from app.models.meal_plan import (
     build_week_lite_from_items, DayPlanLite, MealPlanDay
 )

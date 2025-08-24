@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.providers.youtube_video import YouTubeVideoProvider
-from app.providers.gemini_summary import RecipeSummary, summarize_with_gemini
+from app.providers.youtube.youtube_video import YouTubeVideoProvider
+from app.providers.gemini.gemini_summary import RecipeSummary, summarize_with_gemini
 
 router = APIRouter()
 video_provider = YouTubeVideoProvider()

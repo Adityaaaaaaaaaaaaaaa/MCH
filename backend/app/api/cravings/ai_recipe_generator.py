@@ -4,10 +4,10 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import json
 
-from app.providers.gemini_recipe_generator import generate_recipes
-from app.providers.gemini_image_generator import generate_image_for_title
-from app.utils.id_utils import make_mru_id
-from app.utils.shopping import attach_shopping_to_candidates
+from app.providers.gemini.gemini_recipe_generator import generate_recipes
+from app.providers.gemini.gemini_image_generator import generate_image_for_title
+from app.utils.cravings.id_utils import make_mru_id
+from app.utils.shopping.shopping import attach_shopping_to_candidates
 
 router = APIRouter()
 

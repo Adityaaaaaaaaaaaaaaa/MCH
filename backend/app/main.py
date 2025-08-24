@@ -1,14 +1,13 @@
 from fastapi import FastAPI
-from app.api.scan_food import router as food_router
-from app.api.scan_receipt import router as receipt_router
-from app.api.recipe_ing_search import router as recipe_ing_router
-from app.api.recipe_videos import router as recipe_vid_router
-from app.api.meal_planner import router as meal_planner_router
-from app.api.meal_planner_change_day import router as meal_planner_change_day_router
-from app.api.meal_planner_ping import router as meal_planner_ping_router
-from app.api.meal_planner_admin import router as meal_planner_admin_router
-from app.api.ai_recipe_generator import router as ai_recipe_router
-from app.api.debug import router as debug_router
+from app.api.scan.scan_food import router as food_router
+from app.api.scan.scan_receipt import router as receipt_router
+from app.api.recipe.recipe_ing_search import router as recipe_ing_router
+from app.api.recipe.recipe_videos import router as recipe_vid_router
+from app.api.meal_planner.meal_planner import router as meal_planner_router
+from app.api.meal_planner.meal_planner_change_day import router as meal_planner_change_day_router
+from app.api.meal_planner.meal_planner_ping import router as meal_planner_ping_router
+from app.api.meal_planner.meal_planner_admin import router as meal_planner_admin_router
+from app.api.cravings.ai_recipe_generator import router as ai_recipe_router
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -28,7 +27,6 @@ app.include_router(meal_planner_change_day_router, prefix="/mealPlanner/day")
 app.include_router(meal_planner_ping_router, prefix="/mealPlanner/ping")
 app.include_router(meal_planner_admin_router, prefix="/mealPlanner/userPlan")
 app.include_router(ai_recipe_router, prefix="/recipes/gemini")
-app.include_router(debug_router)
 
 @app.get("/")
 async def root():

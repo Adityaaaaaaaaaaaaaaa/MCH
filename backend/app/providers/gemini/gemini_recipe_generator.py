@@ -3,7 +3,7 @@ import os, json
 from typing import List, Dict, Any, Optional, Literal
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from google import genai
-from app.utils.ai_prompt import build_gemini_recipe_prompt
+from app.utils.cravings.ai_prompt import build_gemini_recipe_prompt
 import json
 import re
 from typing import Tuple
