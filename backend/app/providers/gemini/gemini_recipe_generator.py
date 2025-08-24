@@ -1,4 +1,4 @@
-# app/providers/gemini_recipe_generator.py
+# app/providers/gemini/gemini_recipe_generator.py
 import os, json
 from typing import List, Dict, Any, Optional, Literal
 from pydantic import BaseModel, Field, ValidationError, field_validator
@@ -24,6 +24,8 @@ class _IngredientReq(BaseModel):
     name: str
     quantity: float = 0.0
     unit: Literal["g", "ml", "count"] = "count"
+    canonical: Optional[str] = None      # e.g., "apple", "bell pepper", "yogurt"
+    pantryLikely: Optional[bool] = None  # model’s hint: common pantry item?
 
 class _NutritionLite(BaseModel):
     calories: Optional[float] = None
@@ -145,6 +147,7 @@ async def generate_recipes(
     allergies: List[str],
     cuisines: List[str],
     diets: List[str],
+    allowed_canonicals: Optional[list[str]] = None
 ) -> Dict[str, Any]:
     prompt = build_gemini_recipe_prompt(
         query=query,
@@ -153,6 +156,7 @@ async def generate_recipes(
         allergies=allergies,
         cuisines=cuisines,
         diets=diets,
+        allowed_canonicals=allowed_canonicals or [],
     )
 
     try:

@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from app.utils.shopping.shopping_normalize import ensure_off_aliases_loaded
 from app.api.scan.scan_food import router as food_router
 from app.api.scan.scan_receipt import router as receipt_router
 from app.api.recipe.recipe_ing_search import router as recipe_ing_router
@@ -12,12 +14,25 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Lifespan context for startup/shutdown
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- STARTUP ---
+    ensure_off_aliases_loaded()   # your alias loader
+    # yield control to app
+    yield
+    # --- SHUTDOWN ---
+    # (nothing for now, but could close db connections etc.)
+    pass
+
 app = FastAPI(
-    title="My Cooking Helper API", 
-    version="0.1.0", 
-    description="Backend for My Cooking Helper app"
+    title="My Cooking Helper API",
+    version="0.1.0",
+    description="Backend for My Cooking Helper app",
+    lifespan=lifespan,  # <-- instead of @app.on_event
 )
 
+# Routers
 app.include_router(food_router, prefix="/food")
 app.include_router(receipt_router, prefix="/receipt")
 app.include_router(recipe_ing_router, prefix="/recipes/find")
