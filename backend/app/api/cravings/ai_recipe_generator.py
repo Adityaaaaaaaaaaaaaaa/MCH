@@ -2,8 +2,11 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
+from functools import partial
+from copy import deepcopy
 import json
 import anyio
+from app.utils.cravings.firestore_cravings import save_ai_cravings_session
 from app.utils.shopping.shopping_normalize import normalize_name
 from app.utils.shopping.firestore_inventory import fetch_inventory_once
 from app.providers.gemini.gemini_recipe_generator import generate_recipes
@@ -103,7 +106,7 @@ def _preview_shopping_lists(cands_with_shopping: List[Dict[str, Any]]) -> None:
 async def ai_recipe(req: AiRecipeRequest):
     try:
         # ── Step 1: Get the data ─────────────────────────────────────────
-        _blue("[AI-RECIPES] Step 1/6: Received bundle")
+        _blue("[AI-RECIPES] Step 1/7: Received bundle")
         _blue(f"  user={req.userId} query='{req.query}' time={req.constraints.maxTimeMinutes}m spice={req.constraints.spice.resolvedLevel}")
         _blue(f"  prefs: allergies={req.preferences.allergies} cuisines={req.preferences.cuisines} diets={req.preferences.diets}")
         _blue(f"  inventory items (UI payload)={len(req.inventory)}")
@@ -117,7 +120,7 @@ async def ai_recipe(req: AiRecipeRequest):
             _blue("  e.g.: " + ", ".join(allowed[:15]) + (" …" if len(allowed) > 15 else ""))
         
         # ── Step 2: Call Gemini to generate 3 recipes ───────────────────
-        _blue("[AI-RECIPES] Step 2/6: Calling Gemini recipe generator…")
+        _blue("[AI-RECIPES] Step 2/7: Calling Gemini recipe generator…")
         gen = await generate_recipes(
             query=req.query,
             max_time=req.constraints.maxTimeMinutes,
@@ -134,7 +137,7 @@ async def ai_recipe(req: AiRecipeRequest):
         _preview_candidates_short(cands)
 
         # ── Step 3: Generate images (sequential; 1 per candidate) ───────
-        _blue("[AI-RECIPES] Step 3/6: Generating images per candidate…")
+        _blue("[AI-RECIPES] Step 3/7: Generating images per candidate…")
         images: List[Optional[str]] = []
         for i, cand in enumerate(cands, start=1):
             title = cand.get("title", f"Candidate #{i}")
@@ -149,7 +152,7 @@ async def ai_recipe(req: AiRecipeRequest):
                 images.append(None)
                 
         # ── Step 4: Compute shopping list per candidate ─────────────────
-        _blue("[AI-RECIPES] Step 4/6: Computing shopping lists…")
+        _blue("[AI-RECIPES] Step 4/7: Computing shopping lists…")
         cands_with_shopping = attach_shopping_to_candidates(
             candidates=cands,
             inventory=live_inventory, # use live inventory from Firestore
@@ -157,7 +160,7 @@ async def ai_recipe(req: AiRecipeRequest):
         _preview_shopping_lists(cands_with_shopping)
 
         # ── Step 5: Build final items (merge images + shopping) ─────────
-        _blue("[AI-RECIPES] Step 5/6: Building response items…")
+        _blue("[AI-RECIPES] Step 5/7: Building response items…")
         items: List[Candidate] = []
         for idx, cand in enumerate(cands_with_shopping):
             title = cand.get("title", f"Candidate #{idx+1}")
@@ -171,7 +174,7 @@ async def ai_recipe(req: AiRecipeRequest):
             ))
 
         # ── Step 6: Overwrite IDs with Mauritius-time-based IDs ─────────
-        _blue("[AI-RECIPES] Step 6/6: Overwriting candidate IDs …")
+        _blue("[AI-RECIPES] Step 6/7: Overwriting candidate IDs …")
         base_id = make_mru_id()  # e.g., '230825_2012'
         seen: set[str] = set()
         suffix = ["A", "B", "C", "D", "E", "F"]
@@ -193,6 +196,72 @@ async def ai_recipe(req: AiRecipeRequest):
                 "shoppingCount": len(it.shopping),
             } for it in items
         ]))
+        
+        # ── Step 7: Persist session to Firestore ─────────────────────────
+
+        _blue("[AI-RECIPES] Step 7/7: Saving session to Firestore …")
+        session_id = base_id  # e.g., "240825_1830"
+
+        # IMPORTANT: build from cands_with_shopping (full recipe dicts), not the trimmed `items`
+        recipe_docs: List[Dict[str, Any]] = []
+        for i, raw in enumerate(cands_with_shopping, start=1):
+            rid = f"{session_id}_{i:02d}"
+
+            # shallow copy and normalize
+            d = deepcopy(raw)
+            d["id"] = rid
+            d["hasImage"] = bool(images[i - 1])  # we don't store base64
+            d.pop("image", None)                 # ensure no huge blobs
+            # keep all of: required_ingredients, optional_ingredients, instructions,
+            # cuisines, diets, vegetarian/vegan/glutenFree/dairyFree, summary, nutrition, shopping, reasons, readyInMinutes, title
+
+            recipe_docs.append(d)
+
+        constraints_dump = {
+            "maxTimeMinutes": req.constraints.maxTimeMinutes,
+            "spice": req.constraints.spice.model_dump(),
+        }
+        preferences_dump = req.preferences.model_dump()
+
+        # Preview exactly what we’ll persist (compact)
+        _save_preview = {
+            "sessionPath": f"users/{req.userId}/aiCravings/{session_id}",
+            "meta": {
+                "query": req.query,
+                "constraints": constraints_dump,
+                "preferences": preferences_dump,
+                "recipeCount": len(recipe_docs),
+            },
+            "recipes": [
+                {
+                    "id": r.get("id"),
+                    "title": r.get("title"),
+                    "readyInMinutes": r.get("readyInMinutes"),
+                    "hasImage": r.get("hasImage", False),
+                    "counts": {
+                        "required": len(r.get("required_ingredients", [])),
+                        "optional": len(r.get("optional_ingredients", [])),
+                        "instructions": len(r.get("instructions", [])),
+                        "shopping": len(r.get("shopping", [])),
+                    },
+                }
+                for r in recipe_docs
+            ],
+        }
+        _blue("[AI-RECIPES][SAVE PREVIEW] ↓")
+        _blue(_pp(_save_preview, max_len=5000))
+
+        saved_ok = await anyio.to_thread.run_sync(partial(
+            save_ai_cravings_session,
+            user_id=req.userId,
+            session_id=session_id,
+            recipes=recipe_docs,             # now the full docs
+            query=req.query,
+            constraints=constraints_dump,
+            preferences=preferences_dump,
+            store_image_data_url=False,      # keep docs small
+        ))
+        _blue(f"[AI-RECIPES] Firestore save: {'OK' if saved_ok else 'SKIPPED/FAILED'}")
 
         return AiRecipeResponse(
             received=True,
