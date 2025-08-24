@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '/config/backend_config.dart';
+import '/models/cravings.dart';
 
 class CravingsService {
   CravingsService({FirebaseFirestore? firestore})
@@ -248,6 +249,72 @@ class CravingsService {
       _blue('[DEBUG][Cravings][NET] Unknown error: $e');
       rethrow;
     }
+  }
+
+  Future<List<CravingRecipeModel>> fetchLatestCravingsWithImages(
+    String userId, {
+    int maxTries = 6, // ~6s total (6 * 1s)
+    Duration delay = const Duration(seconds: 1),
+  }) async {
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> _sessionDocs = [];
+    String? sessionId;
+
+    for (int attempt = 0; attempt < maxTries; attempt++) {
+      final aiCol = _firestore.collection('users').doc(userId).collection('aiCravings');
+      final latest = await aiCol.orderBy('createdAt', descending: true).limit(1).get();
+      if (latest.docs.isNotEmpty) {
+        _sessionDocs = latest.docs;
+        sessionId = _sessionDocs.first.id;
+        break;
+      }
+      await Future.delayed(delay);
+    }
+
+    if (_sessionDocs.isEmpty || sessionId == null) {
+      _blue('[DEBUG][Cravings] No sessions found for $userId');
+      return <CravingRecipeModel>[];
+    }
+
+    // recipes in the session
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> recipeDocs = [];
+    for (int attempt = 0; attempt < maxTries; attempt++) {
+      final recSnap = await _firestore
+          .collection('users').doc(userId)
+          .collection('aiCravings').doc(sessionId)
+          .collection('recipes').orderBy('id')
+          .get();
+
+      if (recSnap.docs.isNotEmpty) {
+        recipeDocs = recSnap.docs;
+        break;
+      }
+      await Future.delayed(delay);
+    }
+
+    if (recipeDocs.isEmpty) return <CravingRecipeModel>[];
+
+    final models = recipeDocs.map((d) => CravingRecipeModel.fromFirestore(d.data())).toList();
+    _blue('[DEBUG][Cravings] Loaded ${models.length} recipes for $sessionId');
+
+    await Future.wait(models.map((m) async {
+      if (!m.hasImage) return;
+      m.imageDataUrl = await _fetchImageDataUrlByTitle(m.title);
+    }));
+
+    return models;
+  }
+
+  Future<String?> _fetchImageDataUrlByTitle(String title,
+      {Duration timeout = const Duration(seconds: 20)}) async {
+    final url = '$backendApiUrl/recipes/gemini/image?title=${Uri.encodeComponent(title)}';
+    try {
+      final resp = await http.get(Uri.parse(url)).timeout(timeout);
+      if (resp.statusCode == 200 && resp.body.isNotEmpty) return resp.body;
+      _blue('[DEBUG][Cravings] image GET failed code=${resp.statusCode}');
+    } catch (e) {
+      _blue('[DEBUG][Cravings] image GET error: $e');
+    }
+    return null;
   }
 
   void _blue(Object msg) {

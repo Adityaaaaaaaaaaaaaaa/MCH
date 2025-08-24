@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:glass/glass.dart';
 import '/utils/colors.dart';
+import 'dart:typed_data';
+import '/models/cravings.dart';
+import '/utils/image_data_url.dart';
 
 /// Clean glass search bar (no buttons)
 class GlassSearchBar extends StatelessWidget {
@@ -871,6 +874,117 @@ class _RandomPill extends StatelessWidget {
           blurX: 16,
           blurY: 16,
           frosted: true,
+        ),
+      ),
+    );
+  }
+}
+
+// /widgets/cravings_results.dart
+class CravingsResultsGrid extends StatelessWidget {
+  const CravingsResultsGrid({
+    super.key,
+    required this.items,
+    this.onTap,
+  });
+
+  final List<CravingRecipeModel> items;
+  final void Function(CravingRecipeModel item)? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    final wide = ScreenUtil().screenWidth > 600;
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: wide ? 3 : 1,
+        mainAxisSpacing: 14.h,
+        crossAxisSpacing: 14.w,
+        // tuned so 16:9 image + text fits neatly on both phone/tablet
+        childAspectRatio: wide ? 0.72 : 1.30,
+      ),
+      itemBuilder: (_, i) => _CravingsCard(
+        item: items[i],
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _CravingsCard extends StatelessWidget {
+  const _CravingsCard({required this.item, this.onTap});
+
+  final CravingRecipeModel item;
+  final void Function(CravingRecipeModel item)? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // IMAGE: decode data URL safely; show placeholder if null/bad
+    final Uint8List? bytes = decodeDataUrl(item.imageDataUrl);
+    final Widget image = ClipRRect(
+      borderRadius: BorderRadius.circular(14.r),
+      child: (bytes != null)
+          ? Image.memory(bytes, fit: BoxFit.cover)
+          : Container(
+              color: theme.colorScheme.surface.withOpacity(0.10),
+              alignment: Alignment.center,
+              child: Icon(Icons.image_outlined,
+                  size: 48, color: Colors.white.withOpacity(0.35)),
+            ),
+    );
+
+    return InkWell(
+      onTap: onTap == null ? null : () => onTap!(item),
+      borderRadius: BorderRadius.circular(18.r),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(18.r),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+        ),
+        padding: EdgeInsets.all(10.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // fixed aspect so cards are consistent, avoids overflow surprises
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: image,
+            ),
+            SizedBox(height: 10.h),
+
+            // TITLE
+            Text(
+              item.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 8.h),
+
+            // META ROW
+            Row(
+              children: [
+                const Icon(Icons.timer_outlined, size: 16),
+                SizedBox(width: 6.w),
+                Text('${item.readyInMinutes ?? 0} min',
+                    style: theme.textTheme.bodySmall),
+                const Spacer(),
+                const Icon(Icons.shopping_cart_outlined, size: 16),
+                SizedBox(width: 6.w),
+                Text('${item.shopping.length}',
+                    style: theme.textTheme.bodySmall),
+              ],
+            ),
+          ],
         ),
       ),
     );
