@@ -172,6 +172,9 @@ async def ai_recipe(req: AiRecipeRequest):
                 reasons=cand.get("reasons", []),
                 shopping=[ShoppingItem(**s) for s in cand.get("shopping", [])],
             ))
+            
+        _head = (images[idx] or "")[:40]
+        _blue(f"[AI-RECIPES] image head → {_head}")  # expect "data:image/png;base64,"
 
         # ── Step 6: Overwrite IDs with Mauritius-time-based IDs ─────────
         _blue("[AI-RECIPES] Step 6/7: Overwriting candidate IDs …")
