@@ -7,6 +7,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '/config/backend_config.dart';
 import '/models/cravings.dart';
 
+/// Simple container for a generated session + items (used by generateCravingsAndParse).
+class CravingsSessionResult {
+  CravingsSessionResult({
+    required this.sessionId,
+    required this.items,
+  });
+
+  /// e.g. "240825_2208"
+  final String sessionId;
+
+  /// 3 items with imageDataUrl already included
+  final List<CravingRecipeModel> items;
+}
+
 class CravingsService {
   CravingsService({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -97,6 +111,110 @@ class CravingsService {
     return payload;
   }
 
+  // ─────────────────────── NEW: Parse POST (with images) ───────────────────────
+
+  /// Derive sessionId from a candidate id such as "240825_2208_A"
+  String _deriveSessionId(String id) {
+    final parts = id.split('_');
+    if (parts.length >= 2) return '${parts[0]}_${parts[1]}';
+    return id;
+  }
+
+  /// POST → /recipes/gemini/aiRecipe and PARSE response into models INCLUDING image data URLs.
+  /// Keeps your backend unchanged. Use this in the UI to render images immediately.
+  Future<CravingsSessionResult> generateCravingsAndParse({
+    required String userId,
+    required String query,
+    required Map<String, dynamic> defaults,
+    required bool randomSpice,
+    int? fixedSpiceLevel,
+    required int timeMinutes,
+    Duration timeout = const Duration(seconds: 75),
+  }) async {
+    final payload = await buildFinalBundle(
+      userId: userId,
+      query: query,
+      defaults: defaults,
+      randomSpice: randomSpice,
+      fixedSpiceLevel: fixedSpiceLevel,
+      timeMinutes: timeMinutes,
+    );
+
+    _blue('[DEBUG][Cravings] POST → $aiRecipe');
+    final resp = await http
+        .post(
+          Uri.parse(aiRecipe),
+          headers: const {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode(payload),
+        )
+        .timeout(timeout);
+
+    _blue('[DEBUG][Cravings] Backend responded: ${resp.statusCode}');
+    if (resp.statusCode != 200) {
+      final body = resp.body;
+      if (body.isNotEmpty) {
+        final preview = body.length > 300 ? '${body.substring(0, 300)}…' : body;
+        _blue('[DEBUG][Cravings] Response preview: $preview');
+      }
+      throw Exception('Backend error: ${resp.statusCode}');
+    }
+
+    // Parse JSON: {"received":true,"message":"OK","items":[{id,title,image,readyInMinutes,reasons,shopping}, ...]}
+    final decoded = jsonDecode(resp.body) as Map<String, dynamic>;
+    final list = (decoded['items'] as List<dynamic>? ?? const []);
+
+    final models = list.map((raw) {
+      final m = raw as Map<String, dynamic>;
+
+      final shoppingList = (m['shopping'] as List<dynamic>? ?? const [])
+          .map((e) => ShoppingItemModel.fromMap(e as Map<String, dynamic>))
+          .toList();
+
+      // Backend POST response does not include the full recipe body.
+      // Provide safe defaults for model-required fields.
+      return CravingRecipeModel(
+        id: (m['id'] as String?) ?? '',
+        title: (m['title'] as String?) ?? 'Untitled',
+        readyInMinutes: (m['readyInMinutes'] as num?)?.toInt(),
+        reasons: (m['reasons'] as List<dynamic>? ?? const [])
+            .map((e) => e.toString())
+            .toList(),
+        requiredIngredients: const <dynamic>[],
+        optionalIngredients: const <dynamic>[],
+        instructions: const <dynamic>[],
+        shopping: shoppingList,
+        hasImage: (m['image'] != null && (m['image'] as String).isNotEmpty),
+        imageDataUrl: m['image'] as String?, // data:image/...;base64,...
+      );
+    }).toList();
+
+    if (models.isNotEmpty) {
+      final first = models.first;
+      if (first.imageDataUrl != null && first.imageDataUrl!.isNotEmpty) {
+        final head = first.imageDataUrl!.substring(
+          0,
+          first.imageDataUrl!.length > 40 ? 40 : first.imageDataUrl!.length,
+        );
+        _blue('[DEBUG][Cravings] First image head: $head'); 
+        _blue('[DEBUG][Cravings] First image length: ${first.imageDataUrl!.length}');
+      } else {
+        _blue('[DEBUG][Cravings] First image missing or empty.');
+      }
+    }
+
+    if (models.isEmpty) {
+      throw Exception('No items returned from backend.');
+    }
+
+    final sessionId = _deriveSessionId(models.first.id);
+    _blue('[DEBUG][Cravings] Parsed ${models.length} items; session=$sessionId');
+
+    return CravingsSessionResult(sessionId: sessionId, items: models);
+  }
+
   // ───────────────────────────── Internals ─────────────────────────────
 
   Future<Map<String, dynamic>> _getUserPrefs(String userId) async {
@@ -172,7 +290,7 @@ class CravingsService {
     'bring the heat (spicy)': 3,
     'rip (super spicy!)': 4,
     'mystery heat (surprise me!)': 5, // random
-    "spice? i'm open!": 5,            // random
+    "spice? i'm open!": 5, // random
   };
 
   int _mapSpiceLabelToLevel(String? label) {
@@ -189,8 +307,9 @@ class CravingsService {
   }
 
   /// POST the final bundle to your backend.
-  /// - [aiRecipeUrl] e.g. "$backendApiUrl/recipes/aiRecipe" which we imported from config.
+  /// - [aiRecipeUrl] e.g. "$backendApiUrl/recipes/aiRecipe"
   /// - This method intentionally returns void (for now) and logs status + preview.
+  ///   (Kept for backwards compatibility with your logging flow.)
   Future<void> postAiRecipeBundle({
     required String userId,
     required String query,
@@ -234,7 +353,6 @@ class CravingsService {
       }
 
       // We intentionally do not return anything now.
-      // Later: parse JSON, map into UI models, etc.
 
     } on http.ClientException catch (e) {
       _blue('[DEBUG][Cravings][NET] ClientException: $e');
@@ -251,6 +369,7 @@ class CravingsService {
     }
   }
 
+  /// Read the latest saved cravings session from Firestore and hydrate images by calling the backend "image by title" endpoint.
   Future<List<CravingRecipeModel>> fetchLatestCravingsWithImages(
     String userId, {
     int maxTries = 6, // ~6s total (6 * 1s)
@@ -279,9 +398,12 @@ class CravingsService {
     List<QueryDocumentSnapshot<Map<String, dynamic>>> recipeDocs = [];
     for (int attempt = 0; attempt < maxTries; attempt++) {
       final recSnap = await _firestore
-          .collection('users').doc(userId)
-          .collection('aiCravings').doc(sessionId)
-          .collection('recipes').orderBy('id')
+          .collection('users')
+          .doc(userId)
+          .collection('aiCravings')
+          .doc(sessionId)
+          .collection('recipes')
+          .orderBy('id')
           .get();
 
       if (recSnap.docs.isNotEmpty) {
@@ -296,6 +418,7 @@ class CravingsService {
     final models = recipeDocs.map((d) => CravingRecipeModel.fromFirestore(d.data())).toList();
     _blue('[DEBUG][Cravings] Loaded ${models.length} recipes for $sessionId');
 
+    // hydrate images on the fly (we store only hasImage in Firestore)
     await Future.wait(models.map((m) async {
       if (!m.hasImage) return;
       m.imageDataUrl = await _fetchImageDataUrlByTitle(m.title);

@@ -2,6 +2,8 @@
 import os
 import base64
 from typing import Optional
+from io import BytesIO
+from PIL import Image  # <-- make sure pillow is installed
 from google import genai
 from google.genai import types
 from app.utils.cravings.ai_prompt import recipe_image_prompt
@@ -10,17 +12,29 @@ BLUE = "\x1B[34m"; RESET = "\x1B[0m"
 def _blue(msg: str) -> None:
     print(f"{BLUE}{msg}{RESET}")
 
-# init client once
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
     _blue("[Gemini][recipes] WARNING: GEMINI_API_KEY not set in environment")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+def _to_png_data_url(raw_bytes: bytes) -> str:
+    """
+    Robustly convert arbitrary image bytes (webp/jpeg/png/…) to PNG,
+    then return a data URL: data:image/png;base64,....
+    """
+    with Image.open(BytesIO(raw_bytes)) as im:
+        # convert to RGB to avoid palette/alpha edge cases
+        if im.mode not in ("RGB", "RGBA"):
+            im = im.convert("RGB")
+        buf = BytesIO()
+        im.save(buf, format="PNG", optimize=True)
+        out = buf.getvalue()
+    b64 = base64.b64encode(out).decode("utf-8")
+    return f"data:image/png;base64,{b64}"
+
 async def generate_image_for_title(*, title: str) -> Optional[str]:
     """
-    Returns a data URL (e.g., 'data:image/png;base64,...') or None on failure.
-    Uses gemini-2.0-flash-preview-image-generation, asks for TEXT+IMAGE, then
-    extracts the first inline image. One request per title (stay well under free quotas).
+    Returns a data URL (PNG) or None on failure.
     """
     try:
         prompt = recipe_image_prompt(title)
@@ -34,15 +48,22 @@ async def generate_image_for_title(*, title: str) -> Optional[str]:
             )
         )
 
-        # scan response for first inline image
+        # Scan for first inline image, normalize to PNG
         for cand in getattr(resp, "candidates", []) or []:
             for part in getattr(cand.content, "parts", []) or []:
                 inline = getattr(part, "inline_data", None)
                 if inline and getattr(inline, "data", None):
-                    # prefer mime if provided; default to png
-                    mime = getattr(inline, "mime_type", None) or "image/png"
-                    b64 = base64.b64encode(inline.data).decode("utf-8")
-                    return f"data:{mime};base64,{b64}"
+                    try:
+                        # Normalize format -> PNG data URL
+                        data_url = _to_png_data_url(inline.data)
+                        _blue(f"[Gemini][images] got image bytes={len(inline.data)} → png")
+                        return data_url
+                    except Exception as conv_err:
+                        _blue(f"[Gemini][images] PNG convert error: {conv_err}")
+                        # Fallback: send raw bytes as-is if conversion failed
+                        b64 = base64.b64encode(inline.data).decode("utf-8")
+                        mime = getattr(inline, "mime_type", None) or "image/png"
+                        return f"data:{mime};base64,{b64}"
 
         # sometimes the model only returns text; fall through
         _blue("[Gemini][images] no inline image returned (text-only)")

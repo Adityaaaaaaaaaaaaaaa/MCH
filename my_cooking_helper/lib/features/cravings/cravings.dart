@@ -141,35 +141,41 @@ class _CravingsScreenState extends State<CravingsScreen> {
 
     final defaults = _defaults ?? await _svc.fetchDefaults(uid);
 
-    final query = _queryCtrl.text.trim();
+    final query     = _queryCtrl.text.trim();
     final useRandom = _effectiveRandom;
-    final useFixed  = _effectiveFixedSpice;
+    final useFixed  = _effectiveFixedSpice; // used only when !random
     final timeMins  = _effectiveTime;
 
-    setState(() { _loading = true; });
+    setState(() { 
+      _loading = true; 
+      _results = null; // clear previous results so layout “snaps” up cleanly
+    });
 
+    CravingsSessionResult? session;
     try {
-      // ⬇️ give backend enough time (images+Gemini can take 30–60s)
-      await _svc.postAiRecipeBundle(
+      // ✅ new: get models (with imageDataUrl) directly from the POST response
+      session = await _svc.generateCravingsAndParse(
         userId: uid,
         query: query,
         defaults: defaults,
         randomSpice: useRandom,
         fixedSpiceLevel: useRandom ? null : useFixed,
         timeMinutes: timeMins,
-        timeout: const Duration(seconds: 75),
+        timeout: const Duration(seconds: 75), // image+LLM is slow sometimes
       );
     } catch (e) {
-      // Don’t blow up; we’ll still try to read Firestore (backend likely finished)
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Still fetching your picks…')),
-        );
-      }
+      // soft-fail — server likely still saved to Firestore; try to hydrate from there
+      // ignore: avoid_print
+      print('\x1B[34m[DEBUG][Cravings] POST parse failed, trying Firestore: $e\x1B[0m');
     }
 
-    // ⬇️ Always try to hydrate latest session, even after a timeout.
-    final models = await _svc.fetchLatestCravingsWithImages(uid);
+    List<CravingRecipeModel> models;
+    if (session != null && session.items.isNotEmpty) {
+      models = session.items;
+    } else {
+      // 🔁 fallback: read latest saved session and fetch images by title
+      models = await _svc.fetchLatestCravingsWithImages(uid);
+    }
 
     if (!mounted) return;
     setState(() {
