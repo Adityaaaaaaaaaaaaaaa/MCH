@@ -1,13 +1,14 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:typed_data';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:glass/glass.dart';
-import '/utils/colors.dart';
-import 'dart:typed_data';
-import '/models/cravings.dart';
 import '/utils/image_data_url.dart';
+import '/utils/colors.dart';
+import '/models/cravings.dart';
 
 /// Clean glass search bar (no buttons)
 class GlassSearchBar extends StatelessWidget {
@@ -880,7 +881,8 @@ class _RandomPill extends StatelessWidget {
   }
 }
 
-// /widgets/cravings_results.dart
+
+// /widgets/cravings/cravings_widget.dart
 class CravingsResultsGrid extends StatelessWidget {
   const CravingsResultsGrid({
     super.key,
@@ -895,17 +897,25 @@ class CravingsResultsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
 
-    final wide = ScreenUtil().screenWidth > 600;
+    // 1 col on phones, 2 cols on wider screens
+    final wide = ScreenUtil().screenWidth >= 700;
+    final crossAxisCount = wide ? 2 : 1;
+    final childAspect = wide ? 0.68 : 0.85; // tall, image-first
+
+    // Sanity log: confirms data URL reached this widget
+    // ignore: avoid_print
+    print('\x1B[34m[CravingsGrid] first image head: '
+        '${items.first.imageDataUrl?.substring(0, 32)}\x1B[0m');
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: items.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: wide ? 3 : 1,
-        mainAxisSpacing: 14.h,
-        crossAxisSpacing: 14.w,
-        // tuned so 16:9 image + text fits neatly on both phone/tablet
-        childAspectRatio: wide ? 0.72 : 1.30,
+        crossAxisCount: crossAxisCount,
+        mainAxisSpacing: 16.h,
+        crossAxisSpacing: 16.w,
+        childAspectRatio: childAspect,
       ),
       itemBuilder: (_, i) => _CravingsCard(
         item: items[i],
@@ -925,41 +935,39 @@ class _CravingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // IMAGE: decode data URL safely; show placeholder if null/bad
     final Uint8List? bytes = decodeDataUrl(item.imageDataUrl);
-    final Widget image = ClipRRect(
-      borderRadius: BorderRadius.circular(14.r),
-      child: (bytes != null)
-          ? Image.memory(bytes, fit: BoxFit.cover)
-          : Container(
-              color: theme.colorScheme.surface.withOpacity(0.10),
-              alignment: Alignment.center,
-              child: Icon(Icons.image_outlined,
-                  size: 48, color: Colors.white.withOpacity(0.35)),
-            ),
+    // ignore: avoid_print
+    print('\x1B[34m[CravingsCard] "${item.title}" decoded=${bytes?.length ?? 0} bytes\x1B[0m');
+
+    final Widget imageArea = ClipRRect(
+      borderRadius: BorderRadius.circular(18.r),
+      child: (bytes != null && bytes.isNotEmpty)
+          ? Image.memory(
+              bytes,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+              filterQuality: FilterQuality.low, // safest
+              errorBuilder: (_, __, ___) => _ImageErrorTile(title: item.title),
+            )
+          : _ImageErrorTile(title: item.title),
     );
 
     return InkWell(
       onTap: onTap == null ? null : () => onTap!(item),
-      borderRadius: BorderRadius.circular(18.r),
+      borderRadius: BorderRadius.circular(20.r),
       child: Container(
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(18.r),
+          color: theme.colorScheme.surface.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(20.r),
           border: Border.all(color: Colors.white.withOpacity(0.08)),
         ),
-        padding: EdgeInsets.all(10.w),
+        padding: EdgeInsets.all(12.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // fixed aspect so cards are consistent, avoids overflow surprises
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: image,
-            ),
-            SizedBox(height: 10.h),
+            AspectRatio(aspectRatio: 16 / 9, child: imageArea),
+            SizedBox(height: 12.h),
 
-            // TITLE
             Text(
               item.title,
               maxLines: 2,
@@ -968,9 +976,8 @@ class _CravingsCard extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(height: 8.h),
+            SizedBox(height: 10.h),
 
-            // META ROW
             Row(
               children: [
                 const Icon(Icons.timer_outlined, size: 16),
@@ -986,6 +993,31 @@ class _CravingsCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ImageErrorTile extends StatelessWidget {
+  const _ImageErrorTile({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      color: theme.colorScheme.surface.withOpacity(0.12),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.broken_image_outlined, size: 40, color: Colors.white.withOpacity(0.45)),
+          const SizedBox(height: 6),
+          Text('image', style: theme.textTheme.labelSmall?.copyWith(
+            color: Colors.white.withOpacity(0.55),
+            letterSpacing: 0.3,
+          )),
+        ],
       ),
     );
   }

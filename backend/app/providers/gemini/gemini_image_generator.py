@@ -17,18 +17,25 @@ if not GEMINI_API_KEY:
     _blue("[Gemini][recipes] WARNING: GEMINI_API_KEY not set in environment")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+THUMB_MAX = (512, 512)  # ~phone card size
+
 def _to_png_data_url(raw_bytes: bytes) -> str:
     """
-    Robustly convert arbitrary image bytes (webp/jpeg/png/…) to PNG,
-    then return a data URL: data:image/png;base64,....
+    Convert arbitrary image bytes to a PNG thumbnail (~512px max) and return data URL.
     """
     with Image.open(BytesIO(raw_bytes)) as im:
-        # convert to RGB to avoid palette/alpha edge cases
+        # Convert to safe mode
         if im.mode not in ("RGB", "RGBA"):
             im = im.convert("RGB")
+
+        # Thumbnail in-place with high-quality resampling
+        im.thumbnail(THUMB_MAX, Image.LANCZOS)
+
+        # Save as optimized PNG
         buf = BytesIO()
         im.save(buf, format="PNG", optimize=True)
         out = buf.getvalue()
+
     b64 = base64.b64encode(out).decode("utf-8")
     return f"data:image/png;base64,{b64}"
 

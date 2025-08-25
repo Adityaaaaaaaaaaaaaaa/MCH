@@ -11,7 +11,7 @@ import '/utils/colors.dart';
 import '/utils/loader.dart';
 import '/utils/snackbar.dart';
 import '/widgets/navigation/appbar.dart';
-import '/widgets/camera_commons.dart';
+import '/widgets/scan/camera_commons.dart';
 import '/models/item.dart';
 import 'item_controller.dart';
 import '/services/gemini_scanReceipt.dart'; 

@@ -10,7 +10,7 @@ import '/utils/loader.dart';
 import '/utils/snackbar.dart';
 import '/utils/colors.dart';
 import '/utils/lottie_animation.dart';
-import '/widgets/camera_commons.dart';
+import '/widgets/scan/camera_commons.dart';
 import '/widgets/navigation/appbar.dart';
 import '/models/item.dart';
 import '/services/gemini_scanFood.dart';
