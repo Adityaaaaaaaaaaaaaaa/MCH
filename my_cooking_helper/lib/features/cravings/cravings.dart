@@ -5,14 +5,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lottie/lottie.dart';
 
+import '/theme/app_theme.dart';
 import '/models/cravings.dart';
 import '/services/cravings_service.dart';
-import '/theme/app_theme.dart';
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
 import '/widgets/navigation/nav.dart';
-import '/widgets/cravings_widget.dart';
+import '/widgets/cravings/cravings_widget.dart';
 
 class CravingsScreen extends StatefulWidget {
   const CravingsScreen({super.key});
@@ -22,13 +22,17 @@ class CravingsScreen extends StatefulWidget {
 
 class _CravingsScreenState extends State<CravingsScreen> {
   static const String _bgLottie = 'assets/animations/Animation_wave.json';
+  static const String _loadingLottie = 'assets/animations/Animation_wave.json'; // swap later
+
+  // If you know the height of your CustomNavBar, set it here.
+  // This spacer lets content scroll BEHIND the bottom nav (extendBody: true).
+  static const double _bottomNavSpacer = 90;
 
   final TextEditingController _queryCtrl = TextEditingController();
   final CravingsService _svc = CravingsService();
 
   List<CravingRecipeModel>? _results;
   bool _loading = false;
-
 
   // Defaults loaded from Firestore
   Map<String, dynamic>? _defaults; // allergies, cuisines, diets, inventory, spiceLevel(0..5), spiceLabel
@@ -64,20 +68,16 @@ class _CravingsScreenState extends State<CravingsScreen> {
     if (uid == null) return;
 
     try {
-      // ignore: avoid_print
       print('\x1B[34m[DEBUG][Cravings] Loading Firestore defaults...\x1B[0m');
       final map = await _svc.fetchDefaults(uid);
       setState(() => _defaults = map);
-      // ignore: avoid_print
       print('\x1B[34m[DEBUG][Cravings] Defaults ready: spice=${map['spiceLevel']}, time=$_defaultTime\x1B[0m');
     } catch (e) {
-      // ignore: avoid_print
       print('\x1B[34m[DEBUG][Cravings] Failed to load defaults: $e\x1B[0m');
     }
   }
 
   void _openFilters() {
-    // start with effective values
     int   tempFixed   = _effectiveFixedSpice; // 0..4
     bool  tempRandom  = _effectiveRandom;     // true => ignore fixed
     int   tempMinutes = _effectiveTime;       // minutes
@@ -108,8 +108,6 @@ class _CravingsScreenState extends State<CravingsScreen> {
               },
               onApply: () {
                 setState(() {
-                  // Commit to overrides.
-                  // If user set the same as defaults, keep null (means "use defaults")
                   final defFixed = (_defaults?['spiceLevel'] as int? ?? 2).clamp(0, 4);
                   final defRand  = _defaultRandom;
 
@@ -146,14 +144,13 @@ class _CravingsScreenState extends State<CravingsScreen> {
     final useFixed  = _effectiveFixedSpice; // used only when !random
     final timeMins  = _effectiveTime;
 
-    setState(() { 
-      _loading = true; 
-      _results = null; // clear previous results so layout “snaps” up cleanly
+    setState(() {
+      _loading = true;
+      _results = null; // clear previous results to show clean loading state
     });
 
     CravingsSessionResult? session;
     try {
-      // ✅ new: get models (with imageDataUrl) directly from the POST response
       session = await _svc.generateCravingsAndParse(
         userId: uid,
         query: query,
@@ -161,11 +158,9 @@ class _CravingsScreenState extends State<CravingsScreen> {
         randomSpice: useRandom,
         fixedSpiceLevel: useRandom ? null : useFixed,
         timeMinutes: timeMins,
-        timeout: const Duration(seconds: 75), // image+LLM is slow sometimes
+        timeout: const Duration(seconds: 75),
       );
     } catch (e) {
-      // soft-fail — server likely still saved to Firestore; try to hydrate from there
-      // ignore: avoid_print
       print('\x1B[34m[DEBUG][Cravings] POST parse failed, trying Firestore: $e\x1B[0m');
     }
 
@@ -173,7 +168,6 @@ class _CravingsScreenState extends State<CravingsScreen> {
     if (session != null && session.items.isNotEmpty) {
       models = session.items;
     } else {
-      // 🔁 fallback: read latest saved session and fetch images by title
       models = await _svc.fetchLatestCravingsWithImages(uid);
     }
 
@@ -189,21 +183,15 @@ class _CravingsScreenState extends State<CravingsScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final uid = FirebaseAuth.instance.currentUser?.uid;
-
-    final hasResults = (_results != null && _results!.isNotEmpty); // ⭐ NEW
-    final topPad = hasResults ? 40.h : 120.h;                       // ⭐ NEW
-
+    final hasResults = (_results != null && _results!.isNotEmpty);
 
     return Scaffold(
       backgroundColor: bgColor(context),
       extendBodyBehindAppBar: true,
-      extendBody: true,
-      resizeToAvoidBottomInset: true,
+      extendBody: true, // content can scroll under bottom nav
       drawer: const CustomDrawer(),
       bottomNavigationBar: CustomNavBar(currentIndex: 3),
       appBar: CustomAppBar(
@@ -217,121 +205,202 @@ class _CravingsScreenState extends State<CravingsScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background stays, but we can dim the lottie when results are visible:
+          // Background lottie (dim more when results are present)
           IgnorePointer(
             child: Opacity(
-              opacity: hasResults ? 0.0 : 1.0, // ⭐ NEW
+              opacity: hasResults ? 0.10 : 1.0,
               child: Align(
                 alignment: Alignment.center,
                 child: SizedBox(
-                  width: 400.w,
-                  height: 400.h,
-                  child: Lottie.asset(_bgLottie, frameRate: FrameRate.max, repeat: true, fit: BoxFit.contain),
+                  width: 420.w,
+                  height: 420.h,
+                  child: Lottie.asset(
+                    _bgLottie,
+                    frameRate: FrameRate.max,
+                    repeat: true,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.black.withOpacity(0.45), Colors.black.withOpacity(0.15)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
 
-          // Foreground
-          Padding(
-            padding: EdgeInsets.fromLTRB(24.w, topPad, 24.w, 0), // ⭐ NEW
-            child: uid == null
-                ? Center(
-                    child: Text(
-                      'Sign in to generate recipes based on your cravings.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withOpacity(0.85),
+          // MAIN SCROLLER: switches between 3 states
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // ========== STATE A: NO RESULTS (centered bar + actions) ==========
+              if (uid == null)
+                _buildCenteredMessage('Sign in to generate recipes based on your cravings.')
+              else if (!_loading && !hasResults)
+                _buildCenteredSearch(
+                  title: "What are you craving today?",
+                  childBelow: Padding(
+                    padding: EdgeInsets.only(top: 14.h),
+                    child: CravingsActions(
+                      onOpenFilters: _openFilters,
+                      onGenerate: _generate,
+                    ),
+                  ),
+                )
+
+              // ========== STATE B: LOADING (center Lottie) ==========
+              else if (_loading && !hasResults)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: SizedBox(
+                      width: 220.w,
+                      height: 220.h,
+                      child: Lottie.asset(
+                        _loadingLottie,
+                        repeat: true,
+                        frameRate: FrameRate.max,
                       ),
                     ),
-                  )
-                : Column(
-                    children: [
-                      Expanded(
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-                            return SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
-                              padding: EdgeInsets.only(
-                                bottom: 16.h + (bottomInset > 0 ? bottomInset : 0),
-                              ),
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                                child: Center(
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(maxWidth: 720.w),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        SizedBox(height: hasResults ? 10.h : 30.h),
-                                        Text(
-                                          hasResults ? "Your picks" : "What are you craving today?",
-                                          textAlign: TextAlign.center,
-                                          style: theme.textTheme.headlineSmall?.copyWith(
-                                            color: Colors.white.withOpacity(0.95),
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        SizedBox(height: hasResults ? 16.h : 50.h),
-
-                                        // Search bar always visible
-                                        GlassSearchBar(
-                                          controller: _queryCtrl,
-                                          onSubmit: _generate,
-                                        ),
-                                        SizedBox(height: 10.h),
-
-                                        // Hide actions if we have results (like Google style) ⭐ NEW
-                                        if (!hasResults) ...[
-                                          CravingsActions(
-                                            onOpenFilters: _openFilters,
-                                            onGenerate: _generate,
-                                          ),
-                                          SizedBox(height: 14.h),
-                                        ],
-
-                                        // Results grid ⭐ NEW
-                                        if (hasResults) ...[
-                                          SizedBox(height: 16.h),
-                                          if (_loading)
-                                            const LinearProgressIndicator(minHeight: 2)
-                                          else
-                                            CravingsResultsGrid(
-                                              items: _results!,
-                                              onTap: (m) {
-                                                // TODO: push detail page with `m`
-                                              },
-                                            ),
-                                          SizedBox(height: 16.h),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-                      const CautionBannerGlass(),
-                      SizedBox(height: 90.h),
-                    ],
                   ),
+                )
+
+              // ========== STATE C: RESULTS (pinned bar + big grid) ==========
+              else ...[
+                // Pinned search bar
+                SliverPadding(
+                  padding: EdgeInsets.only(top: 120.h),
+                  sliver: SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _PinnedSearchHeader(
+                      minH: 72.h,
+                      maxH: 86.h,
+                      padding: EdgeInsets.symmetric(horizontal: 24.w),
+                      child: GlassSearchBar(
+                        controller: _queryCtrl,
+                        onSubmit: _generate,
+                      ),
+                    ),
+                  ),
+                ),
+                // Results grid
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 0),
+                    child: CravingsResultsGrid(
+                      items: _results!,
+                      onTap: (m) {
+                        // TODO: open details later
+                      },
+                    ),
+                  ),
+                ),
+              ],
+
+              // Footer caution + spacer to keep it just above bottom nav
+              SliverToBoxAdapter(child: SizedBox(height: 20.h)),
+              SliverPadding(
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                sliver: const SliverToBoxAdapter(child: CautionBannerGlass()),
+              ),
+              // Spacer so content can scroll behind bottom nav
+              SliverToBoxAdapter(child: SizedBox(height: _bottomNavSpacer)),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  // ---------- helper slivers ----------
+
+  SliverFillRemaining _buildCenteredMessage(String text) {
+    final theme = Theme.of(context);
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.white.withOpacity(0.85),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  SliverFillRemaining _buildCenteredSearch({
+    required String title,
+    Widget? childBelow,
+  }) {
+    final theme = Theme.of(context);
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: 720.w),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: Colors.white.withOpacity(0.95),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 18.h),
+                GlassSearchBar(
+                  controller: _queryCtrl,
+                  onSubmit: _generate,
+                ),
+                if (childBelow != null) childBelow,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Pinned header that holds the search bar when results exist.
+class _PinnedSearchHeader extends SliverPersistentHeaderDelegate {
+  _PinnedSearchHeader({
+    required this.minH,
+    required this.maxH,
+    required this.padding,
+    required this.child,
+  });
+
+  final double minH;
+  final double maxH;
+  final EdgeInsets padding;
+  final Widget child;
+
+  @override
+  double get minExtent => minH;
+  @override
+  double get maxExtent => maxH;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Colors.transparent,
+      padding: padding,
+      alignment: Alignment.center,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedSearchHeader oldDelegate) {
+    return oldDelegate.minH != minH ||
+        oldDelegate.maxH != maxH ||
+        oldDelegate.padding != padding ||
+        oldDelegate.child != child;
   }
 }
