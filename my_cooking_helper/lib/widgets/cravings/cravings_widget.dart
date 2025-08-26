@@ -889,31 +889,24 @@ class CravingsResultsGrid extends StatelessWidget {
     required this.items,
     this.onTap,
 
-    // ---- tunables (with sensible defaults) ----
+    // ---- tunables ----
     this.outerHorizontalPadding = 24.0,
     this.mainAxisSpacing,
     this.crossAxisSpacing,
     this.phoneColumns = 1,
     this.tabletColumns = 2,
-    this.phoneAspect = 1.7, // card height control (H/W) via 1/aspectRatio
+    this.phoneAspect = 1.7,
     this.tabletAspect = 0.72,
   });
 
   final List<CravingRecipeModel> items;
   final void Function(CravingRecipeModel item)? onTap;
 
-  /// Match the horizontal padding in the parent so cacheWidth is exact.
   final double outerHorizontalPadding;
-
-  /// Space between rows/columns in the grid. If null, ScreenUtil scaled defaults are used.
   final double? mainAxisSpacing;
   final double? crossAxisSpacing;
-
-  /// How many columns on phone/tablet.
   final int phoneColumns;
   final int tabletColumns;
-
-  /// Child aspect ratio per form-factor (W/H inverted; Grid wants W/H).
   final double phoneAspect;
   final double tabletAspect;
 
@@ -929,35 +922,50 @@ class CravingsResultsGrid extends StatelessWidget {
     final mainGap = (mainAxisSpacing ?? 14.h);
     final crossGap = (crossAxisSpacing ?? 14.w);
 
-    // ----- compute exact tile height (mainAxisExtent) -----
-    // grid width after the outer page padding
+    // phone: 1 column -> use ListView to avoid any grid tile height math (no gaps)
+    if (crossAxisCount == 1) {
+      return ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => SizedBox(height: mainGap),
+        itemBuilder: (_, i) => _CravingsCard(
+          item: items[i],
+          onTap: onTap,
+          columns: 1,
+          crossSpacing: crossGap,
+          outerHorizontalPadding: outerHorizontalPadding,
+        ),
+      );
+    }
+
+    // tablet: 2+ columns -> compute exact tile height (mainAxisExtent)
     final availableW = (screenW - (outerHorizontalPadding * 2));
-    // spacing between columns inside the grid
     final totalCrossSpacing = (crossAxisCount > 1) ? crossGap * (crossAxisCount - 1) : 0.0;
     final tileW = (availableW - totalCrossSpacing) / crossAxisCount;
 
-    // your card uses 12.w horizontal padding
+    // your card padding is EdgeInsets.all(12.w)
     final cardHPad = 12.w;
     final innerW = (tileW - cardHPad * 2).clamp(0.0, double.infinity);
 
-    // image is 16:9 inside the card
+    // 16:9 image inside the card
     final imageH = innerW * 9.0 / 16.0;
 
-    // title: max 2 lines with your titleMedium style
+    // title (max 2 lines) using current theme (rough but close)
     final titleStyle = theme.textTheme.titleMedium;
     final titleFont = (titleStyle?.fontSize ?? 16.0);
     final titleLineH = titleFont * (titleStyle?.height ?? 1.15);
-    final titleH = titleLineH * 2; // 2 lines max
+    final titleH = titleLineH * 2;
 
-    // time pill: approx height = vertical padding (6.h * 2) + text size
+    // time pill height
     final pillTextSize = (theme.textTheme.labelSmall?.fontSize ?? 12.0);
-    final pillH = (6.h * 2) + pillTextSize + 2; // small fudge for border
+    final pillH = (6.h * 2) + pillTextSize + 2;
 
-    // vertical paddings/spacers inside your card
-    final topPad = 12.w; // card top padding
+    // vertical structure: padding/image/spacers/title/spacer/pill/padding
+    final topPad = 12.h;      // use .h for verticals
     final betweenImageTitle = 10.h;
     final betweenTitlePill = 6.h;
-    final bottomPad = 12.w; // card bottom padding
+    final bottomPad = 12.h;
 
     final cardH = topPad +
         imageH +
@@ -970,13 +978,7 @@ class CravingsResultsGrid extends StatelessWidget {
     // Debug
     // print('[Grid] tileW=$tileW innerW=$innerW imageH=$imageH cardH=$cardH');
 
-    // -------------------------------------------------------
-
-    // Sanity log (unchanged)
-    // ignore: avoid_print
-    print('\x1B[34m[CravingsGrid] first image head: '
-        '${items.first.imageDataUrl?.substring(0, 32)}\x1B[0m');
-
+    // grid (tablet)
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -985,9 +987,7 @@ class CravingsResultsGrid extends StatelessWidget {
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: crossGap,
         mainAxisSpacing: mainGap,
-        // 👇 key line: match the tile height to the card height
-        mainAxisExtent: cardH,
-        // (childAspectRatio is ignored when mainAxisExtent is set)
+        mainAxisExtent: cardH, // <- matches card height: no blank under each tile
       ),
       itemBuilder: (_, i) => _CravingsCard(
         item: items[i],
@@ -1012,7 +1012,6 @@ class _CravingsCard extends StatelessWidget {
   final CravingRecipeModel item;
   final void Function(CravingRecipeModel item)? onTap;
 
-  // layout hints for better cacheWidth
   final int columns;
   final double crossSpacing;
   final double outerHorizontalPadding;
@@ -1031,10 +1030,9 @@ class _CravingsCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final Uint8List? bytes = decodeDataUrl(item.imageDataUrl);
-    // ignore: avoid_print
     print('\x1B[34m[CravingsCard] "${item.title}" decoded=${bytes?.length ?? 0} bytes\x1B[0m');
 
-    // ── GPU cache downscale (sharp/efficient)
+    // GPU cache downscale
     final dpr = MediaQuery.of(context).devicePixelRatio;
     final screenW = ScreenUtil().screenWidth;
     final available = (screenW - (outerHorizontalPadding * 2)).clamp(0, double.infinity);
@@ -1042,7 +1040,6 @@ class _CravingsCard extends StatelessWidget {
     final gridWidthPerCol = (available - totalCrossSpacing) / columns;
     final cacheWidthPx = (gridWidthPerCol * dpr).round().clamp(64, 4096);
 
-    // ── Image with gradient (no time pill overlay anymore)
     final Widget imageArea = ClipRRect(
       borderRadius: BorderRadius.circular(20.r),
       child: Stack(
@@ -1063,7 +1060,7 @@ class _CravingsCard extends StatelessWidget {
           else
             _ImageErrorTile(title: item.title),
 
-          // subtle gradient for text safety (future badges over image if needed)
+          // subtle gradient
           Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
@@ -1086,7 +1083,6 @@ class _CravingsCard extends StatelessWidget {
       ),
     );
 
-    // ── Card container (glass)
     final card = Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20.r),
@@ -1106,47 +1102,43 @@ class _CravingsCard extends StatelessWidget {
       padding: EdgeInsets.all(12.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min, // intrinsic height on phone/ListView
         children: [
           AspectRatio(
             aspectRatio: 16 / 9, 
             child: imageArea
           ),
           SizedBox(height: 10.h),
-
-          // Title
           Text(
             item.title,
-            maxLines: 2,
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.onSurface.withOpacity(0.95),
+              fontWeight: FontWeight.w900,
+              color: textColor(context),
               height: 1.15,
+              fontSize: 18.sp,
             ),
           ),
           SizedBox(height: 6.h),
-
-          // Time pill UNDER the title
           _TimePill(label: _fmtMins(item.readyInMinutes)),
         ],
       ),
     ).asGlass(
       clipBorderRadius: BorderRadius.circular(20.r),
       frosted: true,
-      blurX: 14,
-      blurY: 14,
-      tintColor: isDark ? Colors.teal :  Colors.grey.shade200.withOpacity(0.12),
+      blurX: 15,
+      blurY: 15,
+      tintColor: isDark ? Colors.deepPurpleAccent : Colors.deepOrange,
     );
 
-    return Align(
-      alignment: Alignment.topCenter,
-      heightFactor: 1.0,                 // 👈 critical: shrink to child height
-      child: InkWell(
-        onTap: onTap == null ? null : () => onTap!(item),
-        borderRadius: BorderRadius.circular(20.r),
-        child: card,
-      ),
+    // No Align wrapper — phone ListView handles intrinsic height;
+    // tablet Grid uses exact mainAxisExtent (so no blank below).
+    return InkWell(
+      onTap: onTap == null ? null : () => onTap!(item),
+      borderRadius: BorderRadius.circular(20.r),
+      child: card,
     );
   }
 }
@@ -1172,13 +1164,19 @@ class _TimePill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.timer_outlined, size: 14),
+          Icon(
+            Icons.timer_outlined, 
+            size: 15.sp,
+            color: textColor(context),
+          ),
           SizedBox(width: 6.w),
           Text(
             label,
             style: theme.textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w600,
               letterSpacing: 0.2,
+              color: textColor(context),
+              fontSize: 13.sp,
             ),
           ),
         ],
@@ -1187,9 +1185,9 @@ class _TimePill extends StatelessWidget {
 
     return pill.asGlass(
       frosted: true,
-      blurX: 6,
-      blurY: 6,
-      tintColor: Colors.transparent,
+      blurX: 5,
+      blurY: 5,
+      tintColor: isDark ? Colors.lightGreen : Colors.deepPurple,
       clipBorderRadius: BorderRadius.circular(999),
     );
   }
