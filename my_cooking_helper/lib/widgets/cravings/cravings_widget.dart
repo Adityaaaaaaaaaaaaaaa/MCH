@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:typed_data';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,110 +16,165 @@ class GlassSearchBar extends StatelessWidget {
   final String? hintText;
   final bool isLoading;
 
+  /// NEW: called when the clear (×) button is tapped.
+  /// Use it to reset your screen to State B (loading).
+  final VoidCallback? onClear;
+
   const GlassSearchBar({
     super.key,
     required this.controller,
     required this.onSubmit,
     this.hintText,
     this.isLoading = false,
+    this.onClear, // 👈 new
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-      child: Stack(
-        children: [
-          // Subtle glow effect
-          Container(
-            width: double.infinity,
-            height: 52.h,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(26.r),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.08),
-                  blurRadius: 16,
-                  spreadRadius: 0,
-                  offset: const Offset(0, 2),
+    final isDark = theme.brightness == Brightness.dark;
+
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final hasText = value.text.trim().isNotEmpty;
+
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+          child: Stack(
+            children: [
+              // Subtle glow
+              Container(
+                width: double.infinity,
+                height: 52.h,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(26.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          // Main glass container
-          Container(
-            width: double.infinity,
-            height: 52.h,
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(26.r),
-              border: Border.all(
-                color: Colors.deepOrange.withOpacity(0.7),
-                width: 1,
               ),
-            ),
-            child: Row(
-              children: [
-                // Search icon
-                Icon(
-                  Icons.search_rounded,
-                  color: textColor(context),
-                  size: 22.sp,
+
+              // Main glass container
+              Container(
+                width: double.infinity,
+                height: 52.h,
+                padding: EdgeInsets.symmetric(horizontal: 14.w),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(26.r),
+                  border: Border.all(
+                    color: isDark? Colors.deepOrange.withOpacity(0.7) : Colors.orange.withOpacity(0.9),
+                    width: 1,
+                  ),
                 ),
-                SizedBox(width: 14.w),
-                // Text field
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => onSubmit(),
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: textColor(context),
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    cursorColor: Colors.white.withOpacity(0.8),
-                    decoration: InputDecoration(
-                      hintText: hintText ?? "Search your cravings or guilty pleasures ...",
-                      hintStyle: TextStyle(
-                        color: textColor(context),
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w300,
+                child: Row(
+                  children: [
+                    // Search icon
+                    Icon(Icons.search_rounded, color: textColor(context), size: 22.sp),
+                    SizedBox(width: 10.w),
+
+                    // Text field
+                    Expanded(
+                      child: TextField(
+                        controller: controller,
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: (_) {
+                          if (!hasText) return; // prevent empty submit
+                          onSubmit();
+                        },
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: textColor(context),
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        cursorColor: Colors.white.withOpacity(0.8),
+                        decoration: InputDecoration(
+                          hintText: hintText ?? "Search your cravings or guilty pleasures ...",
+                          hintStyle: TextStyle(
+                            color: textColor(context),
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w300,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
                       ),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
                     ),
-                  ),
+
+                    // Forward button (disabled when empty)
+                    IgnorePointer(
+                      ignoring: !hasText,
+                      child: GestureDetector(
+                        onTap: () {
+                          if (!hasText) return;
+                          onSubmit();
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: EdgeInsets.all(6.w),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10.r),
+                            color: hasText
+                                ? textColor(context).withOpacity(0.18)
+                                : textColor(context).withOpacity(0.08),
+                          ),
+                          child: Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: hasText ? Colors.blue : textColor(context).withOpacity(0.3),
+                            size: 16.sp,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Small gap then the CLEAR (×) button — only when there's text
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 150),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      child: hasText
+                          ? Padding(
+                              padding: EdgeInsets.only(left: 8.w),
+                              child: GestureDetector(
+                                onTap: () {
+                                  controller.clear();
+                                  FocusScope.of(context).unfocus();
+                                  onClear?.call(); // tell parent to go to State B
+                                },
+                                child: Container(
+                                  key: const ValueKey('clear'),
+                                  padding: EdgeInsets.all(6.w),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10.r),
+                                    color: textColor(context).withOpacity(0.18),
+                                  ),
+                                  child: Icon(
+                                    Icons.close_rounded,
+                                    color: isDark? Colors.deepOrangeAccent :Colors.red,
+                                    size: 16.sp,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : const SizedBox(key: ValueKey('no-clear'), width: 0, height: 0),
+                    ),
+                  ],
                 ),
-                // Loading indicator or search action
-                GestureDetector(
-                  onTap: onSubmit,
-                  child: Container(
-                    padding: EdgeInsets.all(6.w),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10.r),
-                      color: textColor(context).withOpacity(0.15),
-                    ),
-                    child: Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      color: textColor(context),
-                      size: 15.sp,
-                    ),
-                  ),
-                )
-              ],
-            ),
-          ).asGlass(
-            tintColor: Colors.white.withOpacity(0.04),
-            clipBorderRadius: BorderRadius.circular(26.r),
-            blurX: 28,
-            blurY: 28,
-            frosted: true,
+              ).asGlass(
+                tintColor: Colors.white.withOpacity(0.04),
+                clipBorderRadius: BorderRadius.circular(26.r),
+                blurX: 28,
+                blurY: 28,
+                frosted: true,
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
