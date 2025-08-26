@@ -23,10 +23,10 @@ class CravingsScreen extends StatefulWidget {
 
 class _CravingsScreenState extends State<CravingsScreen> {
   static const String _bgLottie = 'assets/animations/Animation_wave.json';
-  static const String _loadingLottie = 'assets/animations/Animation_wave.json'; // replace later
+  static const String _loadingLottie = 'assets/animations/Animation_AI_Food_Search.json';
 
   // Height of your CustomNavBar so content can scroll behind it elegantly.
-  static const double _bottomNavSpacer = 90;
+  static const double _bottomNavSpacer = 100;
 
   final TextEditingController _queryCtrl = TextEditingController();
   final CravingsService _svc = CravingsService();
@@ -35,6 +35,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
   bool _loading = false;
 
   Map<String, dynamic>? _defaults;
+  // ignore: prefer_final_fields
   int _defaultTime = 90;
 
   bool? _overrideRandomSpice;
@@ -185,7 +186,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
 
     return Scaffold(
       backgroundColor: bgColor(context),
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: false,
       extendBody: true, // scroll under bottom nav
       drawer: const CustomDrawer(),
       bottomNavigationBar: CustomNavBar(currentIndex: 3),
@@ -200,54 +201,50 @@ class _CravingsScreenState extends State<CravingsScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background lottie (visible only when no results)
-          Positioned(
-            top: 100.h,
-            left: 0,
-            right: 0,
-            child: IgnorePointer(
-              child: Opacity(
-                opacity: hasResults ? 0.0 : 1.0,
-                child: Align(
-                  alignment: Alignment.center,
-                  child: SizedBox(
-                    width: 400.w,
-                    height: 400.h,
-                    child: Lottie.asset(
-                      _bgLottie,
-                      frameRate: FrameRate.max,
-                      repeat: true,
-                      fit: BoxFit.contain,
-                    ),
+          // Background lottie (rendered ONLY when no results)
+          if (!hasResults)
+            Positioned(
+              top: 40.h,
+              left: 0,
+              right: 0,
+              child: Align(
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: 400.w,
+                  height: 400.h,
+                  child: Lottie.asset(
+                    _bgLottie,
+                    frameRate: FrameRate.max,
+                    repeat: true,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
             ),
-          ),
 
           // MAIN: three states
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // A) NO RESULTS (centered search & actions, caution glued at bottom)
+              // ========= A) NO RESULTS (centered) =========
               if (uid == null)
-                _centeredWithCaution(
-                  content: _centerChunk(
+                _buildCenteredWithCaution(
+                  content: _buildCenterContent(
                     "Sign in to generate recipes based on your cravings.",
                     showActions: false,
                   ),
                 )
               else if (!_loading && !hasResults)
-                _centeredWithCaution(
-                  content: _centerChunk(
+                _buildCenteredWithCaution(
+                  content: _buildCenterContent(
                     "What are you craving today?",
                     showActions: true,
                   ),
                 )
 
-              // B) LOADING (center Lottie, caution glued at bottom)
+              // ========= B) LOADING (centered Lottie) =========
               else if (_loading && !hasResults)
-                _centeredWithCaution(
+                _buildCenteredWithCaution(
                   content: Center(
                     child: SizedBox(
                       width: 200.w,
@@ -261,52 +258,54 @@ class _CravingsScreenState extends State<CravingsScreen> {
                   ),
                 )
 
-              // C) RESULTS (pinned search + compact top gap + grid)
+              // ========= C) RESULTS =========
               else ...[
-                SliverPadding(
-                  padding: EdgeInsets.only(top: 120.h), // tighter than before
-                  sliver: SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _PinnedSearchHeader(
-                      minH: 66.h,
-                      maxH: 80.h,
-                      padding: EdgeInsets.symmetric(horizontal: 24.w),
-                      child: GlassSearchBar(
-                        controller: _queryCtrl,
-                        onSubmit: _generate,
-                      ),
+                // Search bar pinned directly under the app bar (no extra top spacer needed)
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _PinnedSearchHeader(
+                    minH: 56.h,
+                    maxH: 56.h,
+                    padding: EdgeInsets.symmetric(horizontal: 24.w),
+                    child: GlassSearchBar(
+                      controller: _queryCtrl,
+                      onSubmit: _generate,
                     ),
                   ),
                 ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(20.w, 15.h, 20.w, 20.h),
+
+                // tiny gap under search
+                SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+
+                // Cards (tight) — no inner scroll, so no weird extra space
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(20.w, 5.h, 20.w, 5.h),
+                  sliver: SliverToBoxAdapter(
                     child: CravingsResultsGrid(
                       items: _results!,
-                      onTap: (m) {
-                        // TODO: push details later
-                      },
-
-                      // spacing/size control
+                      onTap: (m) {},
                       outerHorizontalPadding: 24.w,
-                      mainAxisSpacing: 12.h,
+                      mainAxisSpacing: 10.h,
                       crossAxisSpacing: 12.w,
                       phoneColumns: 1,
                       tabletColumns: 2,
-                      phoneAspect: 0.90, // slightly taller cards on phones
+                      phoneAspect: 0.90,
                       tabletAspect: 0.70,
                     ),
                   ),
                 ),
-              ],
 
-              // Caution glued above bottom nav (all states handled)
-              // SliverToBoxAdapter(child: SizedBox(height: 14.h)),
-              // SliverPadding(
-              //   padding: EdgeInsets.symmetric(horizontal: 24.w),
-              //   sliver: const SliverToBoxAdapter(child: CautionBannerGlass()),
-              // ),
-              // SliverToBoxAdapter(child: SizedBox(height: _bottomNavSpacer)),
+                // Caution immediately after cards
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(24.w, 10.h, 24.w, 0),
+                    child: const CautionBannerGlass(),
+                  ),
+                ),
+
+                // Bottom spacer so content can scroll behind the bottom nav (but never behind the app bar)
+                SliverToBoxAdapter(child: SizedBox(height: _bottomNavSpacer)),
+              ],
             ],
           ),
         ],
@@ -314,34 +313,10 @@ class _CravingsScreenState extends State<CravingsScreen> {
     );
   }
 
-  // ---------- helper slivers ----------
+  // ---------- helper slivers (renamed for clarity) ----------
 
-  /// A centered piece of content with the caution bar pushed to the bottom (above nav).
-  SliverFillRemaining _centeredWithCaution({required Widget content}) {
-    return SliverFillRemaining(
-      hasScrollBody: false,
-      child: Column(
-        children: [
-          // take available space to keep content centered
-          Expanded(child: Center(child: Padding(
-            //padding: EdgeInsets.symmetric(horizontal: 24.w),
-            padding: EdgeInsets.only(top: 120.h),
-            child: content,
-          ))),
-
-          // caution + spacer for bottom nav
-          Padding(
-            //padding: EdgeInsets.symmetric(horizontal: 24.w),
-            padding: EdgeInsets.only(bottom: 20.h, left: 10.w, right: 10.w),
-            child: const CautionBannerGlass(),
-          ),
-          SizedBox(height: _bottomNavSpacer),
-        ],
-      ),
-    );
-  }
-
-  Widget _centerChunk(String title, {required bool showActions}) {
+  /// Centered content panel (title + search [+ optional actions]).
+  Widget _buildCenterContent(String title, {required bool showActions}) {
     final theme = Theme.of(context);
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: 720.w),
@@ -372,9 +347,32 @@ class _CravingsScreenState extends State<CravingsScreen> {
       ),
     );
   }
+
+  /// A centered layout with the caution bar glued above the bottom nav.
+  SliverFillRemaining _buildCenteredWithCaution({required Widget content}) {
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.only(top: 120.h),
+                child: content,
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(bottom: 20.h, left: 10.w, right: 10.w),
+            child: const CautionBannerGlass(),
+          ),
+          SizedBox(height: _bottomNavSpacer),
+        ],
+      ),
+    );
+  }
 }
 
-/// Pinned header that holds the search bar when results exist.
 class _PinnedSearchHeader extends SliverPersistentHeaderDelegate {
   _PinnedSearchHeader({
     required this.minH,
