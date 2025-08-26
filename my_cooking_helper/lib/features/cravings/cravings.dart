@@ -179,6 +179,14 @@ class _CravingsScreenState extends State<CravingsScreen> {
     );
   }
 
+  void _resetToLoadingFromClear() {
+    // go to State A (LOADING) with no results
+    setState(() {
+      _loading = false;
+      _results = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -270,6 +278,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
                     child: GlassSearchBar(
                       controller: _queryCtrl,
                       onSubmit: _generate,
+                      onClear: _resetToLoadingFromClear,
                     ),
                   ),
                 ),
@@ -335,6 +344,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
           GlassSearchBar(
             controller: _queryCtrl,
             onSubmit: _generate,
+            onClear: _resetToLoadingFromClear,
           ),
           if (showActions) ...[
             SizedBox(height: 12.h),
