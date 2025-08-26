@@ -336,7 +336,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
             title,
             textAlign: TextAlign.center,
             style: theme.textTheme.headlineSmall?.copyWith(
-              color: Colors.white.withOpacity(0.95),
+              color: textColor(context),
               fontWeight: FontWeight.w700,
             ),
           ),
