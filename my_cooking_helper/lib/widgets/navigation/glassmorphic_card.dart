@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -64,8 +66,8 @@ class GlassmorphicCard extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(borderRadius.r),
                 border: Border.all(
-                  color: Colors.white.withOpacity(isLight ? 0.33 : 0.18),
-                  width: 1.6.w,
+                  color: isLight? Colors.black.withOpacity(0.3) : Colors.white.withOpacity(0.3),
+                  width: 1.5.w,
                 ),
               ),
               child: child,

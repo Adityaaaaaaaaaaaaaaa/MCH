@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:glass/glass.dart';
@@ -275,6 +277,8 @@ class _FeatureCardState extends State<FeatureCard> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return GestureDetector(
       onTapDown: (_) {
         setState(() => _isPressed = true);
@@ -322,6 +326,10 @@ class _FeatureCardState extends State<FeatureCard> with SingleTickerProviderStat
                       children: [
                         Container(
                           decoration: BoxDecoration(
+                            border: Border.all(
+                              color: isDark? Colors.white.withOpacity(0.6) : Colors.black.withOpacity(0.6), 
+                              width: 1
+                            ),
                             gradient: LinearGradient(
                               colors: [
                                 widget.color.withOpacity(0.8),
