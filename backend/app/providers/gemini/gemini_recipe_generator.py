@@ -1,6 +1,7 @@
 # app/providers/gemini/gemini_recipe_generator.py
 import os, json
 from typing import List, Dict, Any, Optional, Literal
+from typing import List as _TList
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from google import genai
 from app.utils.cravings.ai_prompt import build_gemini_recipe_prompt
@@ -109,23 +110,103 @@ def _common_fixes(s: str) -> str:
 
 def _coerce_candidates_from_text(raw_text: str) -> list[dict]:
     """
-    Try multiple strategies to turn Gemini text into a Python list[dict].
+    Turn Gemini text into a list[dict] of recipes.
+    Handles:
+      - a pure JSON array:      [ {...}, {...} ]
+      - a wrapper JSON object:  {"candidates":[ {...}, {...} ], ... }
+      - code fences / trailing commas / BOM
     """
-    t = raw_text.strip()
+    t = _strip_code_fences(raw_text.strip())
+    t = _common_fixes(t)
 
-    # If Gemini returned a *quoted* JSON array string, unquote once.
-    if (t.startswith('"') and t.endswith('"')) or (t.startswith("'") and t.endswith("'")):
-        try:
-            t = json.loads(t)  # becomes the inner JSON string
-        except Exception:
-            pass
+    # 1) Try direct parse first (often succeeds even with prose-free JSON)
+    try:
+        obj = json.loads(t)
+        if isinstance(obj, list):
+            return obj
+        if isinstance(obj, dict) and "candidates" in obj and isinstance(obj["candidates"], list):
+            return obj["candidates"]
+    except Exception:
+        pass
 
-    t = _strip_code_fences(t)
+    # 2) Try extracting the largest top-level object {...} then read "candidates"
+    try:
+        obj_str = _extract_top_level_object(t)
+        obj = json.loads(_common_fixes(obj_str))
+        if isinstance(obj, dict) and "candidates" in obj and isinstance(obj["candidates"], list):
+            return obj["candidates"]
+    except Exception:
+        pass
 
-    # Now extract the array portion (handles surrounding prose)
-    arr = _extract_json_array(t)
-    arr = _common_fixes(arr)
-    return json.loads(arr)
+    # 3) Fall back to extracting the largest top-level array [...]
+    try:
+        arr_str = _extract_json_array(t)
+        return json.loads(_common_fixes(arr_str))
+    except Exception as e:
+        raise ValueError(f"Could not coerce JSON candidates: {e}")
+
+def _extract_top_level_object(text: str) -> str:
+    """
+    Find the first top-level JSON object {...} with brace matching (ignores braces in strings).
+    Returns substring or raises ValueError.
+    """
+    start = text.find("{")
+    if start == -1:
+        raise ValueError("No '{' found")
+    depth = 0
+    in_str = False
+    escape = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_str:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_str = False
+            continue
+        else:
+            if ch == '"':
+                in_str = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[start:i+1]
+    raise ValueError("Unbalanced braces")
+
+def _extract_json_array(text: str) -> str:
+    """
+    Find the first top-level JSON array [ ... ] with bracket matching (ignores brackets in strings).
+    """
+    start = text.find("[")
+    if start == -1:
+        raise ValueError("No '[' found")
+    depth = 0
+    in_str = False
+    escape = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_str:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_str = False
+            continue
+        else:
+            if ch == '"':
+                in_str = True
+            elif ch == "[":
+                depth += 1
+            elif ch == "]":
+                depth -= 1
+                if depth == 0:
+                    return text[start:i+1]
+    raise ValueError("Unbalanced brackets")
 
 def _minimal_validate_list(lst: list) -> bool:
     if not isinstance(lst, list) or len(lst) == 0:
@@ -138,6 +219,93 @@ def _minimal_validate_list(lst: list) -> bool:
         if "required_ingredients" not in item:
             return False
     return True
+
+def _gemini_call(prompt, *, temperature: float = 0.6):
+    client = genai.Client(api_key=GOOGLE_API_KEY)
+
+    # Base config always asks for JSON back
+    base_config = {
+        "response_mime_type": "application/json",
+        "temperature": temperature,
+        "candidate_count": 1,
+    }
+
+    # 1) Try with a proper Schema (NOT pydantic)
+    try:
+        from google.genai.types import Schema
+
+        # Only try schema mode if Schema.Type seems available in this SDK version
+        if not hasattr(Schema, "Type") or not hasattr(Schema.Type, "STRING"):
+            raise RuntimeError("Schema.Type not available in this SDK")
+
+        STR = Schema.Type.STRING
+        NUM = Schema.Type.NUMBER
+        BOOL = Schema.Type.BOOLEAN
+        ARR = Schema.Type.ARRAY
+        OBJ = Schema.Type.OBJECT
+
+        ingredient_schema = Schema(
+            type=OBJ,
+            properties={
+                "name": Schema(type=STR),
+                "quantity": Schema(type=NUM),
+                "unit": Schema(type=STR),
+                "canonical": Schema(type=STR, nullable=True),
+                "pantryLikely": Schema(type=BOOL, nullable=True),
+            },
+            required=["name"],
+        )
+
+        nutrition_schema = Schema(
+            type=OBJ,
+            properties={
+                "calories": Schema(type=NUM, nullable=True),
+                "protein_g": Schema(type=NUM, nullable=True),
+                "fat_g": Schema(type=NUM, nullable=True),
+                "carbs_g": Schema(type=NUM, nullable=True),
+            },
+        )
+
+        recipe_schema = Schema(
+            type=OBJ,
+            properties={
+                "id": Schema(type=STR, nullable=True),
+                "title": Schema(type=STR),
+                "readyInMinutes": Schema(type=NUM),
+                "servings": Schema(type=NUM, nullable=True),
+                "cuisines": Schema(type=ARR, items=Schema(type=STR)),
+                "diets": Schema(type=ARR, items=Schema(type=STR)),
+                "vegetarian": Schema(type=BOOL, nullable=True),
+                "vegan": Schema(type=BOOL, nullable=True),
+                "glutenFree": Schema(type=BOOL, nullable=True),
+                "dairyFree": Schema(type=BOOL, nullable=True),
+                "reasons": Schema(type=ARR, items=Schema(type=STR)),
+                "required_ingredients": Schema(type=ARR, items=ingredient_schema),
+                "optional_ingredients": Schema(type=ARR, items=ingredient_schema),
+                "instructions": Schema(type=ARR, items=Schema(type=STR)),
+                "summary": Schema(type=STR, nullable=True),
+                "nutrition": nutrition_schema,
+            },
+            required=["title", "readyInMinutes", "required_ingredients", "instructions"],
+        )
+
+        cfg = dict(base_config)
+        cfg["response_schema"] = Schema(type=ARR, items=recipe_schema)
+
+        return client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=cfg,
+        )
+        
+    except Exception as e:
+        _blue(f"[Gemini][recipes] WARN schema mode unavailable ({e}); retrying without schema")
+        # 2) Fall back to "no schema" but still JSON
+        return client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=base_config,
+        )
 
 async def generate_recipes(
     *,
@@ -161,24 +329,13 @@ async def generate_recipes(
 
     try:
         _blue("[Gemini][recipes] calling gemini-2.5-flash …")
-        client = genai.Client(api_key=GOOGLE_API_KEY)
-        resp = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config={
-                "response_mime_type": "application/json",
-                # Prefer schema (works when the model obeys it)
-                "response_schema": list[_RecipeCandidateLite],
-            },
-        )
+        resp = _gemini_call(prompt, temperature=0.6)
 
-        # Path A: schema-parsed
         if getattr(resp, "parsed", None):
             parsed: List[_RecipeCandidateLite] = resp.parsed  # type: ignore
             _blue(f"[Gemini][recipes] parsed via schema: {len(parsed)} candidates")
             return {"candidates": [c.model_dump() for c in parsed]}
 
-        # Path B: fallback parse from text
         raw = getattr(resp, "text", "") or ""
         _blue("[Gemini][recipes][RAW text] ↓")
         _blue(raw[:1000] + ("…" if len(raw) > 1000 else ""))
@@ -191,7 +348,24 @@ async def generate_recipes(
             return {"candidates": lst}
         except Exception as pe:
             _blue(f"[Gemini][recipes] fallback parse failed: {pe}")
-            raise
+            # --- one controlled retry, schema-only, lower temp ---
+            _blue("[Gemini][recipes] retrying with stricter generation …")
+            resp2 = _gemini_call(prompt, temperature=0.3)
+            if getattr(resp2, "parsed", None):
+                parsed2: List[_RecipeCandidateLite] = resp2.parsed  # type: ignore
+                _blue(f"[Gemini][recipes] parsed via schema (retry): {len(parsed2)} candidates")
+                return {"candidates": [c.model_dump() for c in parsed2]}
+            # last-ditch: try text on retry too
+            raw2 = getattr(resp2, "text", "") or ""
+            try:
+                lst2 = _coerce_candidates_from_text(raw2)
+                if not _minimal_validate_list(lst2):
+                    raise ValueError("Minimal validation failed (retry)")
+                _blue(f"[Gemini][recipes] parsed via fallback (retry): {len(lst2)} candidates")
+                return {"candidates": lst2}
+            except Exception as pe2:
+                _blue(f"[Gemini][recipes] retry fallback parse failed: {pe2}")
+                raise
 
     except Exception as e:
         _blue(f"[Gemini][recipes] ERROR {e} — returning stub")
