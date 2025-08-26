@@ -57,7 +57,7 @@ class GlassSearchBar extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(26.r),
               border: Border.all(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.deepOrange.withOpacity(0.7),
                 width: 1,
               ),
             ),
@@ -66,7 +66,7 @@ class GlassSearchBar extends StatelessWidget {
                 // Search icon
                 Icon(
                   Icons.search_rounded,
-                  color: Colors.white.withOpacity(0.7),
+                  color: textColor(context),
                   size: 22.sp,
                 ),
                 SizedBox(width: 14.w),
@@ -77,7 +77,7 @@ class GlassSearchBar extends StatelessWidget {
                     textInputAction: TextInputAction.search,
                     onSubmitted: (_) => onSubmit(),
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: Colors.white,
+                      color: textColor(context),
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w400,
                     ),
@@ -95,37 +95,21 @@ class GlassSearchBar extends StatelessWidget {
                   ),
                 ),
                 // Loading indicator or search action
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: isLoading
-                      ? SizedBox(
-                          width: 20.w,
-                          height: 20.h,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white.withOpacity(0.7),
-                            ),
-                          ),
-                        )
-                      : controller.text.isNotEmpty
-                          ? GestureDetector(
-                              onTap: onSubmit,
-                              child: Container(
-                                padding: EdgeInsets.all(6.w),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10.r),
-                                  color: Colors.white.withOpacity(0.1),
-                                ),
-                                child: Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  color: Colors.white.withOpacity(0.8),
-                                  size: 16.sp,
-                                ),
-                              ),
-                            )
-                          : const SizedBox.shrink(),
-                ),
+                GestureDetector(
+                  onTap: onSubmit,
+                  child: Container(
+                    padding: EdgeInsets.all(6.w),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10.r),
+                      color: textColor(context).withOpacity(0.15),
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: textColor(context),
+                      size: 15.sp,
+                    ),
+                  ),
+                )
               ],
             ),
           ).asGlass(
@@ -394,6 +378,7 @@ class CautionBannerGlass extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     
     return Container(
       width: double.infinity,
@@ -423,7 +408,7 @@ class CautionBannerGlass extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20.r),
               border: Border.all(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.red,
                 width: 1.5,
               ),
             ),
@@ -444,13 +429,13 @@ class CautionBannerGlass extends StatelessWidget {
                       end: Alignment.bottomRight,
                     ),
                     border: Border.all(
-                      color: Colors.amber.withOpacity(0.4),
+                      color: textColor(context),
                       width: 1,
                     ),
                   ),
                   child: Icon(
                     Icons.info_outline_rounded,
-                    color: Colors.amber.shade300,
+                    color: isDark? Colors.amber.shade300 : Colors.deepOrange.withOpacity(0.7),
                     size: 20.sp,
                   ),
                 ),
@@ -464,7 +449,7 @@ class CautionBannerGlass extends StatelessWidget {
                       Text(
                         "AI Generated",
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: Colors.orange.shade500,
+                          color: isDark? Colors.orange.shade500 : Colors.deepOrange.withOpacity(0.7),
                           fontWeight: FontWeight.w600,
                           fontSize: 11.sp,
                           letterSpacing: 0.5,
@@ -474,7 +459,7 @@ class CautionBannerGlass extends StatelessWidget {
                       Text(
                         "Please review for accuracy and food safety",
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: textColor(context).withOpacity(0.6),
+                          color: textColor(context).withOpacity(0.7),
                           fontSize: 13.sp,
                           height: 1.2,
                           fontWeight: FontWeight.w400,
@@ -491,7 +476,7 @@ class CautionBannerGlass extends StatelessWidget {
                     borderRadius: BorderRadius.circular(2.r),
                     gradient: LinearGradient(
                       colors: [
-                        Colors.amber.withOpacity(0.6),
+                        Colors.red.withOpacity(0.4),
                         Colors.amber.withOpacity(0.2),
                       ],
                       begin: Alignment.topCenter,
@@ -502,7 +487,7 @@ class CautionBannerGlass extends StatelessWidget {
               ],
             ),
           ).asGlass(
-            tintColor: Colors.white.withOpacity(0.05),
+            tintColor: isDark? Colors.orange.shade500 : Colors.red.withOpacity(0.4),
             clipBorderRadius: BorderRadius.circular(20.r),
             blurX: 25,
             blurY: 25,
@@ -1087,8 +1072,8 @@ class _CravingsCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
-          color: (isDark ? Colors.white : Colors.black).withOpacity(0.06),
-          width: 1,
+          color: isDark ? Colors.teal : Colors.black,
+          width: 2,
         ),
         boxShadow: [
           BoxShadow(

@@ -266,7 +266,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
                   delegate: _PinnedSearchHeader(
                     minH: 56.h,
                     maxH: 56.h,
-                    padding: EdgeInsets.symmetric(horizontal: 24.w),
+                    padding: EdgeInsets.symmetric(horizontal: 15.w),
                     child: GlassSearchBar(
                       controller: _queryCtrl,
                       onSubmit: _generate,
@@ -298,7 +298,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
                 // Caution immediately after cards
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(24.w, 10.h, 24.w, 0),
+                    padding: EdgeInsets.fromLTRB(15.w, 10.h, 15.w, 0),
                     child: const CautionBannerGlass(),
                   ),
                 ),
