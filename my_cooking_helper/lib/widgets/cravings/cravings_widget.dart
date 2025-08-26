@@ -888,21 +888,91 @@ class CravingsResultsGrid extends StatelessWidget {
     super.key,
     required this.items,
     this.onTap,
+
+    // ---- tunables (with sensible defaults) ----
+    this.outerHorizontalPadding = 24.0,
+    this.mainAxisSpacing,
+    this.crossAxisSpacing,
+    this.phoneColumns = 1,
+    this.tabletColumns = 2,
+    this.phoneAspect = 1.7, // card height control (H/W) via 1/aspectRatio
+    this.tabletAspect = 0.72,
   });
 
   final List<CravingRecipeModel> items;
   final void Function(CravingRecipeModel item)? onTap;
 
+  /// Match the horizontal padding in the parent so cacheWidth is exact.
+  final double outerHorizontalPadding;
+
+  /// Space between rows/columns in the grid. If null, ScreenUtil scaled defaults are used.
+  final double? mainAxisSpacing;
+  final double? crossAxisSpacing;
+
+  /// How many columns on phone/tablet.
+  final int phoneColumns;
+  final int tabletColumns;
+
+  /// Child aspect ratio per form-factor (W/H inverted; Grid wants W/H).
+  final double phoneAspect;
+  final double tabletAspect;
+
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
 
-    // 1 col on phones, 2 cols on wider screens
-    final wide = ScreenUtil().screenWidth >= 700;
-    final crossAxisCount = wide ? 2 : 1;
-    final childAspect = wide ? 0.68 : 0.85; // tall, image-first
+    final theme = Theme.of(context);
+    final screenW = ScreenUtil().screenWidth;
+    final isWide = screenW >= 700;
+    final crossAxisCount = isWide ? tabletColumns : phoneColumns;
 
-    // Sanity log: confirms data URL reached this widget
+    final mainGap = (mainAxisSpacing ?? 14.h);
+    final crossGap = (crossAxisSpacing ?? 14.w);
+
+    // ----- compute exact tile height (mainAxisExtent) -----
+    // grid width after the outer page padding
+    final availableW = (screenW - (outerHorizontalPadding * 2));
+    // spacing between columns inside the grid
+    final totalCrossSpacing = (crossAxisCount > 1) ? crossGap * (crossAxisCount - 1) : 0.0;
+    final tileW = (availableW - totalCrossSpacing) / crossAxisCount;
+
+    // your card uses 12.w horizontal padding
+    final cardHPad = 12.w;
+    final innerW = (tileW - cardHPad * 2).clamp(0.0, double.infinity);
+
+    // image is 16:9 inside the card
+    final imageH = innerW * 9.0 / 16.0;
+
+    // title: max 2 lines with your titleMedium style
+    final titleStyle = theme.textTheme.titleMedium;
+    final titleFont = (titleStyle?.fontSize ?? 16.0);
+    final titleLineH = titleFont * (titleStyle?.height ?? 1.15);
+    final titleH = titleLineH * 2; // 2 lines max
+
+    // time pill: approx height = vertical padding (6.h * 2) + text size
+    final pillTextSize = (theme.textTheme.labelSmall?.fontSize ?? 12.0);
+    final pillH = (6.h * 2) + pillTextSize + 2; // small fudge for border
+
+    // vertical paddings/spacers inside your card
+    final topPad = 12.w; // card top padding
+    final betweenImageTitle = 10.h;
+    final betweenTitlePill = 6.h;
+    final bottomPad = 12.w; // card bottom padding
+
+    final cardH = topPad +
+        imageH +
+        betweenImageTitle +
+        titleH +
+        betweenTitlePill +
+        pillH +
+        bottomPad;
+
+    // Debug
+    // print('[Grid] tileW=$tileW innerW=$innerW imageH=$imageH cardH=$cardH');
+
+    // -------------------------------------------------------
+
+    // Sanity log (unchanged)
     // ignore: avoid_print
     print('\x1B[34m[CravingsGrid] first image head: '
         '${items.first.imageDataUrl?.substring(0, 32)}\x1B[0m');
@@ -913,87 +983,214 @@ class CravingsResultsGrid extends StatelessWidget {
       itemCount: items.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        mainAxisSpacing: 16.h,
-        crossAxisSpacing: 16.w,
-        childAspectRatio: childAspect,
+        crossAxisSpacing: crossGap,
+        mainAxisSpacing: mainGap,
+        // 👇 key line: match the tile height to the card height
+        mainAxisExtent: cardH,
+        // (childAspectRatio is ignored when mainAxisExtent is set)
       ),
       itemBuilder: (_, i) => _CravingsCard(
         item: items[i],
         onTap: onTap,
+        columns: crossAxisCount,
+        crossSpacing: crossGap,
+        outerHorizontalPadding: outerHorizontalPadding,
       ),
     );
   }
 }
 
 class _CravingsCard extends StatelessWidget {
-  const _CravingsCard({required this.item, this.onTap});
+  const _CravingsCard({
+    required this.item,
+    this.onTap,
+    required this.columns,
+    required this.crossSpacing,
+    required this.outerHorizontalPadding,
+  });
 
   final CravingRecipeModel item;
   final void Function(CravingRecipeModel item)? onTap;
 
+  // layout hints for better cacheWidth
+  final int columns;
+  final double crossSpacing;
+  final double outerHorizontalPadding;
+
+  String _fmtMins(int? mins) {
+    final m = (mins ?? 0).clamp(0, 10000);
+    final h = m ~/ 60;
+    final rem = m % 60;
+    if (h > 0) return '${h}h ${rem}m';
+    return '${rem}m';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     final Uint8List? bytes = decodeDataUrl(item.imageDataUrl);
     // ignore: avoid_print
     print('\x1B[34m[CravingsCard] "${item.title}" decoded=${bytes?.length ?? 0} bytes\x1B[0m');
 
+    // ── GPU cache downscale (sharp/efficient)
+    final dpr = MediaQuery.of(context).devicePixelRatio;
+    final screenW = ScreenUtil().screenWidth;
+    final available = (screenW - (outerHorizontalPadding * 2)).clamp(0, double.infinity);
+    final totalCrossSpacing = columns > 1 ? crossSpacing : 0.0;
+    final gridWidthPerCol = (available - totalCrossSpacing) / columns;
+    final cacheWidthPx = (gridWidthPerCol * dpr).round().clamp(64, 4096);
+
+    // ── Image with gradient (no time pill overlay anymore)
     final Widget imageArea = ClipRRect(
-      borderRadius: BorderRadius.circular(18.r),
-      child: (bytes != null && bytes.isNotEmpty)
-          ? Image.memory(
-              bytes,
-              fit: BoxFit.cover,
-              gaplessPlayback: true,
-              filterQuality: FilterQuality.low, // safest
-              errorBuilder: (_, __, ___) => _ImageErrorTile(title: item.title),
-            )
-          : _ImageErrorTile(title: item.title),
-    );
-
-    return InkWell(
-      onTap: onTap == null ? null : () => onTap!(item),
       borderRadius: BorderRadius.circular(20.r),
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface.withOpacity(0.10),
-          borderRadius: BorderRadius.circular(20.r),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
-        ),
-        padding: EdgeInsets.all(12.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AspectRatio(aspectRatio: 16 / 9, child: imageArea),
-            SizedBox(height: 12.h),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (bytes != null && bytes.isNotEmpty)
+            Hero(
+              tag: 'craving:${item.id}',
+              child: Image.memory(
+                bytes,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+                filterQuality: FilterQuality.low,
+                cacheWidth: cacheWidthPx,
+                errorBuilder: (_, __, ___) => _ImageErrorTile(title: item.title),
+              ),
+            )
+          else
+            _ImageErrorTile(title: item.title),
 
-            Text(
-              item.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+          // subtle gradient for text safety (future badges over image if needed)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(isDark ? 0.05 : 0.08),
+                      Colors.transparent,
+                      Colors.black.withOpacity(isDark ? 0.22 : 0.18),
+                    ],
+                    stops: const [0.0, 0.55, 1.0],
+                  ),
+                ),
               ),
             ),
-            SizedBox(height: 10.h),
+          ),
+        ],
+      ),
+    );
 
-            Row(
-              children: [
-                const Icon(Icons.timer_outlined, size: 16),
-                SizedBox(width: 6.w),
-                Text('${item.readyInMinutes ?? 0} min',
-                    style: theme.textTheme.bodySmall),
-                const Spacer(),
-                const Icon(Icons.shopping_cart_outlined, size: 16),
-                SizedBox(width: 6.w),
-                Text('${item.shopping.length}',
-                    style: theme.textTheme.bodySmall),
-              ],
+    // ── Card container (glass)
+    final card = Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(
+          color: (isDark ? Colors.white : Colors.black).withOpacity(0.06),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.30 : 0.12),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
+      ),
+      padding: EdgeInsets.all(12.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 9, 
+            child: imageArea
+          ),
+          SizedBox(height: 10.h),
+
+          // Title
+          Text(
+            item.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface.withOpacity(0.95),
+              height: 1.15,
             ),
-          ],
+          ),
+          SizedBox(height: 6.h),
+
+          // Time pill UNDER the title
+          _TimePill(label: _fmtMins(item.readyInMinutes)),
+        ],
+      ),
+    ).asGlass(
+      clipBorderRadius: BorderRadius.circular(20.r),
+      frosted: true,
+      blurX: 14,
+      blurY: 14,
+      tintColor: isDark ? Colors.teal :  Colors.grey.shade200.withOpacity(0.12),
+    );
+
+    return Align(
+      alignment: Alignment.topCenter,
+      heightFactor: 1.0,                 // 👈 critical: shrink to child height
+      child: InkWell(
+        onTap: onTap == null ? null : () => onTap!(item),
+        borderRadius: BorderRadius.circular(20.r),
+        child: card,
+      ),
+    );
+  }
+}
+
+class _TimePill extends StatelessWidget {
+  const _TimePill({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final pill = Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: (isDark ? Colors.black : Colors.white).withOpacity(0.26),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: (isDark ? Colors.white : Colors.black).withOpacity(0.12),
         ),
       ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.timer_outlined, size: 14),
+          SizedBox(width: 6.w),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return pill.asGlass(
+      frosted: true,
+      blurX: 6,
+      blurY: 6,
+      tintColor: Colors.transparent,
+      clipBorderRadius: BorderRadius.circular(999),
     );
   }
 }
