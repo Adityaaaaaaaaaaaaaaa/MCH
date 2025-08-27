@@ -7,11 +7,22 @@ import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
 import '/theme/app_theme.dart';
+import '/widgets/cravings/craving_recipe_widgets.dart';
 
 class CravingRecipePage extends StatelessWidget {
-  final CravingRecipeModel recipe;
-  const CravingRecipePage({super.key, required this.recipe});
+  const CravingRecipePage({
+    super.key,
+    required this.recipe,
+    this.previewImageBytes,
+  });
 
+  /// Full recipe from Firestore (already hydrated in your flow)
+  final CravingRecipeModel recipe;
+
+  /// Optional preview image bytes (from the list card, memory-only)
+  final Uint8List? previewImageBytes;
+
+  // Convert a data URL -> bytes (when you only have imageDataUrl on the model)
   Uint8List? _bytesFromDataUrl(String? dataUrl) {
     if (dataUrl == null || dataUrl.isEmpty) return null;
     try {
@@ -24,13 +35,25 @@ class CravingRecipePage extends StatelessWidget {
     }
   }
 
+  String formatHm(int totalMinutes) {
+    final h = totalMinutes ~/ 60;
+    final m = totalMinutes % 60;
+    if (h > 0 && m > 0) return '$h hr $m min';
+    if (h > 0) return '$h hr';
+    return '$m min';
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final imgBytes = _bytesFromDataUrl(recipe.imageDataUrl);
+    final bg = bgColor(context);
+
+    // choose image in priority order:
+    // 1) passed preview bytes  2) hydrated model imageDataUrl  3) none
+    final bytes = previewImageBytes ?? _bytesFromDataUrl(recipe.imageDataUrl);
 
     return Scaffold(
-      backgroundColor: bgColor(context),
+      backgroundColor: bg,
       extendBody: true,
       extendBodyBehindAppBar: true,
       drawer: const CustomDrawer(),
@@ -42,325 +65,220 @@ class CravingRecipePage extends StatelessWidget {
         borderRadius: 26.r,
         topPadding: 40.h,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 20.h),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // IMAGE
-              if (imgBytes != null) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(18.r),
-                  child: Image.memory(
-                    imgBytes,
-                    height: 220.h,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
+      body: Stack(
+        children: [
+          // faint background image/gradient for atmosphere
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [bg.withOpacity(0.95), bg.withOpacity(0.75)]
+                      : [bg.withOpacity(0.98), bg.withOpacity(0.85)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
-                SizedBox(height: 14.h),
-              ],
-
-              // TITLE + META
-              Text(
-                recipe.title,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: textColor(context),
-                    ),
               ),
-              SizedBox(height: 8.h),
-              Wrap(
-                spacing: 8.w,
-                runSpacing: 8.h,
+            ),
+          ),
+          if (bytes != null)
+            Positioned.fill(
+              child: Opacity(
+                opacity: isDark ? 0.07 : 0.10,
+                child: Image.memory(bytes, fit: BoxFit.cover),
+              ),
+            ),
+
+          SafeArea(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(14.w, 8.h, 14.w, 22.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (recipe.readyInMinutes != null)
-                    _chip(context, Icons.timer_rounded, "${recipe.readyInMinutes} min", isDark),
-                  if (recipe.vegetarian == true) _chip(context, Icons.eco_rounded, "Vegetarian", isDark),
-                  if (recipe.vegan == true) _chip(context, Icons.spa_rounded, "Vegan", isDark),
-                  if (recipe.glutenFree == true) _chip(context, Icons.no_food_rounded, "Gluten-free", isDark),
-                  if (recipe.dairyFree == true) _chip(context, Icons.free_breakfast_rounded, "Dairy-free", isDark),
-                ],
-              ),
-              SizedBox(height: 12.h),
+                  // Hero image card (glassy)
+                  if (bytes != null)
+                    Hero(
+                      tag: 'craving-hero-${recipe.id}',
+                      child: GlassHeroImage(bytes: bytes),
+                    ),
+                  SizedBox(height: 12.h),
 
-              // CUISINES / DIETS
-              if (recipe.cuisines.isNotEmpty || recipe.diets.isNotEmpty) ...[
-                Row(
-                  children: [
-                    if (recipe.cuisines.isNotEmpty)
-                      Expanded(
-                        child: _sectionBox(
-                          context,
-                          title: "Cuisines",
-                          child: Wrap(
-                            spacing: 6.w,
-                            runSpacing: 6.h,
-                            children: recipe.cuisines
-                                .map((c) => _smallTag(context, c, isDark))
-                                .toList(),
-                          ),
-                        ),
-                      ),
-                    if (recipe.diets.isNotEmpty) SizedBox(width: 10.w),
-                    if (recipe.diets.isNotEmpty)
-                      Expanded(
-                        child: _sectionBox(
-                          context,
-                          title: "Diets",
-                          child: Wrap(
-                            spacing: 6.w,
-                            runSpacing: 6.h,
-                            children: recipe.diets
-                                .map((d) => _smallTag(context, d, isDark))
-                                .toList(),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                SizedBox(height: 12.h),
-              ],
-
-              // SUMMARY
-              if ((recipe.summary ?? '').isNotEmpty)
-                _sectionBox(
-                  context,
-                  title: "Summary",
-                  child: Text(
-                    recipe.summary!,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          height: 1.35,
-                          color: textColor(context).withOpacity(0.90),
-                        ),
-                  ),
-                ),
-              if ((recipe.summary ?? '').isNotEmpty) SizedBox(height: 12.h),
-
-              // WHY THIS FITS
-              if (recipe.reasons.isNotEmpty)
-                _sectionBox(
-                  context,
-                  title: "Why this fits",
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: recipe.reasons
-                        .map((r) => Padding(
-                              padding: EdgeInsets.only(bottom: 6.h),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text("• "),
-                                  Expanded(
-                                    child: Text(
-                                      r,
-                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                            color: textColor(context).withOpacity(0.95),
-                                          ),
-                                    ),
-                                  ),
-                                ],
+                  // Title + meta chips (time + diet flags)
+                  GlassSection(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          recipe.title,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: textColor(context),
                               ),
-                            ))
-                        .toList(),
-                  ),
-                ),
-              if (recipe.reasons.isNotEmpty) SizedBox(height: 12.h),
-
-              // INGREDIENTS
-              if (recipe.requiredIngredients.isNotEmpty || recipe.optionalIngredients.isNotEmpty)
-                _sectionBox(
-                  context,
-                  title: "Ingredients",
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (recipe.requiredIngredients.isNotEmpty) ...[
-                        Text("Required", style: Theme.of(context).textTheme.titleSmall),
-                        SizedBox(height: 6.h),
-                        ...recipe.requiredIngredients.map((e) => _bulletLine(context, _formatIng(e))),
-                      ],
-                      if (recipe.optionalIngredients.isNotEmpty) ...[
-                        SizedBox(height: 10.h),
-                        Text("Optional", style: Theme.of(context).textTheme.titleSmall),
-                        SizedBox(height: 6.h),
-                        ...recipe.optionalIngredients.map((e) => _bulletLine(context, _formatIng(e))),
-                      ],
-                    ],
-                  ),
-                ),
-              if (recipe.requiredIngredients.isNotEmpty || recipe.optionalIngredients.isNotEmpty) SizedBox(height: 12.h),
-
-              // INSTRUCTIONS
-              if (recipe.instructions.isNotEmpty)
-                _sectionBox(
-                  context,
-                  title: "Instructions",
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: List.generate(
-                      recipe.instructions.length,
-                      (i) => Padding(
-                        padding: EdgeInsets.only(bottom: 8.h),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                        SizedBox(height: 8.h),
+                        Wrap(
+                          spacing: 8.w,
+                          runSpacing: 8.h,
                           children: [
-                            Text("${i + 1}. "),
-                            Expanded(child: Text(recipe.instructions[i].toString())),
+                            if (recipe.readyInMinutes != null)
+                              TinyChip(
+                                icon: Icons.timer_rounded,
+                                text: formatHm(recipe.readyInMinutes!),
+                              ),
+                            if (recipe.vegetarian == true)
+                              TinyChip(icon: Icons.eco_rounded, text: "Vegetarian"),
+                            if (recipe.vegan == true)
+                              TinyChip(icon: Icons.spa_rounded, text: "Vegan"),
+                            if (recipe.glutenFree == true)
+                              TinyChip(icon: Icons.no_food_rounded, text: "Gluten-free"),
+                            if (recipe.dairyFree == true)
+                              TinyChip(icon: Icons.free_breakfast_rounded, text: "Dairy-free"),
                           ],
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                ),
-              if (recipe.instructions.isNotEmpty) SizedBox(height: 12.h),
+                  SizedBox(height: 10.h),
 
-              // SHOPPING LIST
-              if (recipe.shopping.isNotEmpty)
-                _sectionBox(
-                  context,
-                  title: "Shopping",
-                  child: Column(
-                    children: recipe.shopping.map((s) {
-                      final need = s.need.toStringAsFixed(s.need % 1 == 0 ? 0 : 1);
-                      final have = s.have.toStringAsFixed(s.have % 1 == 0 ? 0 : 1);
-                      final tagColor = s.tag == 'missing'
-                          ? Colors.amber[700]
-                          : Theme.of(context).colorScheme.tertiary;
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                        title: Text("${s.name} • $need ${s.unit}"),
-                        subtitle: Text("have: $have ${s.unit}"),
-                        trailing: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8.r),
-                            color: tagColor?.withOpacity(0.15),
-                            border: Border.all(color: tagColor ?? Colors.grey),
-                          ),
-                          child: Text(
-                            s.tag,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: tagColor,
+                  // Cuisines + Diets
+                  if (recipe.cuisines.isNotEmpty || recipe.diets.isNotEmpty)
+                    Row(
+                      children: [
+                        if (recipe.cuisines.isNotEmpty)
+                          Expanded(
+                            child: GlassSection(
+                              title: "Cuisines",
+                              child: Wrap(
+                                spacing: 6.w,
+                                runSpacing: 6.h,
+                                children: recipe.cuisines
+                                    .map((c) => FlagTag(text: c, emoji: cuisineFlagEmoji(c)))
+                                    .toList(),
+                              ),
                             ),
                           ),
+                        if (recipe.cuisines.isNotEmpty && recipe.diets.isNotEmpty)
+                          SizedBox(width: 8.w),
+                        if (recipe.diets.isNotEmpty)
+                          Expanded(
+                            child: GlassSection(
+                              title: "Diets",
+                              child: Wrap(
+                                spacing: 6.w,
+                                runSpacing: 6.h,
+                                children: recipe.diets.map((d) => PillTag(text: d)).toList(),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  if (recipe.cuisines.isNotEmpty || recipe.diets.isNotEmpty)
+                    SizedBox(height: 10.h),
+
+                  // Summary
+                  if ((recipe.summary ?? '').isNotEmpty)
+                    GlassSection(
+                      title: "Summary",
+                      child: Text(
+                        recipe.summary!,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              height: 1.35,
+                              color: textColor(context).withOpacity(0.92),
+                            ),
+                      ),
+                    ),
+                  if ((recipe.summary ?? '').isNotEmpty) SizedBox(height: 10.h),
+
+                  // Why this fits
+                  if (recipe.reasons.isNotEmpty)
+                    GlassSection(
+                      title: "Why this fits",
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: recipe.reasons
+                            .map((r) => BulletLine(text: r))
+                            .toList(),
+                      ),
+                    ),
+                  if (recipe.reasons.isNotEmpty) SizedBox(height: 10.h),
+
+                  // Ingredients
+                  if (recipe.requiredIngredients.isNotEmpty || recipe.optionalIngredients.isNotEmpty)
+                    GlassSection(
+                      title: "Ingredients",
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (recipe.requiredIngredients.isNotEmpty) ...[
+                            SubHeader("Required"),
+                            SizedBox(height: 6.h),
+                            ...recipe.requiredIngredients.map((e) => IngredientTile(data: e)),
+                          ],
+                          if (recipe.optionalIngredients.isNotEmpty) ...[
+                            SizedBox(height: 10.h),
+                            SubHeader("Optional"),
+                            SizedBox(height: 6.h),
+                            ...recipe.optionalIngredients.map((e) => IngredientTile(data: e)),
+                          ],
+                        ],
+                      ),
+                    ),
+                  if (recipe.requiredIngredients.isNotEmpty || recipe.optionalIngredients.isNotEmpty)
+                    SizedBox(height: 10.h),
+
+                  // Instructions
+                  if (recipe.instructions.isNotEmpty)
+                    GlassSection(
+                      title: "Instructions",
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: List.generate(
+                          recipe.instructions.length,
+                          (i) => InstructionTile(index: i + 1, text: recipe.instructions[i].toString()),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              if (recipe.shopping.isNotEmpty) SizedBox(height: 12.h),
+                      ),
+                    ),
+                  if (recipe.instructions.isNotEmpty) SizedBox(height: 10.h),
 
-              // NUTRITION (simple)
-              if (recipe.nutrition != null && recipe.nutrition!.isNotEmpty)
-                _sectionBox(
-                  context,
-                  title: "Nutrition (per serving, approx.)",
-                  child: Wrap(
-                    spacing: 8.w,
-                    runSpacing: 8.h,
-                    children: [
-                      if (recipe.nutrition!['calories'] != null)
-                        _chip(context, Icons.local_fire_department_rounded,
-                            "${recipe.nutrition!['calories']} kcal", isDark),
-                      if (recipe.nutrition!['protein_g'] != null)
-                        _chip(context, Icons.egg_alt_rounded,
-                            "${recipe.nutrition!['protein_g']} g protein", isDark),
-                      if (recipe.nutrition!['fat_g'] != null)
-                        _chip(context, Icons.water_drop_rounded,
-                            "${recipe.nutrition!['fat_g']} g fat", isDark),
-                      if (recipe.nutrition!['carbs_g'] != null)
-                        _chip(context, Icons.bakery_dining_rounded,
-                            "${recipe.nutrition!['carbs_g']} g carbs", isDark),
-                    ],
-                  ),
-                ),
-            ],
+                  // Shopping list
+                  if (recipe.shopping.isNotEmpty)
+                    GlassSection(
+                      title: "Shopping",
+                      child: Column(
+                        children: recipe.shopping.map((s) => ShoppingTile(item: s)).toList(),
+                      ),
+                    ),
+                  if (recipe.shopping.isNotEmpty) SizedBox(height: 10.h),
+
+                  // Nutrition
+                  if (recipe.nutrition != null && recipe.nutrition!.isNotEmpty)
+                    GlassSection(
+                      title: "Nutrition (approx. per serving)",
+                      child: Wrap(
+                        spacing: 8.w,
+                        runSpacing: 8.h,
+                        children: [
+                          if (recipe.nutrition!['calories'] != null)
+                            TinyChip(icon: Icons.local_fire_department_rounded, text: "${recipe.nutrition!['calories']} kcal"),
+                          if (recipe.nutrition!['protein_g'] != null)
+                            TinyChip(icon: Icons.egg_alt_rounded, text: "${recipe.nutrition!['protein_g']} g protein"),
+                          if (recipe.nutrition!['fat_g'] != null)
+                            TinyChip(icon: Icons.water_drop_rounded, text: "${recipe.nutrition!['fat_g']} g fat"),
+                          if (recipe.nutrition!['carbs_g'] != null)
+                            TinyChip(icon: Icons.bakery_dining_rounded, text: "${recipe.nutrition!['carbs_g']} g carbs"),
+                        ],
+                      ),
+                    ),
+
+                  SizedBox(height: 14.h),
+                  const AiCautionBar(),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
-    );
-  }
-
-  // --- tiny UI helpers ---
-  Widget _chip(BuildContext ctx, IconData icon, String text, bool isDark) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: textColor(ctx).withOpacity(0.2)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16.sp, color: textColor(ctx)),
-          SizedBox(width: 6.w),
-          Text(text, style: TextStyle(color: textColor(ctx))),
         ],
       ),
     );
-  }
-
-  Widget _smallTag(BuildContext ctx, String text, bool isDark) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10.r),
-        color: textColor(ctx).withOpacity(0.08),
-      ),
-      child: Text(text, style: TextStyle(fontSize: 12.sp)),
-    );
-  }
-
-  Widget _sectionBox(BuildContext ctx, {required String title, required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: textColor(ctx).withOpacity(0.12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-          SizedBox(height: 8.h),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _bulletLine(BuildContext ctx, String text) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 6.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("• "),
-          Expanded(child: Text(text)),
-        ],
-      ),
-    );
-  }
-
-  String _formatIng(dynamic e) {
-    // data shape from your Firestore:
-    // {name, quantity, unit, canonical, pantryLikely} OR sometimes string
-    if (e is String) return e;
-    if (e is Map) {
-      final name = (e['name'] ?? '').toString();
-      final q = (e['quantity'] as num?)?.toDouble();
-      final unit = (e['unit'] ?? '').toString();
-      if (q == null || q == 0) return name;
-      final qStr = q % 1 == 0 ? q.toStringAsFixed(0) : q.toString();
-      return unit.isEmpty ? "$name — $qStr" : "$name — $qStr $unit";
-    }
-    return e.toString();
   }
 }
