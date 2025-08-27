@@ -8,8 +8,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'config/firebase_options.dart';
+import 'features/cravings/craving_recipe.dart';
+import 'models/cravings.dart';
 import 'models/recipe_detail.dart';
-// import 'models/recipe.dart';
 import 'theme/theme_provider.dart';  
 import 'theme/app_theme.dart';
 import 'features/smart_scan/scan_food.dart';
@@ -135,6 +136,13 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/cravings',
       builder: (context, state) => const CravingsScreen(),
+    ),
+    GoRoute(
+      path: '/cravingRecipe',
+      builder: (ctx, state) {
+        final model = state.extra as CravingRecipeModel;
+        return CravingRecipePage(recipe: model);
+      },
     ),
   ],
 );

@@ -440,6 +440,71 @@ class CravingsService {
     return null;
   }
 
+  Future<CravingRecipeModel?> fetchCravingRecipeDetail({
+    required String userId,
+    required String recipeId,
+    String? previewImageDataUrl, // NEW: allow passing the in-memory data URL from the grid
+  }) async {
+    try {
+      final sessionId = _deriveSessionId(recipeId);
+      final recipesCol = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('aiCravings')
+          .doc(sessionId)
+          .collection('recipes');
+
+      String _normalize(String id) {
+        final m = RegExp(r'_(A|B|C)$').firstMatch(id);
+        if (m == null) return id;
+        final letter = m.group(1)!;
+        final idx = {'A': '01', 'B': '02', 'C': '03'}[letter]!;
+        return id.replaceFirst(RegExp(r'_(A|B|C)$'), '_$idx');
+      }
+
+      final normalizedId = _normalize(recipeId);
+
+      Future<CravingRecipeModel?> _hydrateFromMap(Map<String, dynamic> data) async {
+        final model = CravingRecipeModel.fromFirestore(data);
+
+        // 1) if preview image exists, prefer to keep it (fast, already in memory)
+        if ((model.imageDataUrl == null || model.imageDataUrl!.isEmpty) &&
+            previewImageDataUrl != null &&
+            previewImageDataUrl.isNotEmpty) {
+          return model.copyWith(imageDataUrl: previewImageDataUrl);
+        }
+
+        // 2) otherwise, if hasImage==true and still no dataUrl, fetch by title
+        if (model.hasImage && (model.imageDataUrl == null || model.imageDataUrl!.isEmpty)) {
+          final fetched = await _fetchImageDataUrlByTitle(model.title);
+          return model.copyWith(imageDataUrl: fetched ?? model.imageDataUrl);
+        }
+
+        return model;
+      }
+
+      final byDoc = await recipesCol.doc(normalizedId).get();
+      if (byDoc.exists) {
+        final model = await _hydrateFromMap(byDoc.data()!);
+        _blue('[Cravings][Detail] Loaded by docId: $normalizedId (session=$sessionId)');
+        return model;
+      }
+
+      final q1 = await recipesCol.where('id', isEqualTo: normalizedId).limit(1).get();
+      if (q1.docs.isNotEmpty) {
+        final model = await _hydrateFromMap(q1.docs.first.data());
+        _blue('[Cravings][Detail] Loaded by field id: $normalizedId (session=$sessionId)');
+        return model;
+      }
+
+      _blue('[Cravings][Detail] No recipe doc for id=$recipeId (session=$sessionId)');
+      return null;
+    } catch (e) {
+      _blue('[Cravings][Detail] Error fetching recipe: $e');
+      return null;
+    }
+  }
+
   void _blue(Object msg) {
     final s = msg.toString();
     const max = 800; // logcat safe chunk (under 1024)
