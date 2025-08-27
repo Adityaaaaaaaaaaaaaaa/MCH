@@ -220,6 +220,37 @@ def _minimal_validate_list(lst: list) -> bool:
             return False
     return True
 
+def _repair_to_json_array(raw_text: str) -> Optional[list[dict]]:
+    """
+    Ask the model to reformat whatever it produced into a STRICT JSON array of candidates.
+    Returns list[dict] or None if it still can't be parsed.
+    """
+    try:
+        client = genai.Client(api_key=GOOGLE_API_KEY)
+        sys_prompt = (
+            "You are a JSON repair tool. "
+            "Given arbitrary text that contains recipes, output ONLY a strict JSON array of recipe objects. "
+            "No markdown, no explanation, no comments. Keys must match:\n"
+            "{id?, title, readyInMinutes, reasons[], required_ingredients[], optional_ingredients[], "
+            "instructions[], cuisines[], diets[], vegetarian?, vegan?, glutenFree?, dairyFree?, summary?, nutrition?}\n"
+            "If any field is missing, omit it; never invent extra keys. Output MUST be a valid JSON array."
+        )
+        resp = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[{"role":"system","parts":[sys_prompt]}, {"role":"user","parts":[raw_text]}],
+            config={
+                "response_mime_type": "application/json",
+                "candidate_count": 1,
+                "temperature": 0.0,
+                "max_output_tokens": 2048,
+            },
+        )
+        text = getattr(resp, "text", "") or ""
+        arr = _coerce_candidates_from_text(text)
+        return arr if _minimal_validate_list(arr) else None
+    except Exception:
+        return None
+
 def _gemini_call(prompt, *, temperature: float = 0.6):
     client = genai.Client(api_key=GOOGLE_API_KEY)
 
@@ -365,6 +396,14 @@ async def generate_recipes(
                 return {"candidates": lst2}
             except Exception as pe2:
                 _blue(f"[Gemini][recipes] retry fallback parse failed: {pe2}")
+                # --- JSON repair pass before giving up ---
+                try_source = raw2 or raw
+                _blue("[Gemini][recipes] attempting JSON repair pass …")
+                repaired = _repair_to_json_array(try_source)
+                if repaired and _minimal_validate_list(repaired):
+                    _blue(f"[Gemini][recipes] repaired JSON: {len(repaired)} candidates")
+                    return {"candidates": repaired}
+                # if repair didn't help, bubble up to outer except (stub)
                 raise
 
     except Exception as e:
