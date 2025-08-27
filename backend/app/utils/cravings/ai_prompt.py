@@ -94,13 +94,13 @@ def build_gemini_recipe_prompt(
       • Solids examples: flour, cheese, rice, butter → "g"
       • Whole items examples: eggs, lemons, onions → "count"
 
-    OUTPUT RULES (STRICT)
+    OUTPUT RULES (STRICT) // always try to add all fields if possible
     - Top-level: an ARRAY with exactly 3 objects.
     - Each object MUST have:
         "id": string,  // format DDMMYY_HHMM in UTC+4 (Mauritius), e.g. "230825_2012"
         "title": string,
         "readyInMinutes": integer > 0 (<= {max_time}),
-        "reasons": array<string>,  // why it matches query/time/prefs
+        "reasons": array<string>,  // why it matches query/time/prefs, stricly is an array of plaintext strings
         "required_ingredients": array<object> with keys {{
             "name": string,
             "quantity": number,
@@ -110,15 +110,15 @@ def build_gemini_recipe_prompt(
         }},
         "optional_ingredients": array<object> with the same keys (can be empty),
         "instructions": array<string>, // clear, step-by-step cooking steps
-        "cuisines": array<string>,
-        "diets": array<string>,
+        "cuisines": array<string>, // from user prefs if possible
+        "diets": array<string>, // add if applicable
         "vegetarian": boolean,
         "vegan": boolean,
         "glutenFree": boolean,
         "dairyFree": boolean,
-        "summary": optional string,
-        "nutrition": optional object {{ "calories": number, "protein_g": number, "fat_g": number, "carbs_g": number }}, // try add if possible but keep it realistic
-        "servings": optional integer > 0
+        "summary": optional string, // descriptive plain-text, no markup summary of the dish
+        "nutrition": optional object {{ "calories": number, "protein_g": number, "fat_g": number, "carbs_g": number }}, // add if possible estimation but keep it realistic
+        "servings": optional integer > 0 // add if known
     - Do NOT invent extra keys beyond the above. If you don't know a value, omit that optional key entirely.
     - Keep instructions concise and safe. No URLs, images, or markdown.
     - Output MUST be valid JSON. Do NOT wrap in markdown fences. Do NOT output a quoted string.
@@ -126,6 +126,7 @@ def build_gemini_recipe_prompt(
     - If the query was not food-related, reasons[0] MUST be:
         "[invalid-non-food] Query wasn't food-related; showing 3 varied recipes instead."
         Otherwise, do not use that tag.
+    - Reasons should be concise, relevant, and unique per recipe.
 
 
     COMMON FAILURE MODES TO AVOID
@@ -138,18 +139,20 @@ def build_gemini_recipe_prompt(
 
 def recipe_image_prompt(title: str) -> str:
     return dedent(f"""
-    Generate one high-quality, photorealistic hero image for a cooked dish titled:
+    Create a single, high-resolution, photorealistic hero image of a freshly prepared dish titled:
     "{title}"
 
-    Requirements:
-    - Output: exactly 1 image, PNG format
-    - Aspect: 4:3 (landscape)
-    - Target size: 1280x960 px (approx); no borders
-    - Composition: overhead or 45° angle; tight crop on the dish
-    - Styling: clean white/neutral plate, soft natural/studio lighting, subtle depth of field
-    - Background/props: minimal, neutral surface; avoid clutter
-    - Content: realistic ingredients only; no people, hands, utensils, logos, watermarks, or text overlays
-    - Color: natural, appetizing food tones; avoid cartoon or painterly styles
+    Guidelines:
+    - Output: exactly 1 PNG image
+    - Aspect ratio: 4:3 (landscape)
+    - Size: 1280x960 px (approx); no borders or frames
+    - Composition: overhead or 45° angle; tightly focused on the dish
+    - Presentation: clean, neutral plate or bowl; elegant, appetizing plating
+    - Lighting: soft, natural or studio lighting; gentle shadows; subtle depth of field
+    - Background: minimal, neutral surface (e.g., wood, stone, linen); no clutter or distracting props
+    - Food styling: highlight fresh, realistic ingredients; vibrant, natural colors; avoid artificial shine or cartoon effects
+    - Exclude: people, hands, utensils, logos, watermarks, text overlays, excessive garnishes
+    - Atmosphere: inviting, warm, and authentic; evoke the dish's cuisine and character
 
     Return only the image.
     """).strip()
