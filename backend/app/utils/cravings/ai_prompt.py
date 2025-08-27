@@ -14,12 +14,8 @@ def build_gemini_recipe_prompt(
     allergies: List[str],
     cuisines: List[str],
     diets: List[str],
-    allowed_canonicals: Optional[List[str]] = None,   # NEW (optional)
+    allowed_canonicals: Optional[List[str]] = None,
 ) -> str:
-    """
-    Prompt for EXACTLY 3 distinct recipes as a JSON ARRAY (no extra text).
-    Adds: canonical ingredient names + pantryLikely flags.
-    """
     _blue("[Gemini][prompt] building prompt …")
 
     spice_scale = (
@@ -32,29 +28,46 @@ def build_gemini_recipe_prompt(
 
     canon_vocab = ""
     if allowed_canonicals:
-        # keep it short & stable; you can cap length upstream if needed
         unique = sorted(set(x.strip().lower() for x in allowed_canonicals if x.strip()))
-        canon_vocab = "\n    CANONICAL VOCABULARY (prefer these if applicable):\n    - " + ", ".join(unique)
-        
-    allowed_text = ", ".join(sorted(set(allowed_canonicals or []))) or "[]"
+        canon_vocab = (
+            "\n    CANONICAL VOCABULARY (prefer these if applicable):\n"
+            "    - " + ", ".join(unique)
+        )
 
     return dedent(f"""
-    You are a careful culinary assistant. Produce EXACTLY THREE distinct, home-cookable recipes as a JSON ARRAY.
-    Return ONLY JSON (no prose) that strictly follows the schema and rules below.
+    You are a careful culinary assistant. Produce EXACTLY THREE distinct, home-cookable recipes **as a raw JSON ARRAY**.
+    Return ONLY a JSON array and nothing else. Do NOT use markdown, backticks, or any prose before/after.
 
     PRIORITY & BEHAVIOR RULES
     - The USER QUERY has TOP PRIORITY. Never substitute a different dish type.
       • If the query asks for a dessert/baked sweet (e.g., cake, cookies, pie, brownies, tart, pastry, ice cream),
         treat spice level as 0 and DO NOT add chilies/heat.
       • If the query specifies a cuisine or style (e.g., "Mauritian fried rice"), obey it even if not in prefs.
-    - Preferences (cuisines, diets, spice) are GUIDANCE ONLY. Apply them when they do not conflict with the query.
+    - Preferences (cuisines, diets, spice) are GUIDANCE ONLY when they don't conflict with the query.
     - Never violate allergies or diets.
-    - Recipes must be distinct (no minor variations).
+    - The three recipes must be meaningfully different (not small variations).
+    
+    QUERY VALIDATION
+    - First, decide if the user query clearly refers to a food, drink, dish, or cooking method/ingredient.
+    - If the query is NOT food-related (e.g., vehicles, devices, places, people, colors with no food nouns):
+        • Ignore cuisine/spice intent from the query.
+        • Generate 3 varied, approachable recipes that respect allergies/diets and time limit.
+        • In reasons[0] include EXACTLY this message:
+            "[invalid-non-food] Query wasn’t food-related; showing 3 varied recipes instead."
+    - If the query IS food-related, proceed normally and DO NOT include that message.
+    - If the query is ambiguous (e.g., "apple" could be fruit or tech brand):
+        • Assume it's food-related unless it clearly isn't.
+        • If you think it might be non-food, include in reasons[0]:
+            "[ambiguous] Query might not be food-related; assuming it is."
+    - If the query is very generic (e.g., "dinner", "lunch", "snack", "breakfast", "food", "recipe"):
+        • Include in reasons[0]: "[generic] Query was very generic; showing 3 varied recipes."
+        • Generate 3 varied, approachable recipes that respect allergies/diets and time limit.
+        
 
     HARD CONSTRAINTS
     - Total time (readyInMinutes) <= {max_time}
     - Target spiceLevel (0..4) = {spice_level}, EXCEPT desserts/sweets => force 0
-    - Use realistic, widely available ingredients and home-cook techniques.
+    - Use realistic ingredients and home techniques; no brands.
 
     CONTEXT
     {spice_scale}
@@ -70,65 +83,73 @@ def build_gemini_recipe_prompt(
           • Singular nouns; no brands; collapse varieties to a base item.
           • Examples:
               "Granny Smith apples" → "apple"
-              "bell peppers"/"red bell pepper" → "bell pepper"
+              "red bell pepper"/"bell peppers" → "bell pepper"
               "green onions"/"spring onions"/"scallions" → "scallion"
               "yoghurt" → "yogurt"
               "red chili powder" → "chilli powder"
           • If uncertain, repeat the original name in lowercase.
         "pantryLikely": true if most households keep it as a staple (salt, sugar, oil, soy sauce, stock, etc.); false otherwise.
     - Units must be normalized: "g" for solids, "ml" for liquids, "count" for whole items.
+      • Liquids examples: water, milk, oil, vinegar, soy/oyster/fish sauce → "ml"
+      • Solids examples: flour, cheese, rice, butter → "g"
+      • Whole items examples: eggs, lemons, onions → "count"
 
     OUTPUT RULES (STRICT)
     - Top-level: an ARRAY with exactly 3 objects.
-    - Each object MUST have the following fields:
+    - Each object MUST have:
         "id": string,  // format DDMMYY_HHMM in UTC+4 (Mauritius), e.g. "230825_2012"
         "title": string,
         "readyInMinutes": integer > 0 (<= {max_time}),
-        "reasons": array of short strings (why it matches query/time/prefs),
-        "required_ingredients": array of objects {{
+        "reasons": array<string>,  // why it matches query/time/prefs
+        "required_ingredients": array<object> with keys {{
             "name": string,
-            "canonical": string
             "quantity": number,
             "unit": "g"|"ml"|"count",
             "canonical": string,
             "pantryLikely": boolean
         }},
-        "optional_ingredients": array of the same object schema (can be empty),
-        "instructions": array of clear, safe, step-by-step strings,
-        "cuisines": array of strings,
-        "diets": array of strings,
+        "optional_ingredients": array<object> with the same keys (can be empty),
+        "instructions": array<string>, // clear, step-by-step cooking steps
+        "cuisines": array<string>,
+        "diets": array<string>,
         "vegetarian": boolean,
         "vegan": boolean,
         "glutenFree": boolean,
         "dairyFree": boolean,
         "summary": optional string,
-        "nutrition": optional object {{ "calories": number, "protein_g": number, "fat_g": number, "carbs_g": number }}
-    - UNITS: use only "g" (solids), "ml" (liquids), or "count" (whole items).
-      • Prefer "ml" for liquids like water, milk, oil, vinegar, soy/oyster/fish sauce, etc.
-      • Prefer "g" for solids.
-    - Keep instructions concise and safe. No URLs, no markdown, no images.
-    - Ensure the three recipes are meaningfully different.
-    - Output MUST be a raw JSON ARRAY, not a quoted string. Do NOT escape quotes.
+        "nutrition": optional object {{ "calories": number, "protein_g": number, "fat_g": number, "carbs_g": number }}, // try add if possible but keep it realistic
+        "servings": optional integer > 0
+    - Do NOT invent extra keys beyond the above. If you don't know a value, omit that optional key entirely.
+    - Keep instructions concise and safe. No URLs, images, or markdown.
+    - Output MUST be valid JSON. Do NOT wrap in markdown fences. Do NOT output a quoted string.
+    - Absolutely NO text before or after the array.
+    - If the query was not food-related, reasons[0] MUST be:
+        "[invalid-non-food] Query wasn't food-related; showing 3 varied recipes instead."
+        Otherwise, do not use that tag.
 
-    OUTPUT FORMAT
-    - Return ONLY valid JSON (no prose) as a raw JSON ARRAY (not a quoted string).
-    - Do NOT wrap in markdown fences or add any text before/after.
+
+    COMMON FAILURE MODES TO AVOID
+    - Do NOT output prose or explanations.
+    - Do NOT output JSON5 (comments, trailing commas).
+    - Do NOT output markdown fences or triple backticks.
+
     """).strip()
 
 
 def recipe_image_prompt(title: str) -> str:
     return dedent(f"""
     Generate one high-quality, photorealistic hero image for a cooked dish titled:
-    "{title}".
+    "{title}"
 
-    Art direction:
-    - appetizing overhead or 45° angle
-    - clean plate, soft lighting, subtle depth of field
-    - neutral, minimal background / props
-    - no people, no text, no watermarks, no logos
-    - realistic ingredients; avoid fantasy elements
-    - color-accurate food tones
-    - avoid cartoon/anime/illustration styles; avoid overly dark or moody styles
+    Requirements:
+    - Output: exactly 1 image, PNG format
+    - Aspect: 4:3 (landscape)
+    - Target size: 1280x960 px (approx); no borders
+    - Composition: overhead or 45° angle; tight crop on the dish
+    - Styling: clean white/neutral plate, soft natural/studio lighting, subtle depth of field
+    - Background/props: minimal, neutral surface; avoid clutter
+    - Content: realistic ingredients only; no people, hands, utensils, logos, watermarks, or text overlays
+    - Color: natural, appetizing food tones; avoid cartoon or painterly styles
 
-    Output only one image.
+    Return only the image.
     """).strip()
