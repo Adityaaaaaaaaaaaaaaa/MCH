@@ -27,14 +27,26 @@ class CravingRecipeModel {
   final String id;
   final String title;
   final int? readyInMinutes;
+
+  // new / expanded fields
+  final List<String> cuisines;
+  final List<String> diets;
+  final bool? vegetarian;
+  final bool? vegan;
+  final bool? glutenFree;
+  final bool? dairyFree;
+  final Map<String, dynamic>? nutrition; // keep it loose for now
+  final String? summary;
+
   final List<String> reasons;
   final List<dynamic> requiredIngredients;
   final List<dynamic> optionalIngredients;
   final List<dynamic> instructions;
+
   final List<ShoppingItemModel> shopping;
   final bool hasImage;
 
-  /// filled by the service after fetching from backend
+  /// Filled from backend POST preview or fetched-by-title.
   String? imageDataUrl;
 
   CravingRecipeModel({
@@ -48,6 +60,16 @@ class CravingRecipeModel {
     required this.shopping,
     required this.hasImage,
     this.imageDataUrl,
+
+    // new params (optional)
+    this.cuisines = const [],
+    this.diets = const [],
+    this.vegetarian,
+    this.vegan,
+    this.glutenFree,
+    this.dairyFree,
+    this.nutrition,
+    this.summary,
   });
 
   factory CravingRecipeModel.fromFirestore(Map<String, dynamic> m) {
@@ -55,14 +77,50 @@ class CravingRecipeModel {
     return CravingRecipeModel(
       id: (m['id'] ?? '').toString(),
       title: (m['title'] ?? '').toString(),
-      readyInMinutes:
-          (m['readyInMinutes'] is num) ? (m['readyInMinutes'] as num).toInt() : null,
+      readyInMinutes: (m['readyInMinutes'] is num)
+          ? (m['readyInMinutes'] as num).toInt()
+          : null,
+      cuisines: ((m['cuisines'] as List?) ?? const []).map((e) => e.toString()).toList(),
+      diets: ((m['diets'] as List?) ?? const []).map((e) => e.toString()).toList(),
+      vegetarian: m['vegetarian'] as bool?,
+      vegan: m['vegan'] as bool?,
+      glutenFree: m['glutenFree'] as bool?,
+      dairyFree: m['dairyFree'] as bool?,
+      nutrition: (m['nutrition'] as Map?)?.map((k, v) => MapEntry(k.toString(), v)),
+      summary: (m['summary'] as String?),
+
       reasons: ((m['reasons'] as List?) ?? const []).map((e) => e.toString()).toList(),
       requiredIngredients: (m['required_ingredients'] as List?) ?? const [],
       optionalIngredients: (m['optional_ingredients'] as List?) ?? const [],
       instructions: (m['instructions'] as List?) ?? const [],
-      shopping: rawShopping.map((e) => ShoppingItemModel.fromMap(e as Map<String, dynamic>)).toList(),
+      shopping: rawShopping
+          .map((e) => ShoppingItemModel.fromMap(e as Map<String, dynamic>))
+          .toList(),
       hasImage: (m['hasImage'] as bool?) ?? false,
     );
   }
+
+  CravingRecipeModel copyWith({
+    String? imageDataUrl,
+  }) =>
+      CravingRecipeModel(
+        id: id,
+        title: title,
+        readyInMinutes: readyInMinutes,
+        reasons: reasons,
+        requiredIngredients: requiredIngredients,
+        optionalIngredients: optionalIngredients,
+        instructions: instructions,
+        shopping: shopping,
+        hasImage: hasImage,
+        imageDataUrl: imageDataUrl ?? this.imageDataUrl,
+        cuisines: cuisines,
+        diets: diets,
+        vegetarian: vegetarian,
+        vegan: vegan,
+        glutenFree: glutenFree,
+        dairyFree: dairyFree,
+        nutrition: nutrition,
+        summary: summary,
+      );
 }

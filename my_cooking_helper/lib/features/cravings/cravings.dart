@@ -4,8 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
-
 import '/theme/app_theme.dart';
 import '/models/cravings.dart';
 import '/services/cravings_service.dart';
@@ -292,7 +292,21 @@ class _CravingsScreenState extends State<CravingsScreen> {
                   sliver: SliverToBoxAdapter(
                     child: CravingsResultsGrid(
                       items: _results!,
-                      onTap: (m) {},
+                      onTap: (m) async {
+                        final uid = FirebaseAuth.instance.currentUser?.uid;
+                        if (uid == null) return;
+
+                        // m is CravingRecipeModel from the grid (already has imageDataUrl for this session)
+                        final detail = await _svc.fetchCravingRecipeDetail(
+                          userId: uid,
+                          recipeId: m.id,
+                          previewImageDataUrl: m.imageDataUrl, // pass the preview image!
+                        );
+
+                        if (detail != null && context.mounted) {
+                          context.push('/cravingRecipe', extra: detail);
+                        }
+                      },
                       outerHorizontalPadding: 24.w,
                       mainAxisSpacing: 10.h,
                       crossAxisSpacing: 12.w,
