@@ -11,6 +11,8 @@ import '/widgets/navigation/drawer.dart';
 import '/theme/app_theme.dart';
 import '/widgets/cravings/craving_recipe_widgets.dart';
 
+enum _ShopVariant { bag, plus }
+
 class CravingRecipePage extends StatefulWidget {
   const CravingRecipePage({
     super.key,
@@ -30,8 +32,9 @@ class CravingRecipePage extends StatefulWidget {
 
 class _CravingRecipePageState extends State<CravingRecipePage> {
 
-  final ValueNotifier<int> selectAllSignal = ValueNotifier<int>(0);
-  final ValueNotifier<int> selectionDirtySignal = ValueNotifier<int>(0); 
+  final ValueNotifier<int> selectAllSignal     = ValueNotifier<int>(0);
+  final ValueNotifier<int> selectionDirtySignal= ValueNotifier<int>(0);
+  final ValueNotifier<int> selectedCount       = ValueNotifier<int>(0);
 
   // Convert a data URL -> bytes (when you only have imageDataUrl on the model)
   Uint8List? _bytesFromDataUrl(String? dataUrl) {
@@ -55,6 +58,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
     return '$m min';
   }
 
+  // ignore: unused_element
   String _nameOf(dynamic e) {
     if (e == null) return '';
     if (e is String) return e;
@@ -72,13 +76,44 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
   void dispose() {
     selectAllSignal.dispose();
     selectionDirtySignal.dispose();
+    selectedCount.dispose();
     super.dispose();
+  }
+
+  // ignore: unused_element
+  _ShopVariant _variantFor(dynamic e) {
+    // mirror tile logic: bag if in shopping('buy'), else plus
+    String name = "";
+
+    if (e is String) {
+      name = e;
+    } else if (e is ShoppingItemModel) {
+      name = e.name;
+    } else if (e is Map) {
+      name = (e['name'] ?? '').toString();
+    }
+
+    final s = widget.recipe.shopping.firstWhere(
+      (x) => x.name.trim().toLowerCase() == name.trim().toLowerCase(),
+      orElse: () => ShoppingItemModel(name: '', need: 0, unit: 'count', have: 0, tag: ''),
+    );
+
+    if (s.name.isNotEmpty && s.tag.toLowerCase() == 'buy') {
+      return _ShopVariant.bag;
+    }
+    return _ShopVariant.plus;
+  }
+  
+  int _eligibleCount() {
+    return widget.recipe.requiredIngredients.length +
+          widget.recipe.optionalIngredients.length;
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = bgColor(context);
+    final eligible = _eligibleCount();
 
     // choose image in priority order:
     // 1) passed preview bytes  2) hydrated model imageDataUrl  3) none
@@ -268,26 +303,16 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Required ingredients
-                          ...widget.recipe.requiredIngredients.map((e) {
-                            // Optional: derive whether this item is already in shopping with tag 'buy'
-                            bool initiallyInShopping = false;
-                            final name = _nameOf(e);
-                            if (name.isNotEmpty) {
-                              initiallyInShopping = widget.recipe.shopping.any(
-                                (s) => s.tag.toLowerCase() == 'buy' && s.name.toLowerCase().trim() == name.toLowerCase().trim(),
-                              );
-                            }
-
-                            return ModernIngredientTile(
-                                data: e,
-                                shopping: widget.recipe.shopping,
-                                optionalIngredients: widget.recipe.optionalIngredients,
-                                initiallyInShopping: initiallyInShopping,            // everything starts inactive
-                                selectAllSignal: selectAllSignal,      // ✅
-                                selectionDirtySignal: selectionDirtySignal, // ✅ NEW
-                                onToggleShopping: () {},
-                            );
-                          }),
+                          ...widget.recipe.requiredIngredients.map((e) => ModernIngredientTile(
+                            data: e,
+                            shopping: widget.recipe.shopping,
+                            optionalIngredients: widget.recipe.optionalIngredients,
+                            selectAllSignal: selectAllSignal,
+                            selectionDirtySignal: selectionDirtySignal,
+                            selectionCount: selectedCount,             // NEW
+                            initiallyInShopping: false,                // never auto-activate
+                            onToggleShopping: () {},                   // hook later
+                          )),
 
                           if (widget.recipe.optionalIngredients.isNotEmpty) SizedBox(height: 12.h),
 
@@ -296,18 +321,23 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                             data: e,
                             shopping: widget.recipe.shopping,
                             optionalIngredients: widget.recipe.optionalIngredients,
+                            selectAllSignal: selectAllSignal,
+                            selectionDirtySignal: selectionDirtySignal,
+                            selectionCount: selectedCount,             // NEW
                             initiallyInShopping: false,
-                            selectAllSignal: selectAllSignal,           // NEW ←
                             onToggleShopping: () {},
                           )),
 
 
                           SizedBox(height: 15.h),
                           ModernCreateShoppingListButton(
-                            selectAllSignal: selectAllSignal,              // ✅
-                            selectionDirtySignal: selectionDirtySignal,    // ✅ NEW
+                            selectAllSignal: selectAllSignal,
+                            selectionDirtySignal: selectionDirtySignal,
+                            selectedCount: selectedCount,              // NEW
+                            eligibleCount: eligible,                   // NEW
                             onCreate: () {
-                              // later: persist union of all ACTIVE controls per tile (bagSelected || plusSelected)
+                              // Persist current selection snapshot (bagSelected/plusSelected) as you prefer.
+                              // (No duplicates; tiles are idempotent and you can de-dupe server-side too.)
                             },
                           ),
                         ],
