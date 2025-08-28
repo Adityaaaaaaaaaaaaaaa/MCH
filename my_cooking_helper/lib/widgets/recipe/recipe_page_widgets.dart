@@ -261,17 +261,6 @@ class RecipeSummaryText extends StatelessWidget {
               ),
             ],
           ),
-          // if (title != null && title.isNotEmpty) ...[
-          //   SizedBox(height: 7.h),
-          //   Text(
-          //     title,
-          //     style: TextStyle(
-          //       fontWeight: FontWeight.w700,
-          //       fontSize: 18.sp,
-          //       color: Theme.of(context).colorScheme.primary,
-          //     ),
-          //   ),
-          // ],
           if (shortSummary != null && shortSummary.isNotEmpty) ...[
             SizedBox(height: 7.h),
             Text(
