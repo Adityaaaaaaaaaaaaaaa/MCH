@@ -11,7 +11,7 @@ import '/widgets/navigation/drawer.dart';
 import '/theme/app_theme.dart';
 import '/widgets/cravings/craving_recipe_widgets.dart';
 
-class CravingRecipePage extends StatelessWidget {
+class CravingRecipePage extends StatefulWidget {
   const CravingRecipePage({
     super.key,
     required this.recipe,
@@ -23,6 +23,15 @@ class CravingRecipePage extends StatelessWidget {
 
   /// Optional preview image bytes (from the list card, memory-only)
   final Uint8List? previewImageBytes;
+
+  @override
+  State<CravingRecipePage> createState() => _CravingRecipePageState();
+}
+
+class _CravingRecipePageState extends State<CravingRecipePage> {
+
+  final ValueNotifier<int> selectAllSignal = ValueNotifier<int>(0);
+  final ValueNotifier<int> selectionDirtySignal = ValueNotifier<int>(0); 
 
   // Convert a data URL -> bytes (when you only have imageDataUrl on the model)
   Uint8List? _bytesFromDataUrl(String? dataUrl) {
@@ -46,6 +55,26 @@ class CravingRecipePage extends StatelessWidget {
     return '$m min';
   }
 
+  String _nameOf(dynamic e) {
+    if (e == null) return '';
+    if (e is String) return e;
+    if (e is Map) {
+      if (e['name'] != null) return e['name'].toString();
+      if (e['original'] != null) return e['original'].toString();
+      if (e['title'] != null) return e['title'].toString();
+      return e.toString();
+    }
+    if (e is ShoppingItemModel) return e.name;
+    return e.toString();
+  }
+
+  @override
+  void dispose() {
+    selectAllSignal.dispose();
+    selectionDirtySignal.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -53,7 +82,7 @@ class CravingRecipePage extends StatelessWidget {
 
     // choose image in priority order:
     // 1) passed preview bytes  2) hydrated model imageDataUrl  3) none
-    final bytes = previewImageBytes ?? _bytesFromDataUrl(recipe.imageDataUrl);
+    final bytes = widget.previewImageBytes ?? _bytesFromDataUrl(widget.recipe.imageDataUrl);
 
     return Scaffold(
       backgroundColor: bg,
@@ -103,14 +132,14 @@ class CravingRecipePage extends StatelessWidget {
                   // HERO
                   if (bytes != null)
                     Hero(
-                      tag: 'craving-hero-${recipe.id}',
+                      tag: 'craving-hero-${widget.recipe.id}',
                       child: Stack(
                         children: [
                           ModernHeroImage(bytes: bytes),
                           Positioned(
                             left: 12.w,
                             bottom: 12.h,
-                            child: ModernTimeBadge(minutes: recipe.readyInMinutes),
+                            child: ModernTimeBadge(minutes: widget.recipe.readyInMinutes),
                           ),
                         ],
                       )
@@ -125,7 +154,7 @@ class CravingRecipePage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            recipe.title,
+                            widget.recipe.title,
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.w800,
                                   color: textColor(context),
@@ -144,13 +173,13 @@ class CravingRecipePage extends StatelessWidget {
                               //     label: formatHm(recipe.readyInMinutes!),
                               //     isPrimary: true,
                               //   ),
-                              if (recipe.vegetarian == true)
+                              if (widget.recipe.vegetarian == true)
                                 PremiumChip(icon: Icons.restaurant_rounded, label: "Vegetarian"),
-                              if (recipe.vegan == true)
+                              if (widget.recipe.vegan == true)
                                 PremiumChip(icon: Icons.spa_rounded, label: "Vegan"),
-                              if (recipe.glutenFree == true)
+                              if (widget.recipe.glutenFree == true)
                                 PremiumChip(icon: Icons.no_food_rounded, label: "Gluten-free"),
-                              if (recipe.dairyFree == true)
+                              if (widget.recipe.dairyFree == true)
                                 PremiumChip(icon: Icons.free_breakfast_rounded, label: "Dairy-free"),
                             ],
                           ),
@@ -161,10 +190,10 @@ class CravingRecipePage extends StatelessWidget {
                   SizedBox(height: 10.h),
 
                   // CUISINES / DIETS
-                  if (recipe.cuisines.isNotEmpty || recipe.diets.isNotEmpty)
+                  if (widget.recipe.cuisines.isNotEmpty || widget.recipe.diets.isNotEmpty)
                     Row(
                       children: [
-                        if (recipe.cuisines.isNotEmpty)
+                        if (widget.recipe.cuisines.isNotEmpty)
                           Expanded(
                             child: ModernSection(
                               title: "Cuisines",
@@ -174,15 +203,15 @@ class CravingRecipePage extends StatelessWidget {
                                   alignment: WrapAlignment.center,
                                   spacing: 6.w,
                                   runSpacing: 6.h,
-                                  children: recipe.cuisines
+                                  children: widget.recipe.cuisines
                                       .map((c) => ModernFlagTag(text: c, emoji: cuisineFlagEmoji(c)))
                                       .toList(),
                                 ),
                               ),
                             ),
                           ),
-                        if (recipe.cuisines.isNotEmpty && recipe.diets.isNotEmpty) SizedBox(width: 8.w),
-                        if (recipe.diets.isNotEmpty)
+                        if (widget.recipe.cuisines.isNotEmpty && widget.recipe.diets.isNotEmpty) SizedBox(width: 8.w),
+                        if (widget.recipe.diets.isNotEmpty)
                           Expanded(
                             child: ModernSection(
                               title: "Diets",
@@ -192,23 +221,23 @@ class CravingRecipePage extends StatelessWidget {
                                   alignment: WrapAlignment.center,
                                   spacing: 6.w,
                                   runSpacing: 6.h,
-                                  children: recipe.diets.map((d) => ModernPillTag(text: d)).toList(),
+                                  children: widget.recipe.diets.map((d) => ModernPillTag(text: d)).toList(),
                                 ),
                               ),
                             ),
                           ),
                       ],
                     ),
-                  if (recipe.cuisines.isNotEmpty || recipe.diets.isNotEmpty)
+                  if (widget.recipe.cuisines.isNotEmpty || widget.recipe.diets.isNotEmpty)
                     SizedBox(height: 10.h),
 
                   // SUMMARY
-                  if ((recipe.summary ?? '').isNotEmpty)
+                  if ((widget.recipe.summary ?? '').isNotEmpty)
                     ModernSection(
                       title: "Summary",
                       icon: Icons.description_rounded,
                       child: Text(
-                        recipe.summary!,
+                        widget.recipe.summary!,
                         textAlign: TextAlign.justify,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               height: 1.5,
@@ -216,67 +245,94 @@ class CravingRecipePage extends StatelessWidget {
                             ),
                       ),
                     ),
-                  if ((recipe.summary ?? '').isNotEmpty) SizedBox(height: 10.h),
+                  if ((widget.recipe.summary ?? '').isNotEmpty) SizedBox(height: 10.h),
 
                   // Why this fits
-                  if (recipe.reasons.isNotEmpty)
+                  if (widget.recipe.reasons.isNotEmpty)
                     ModernSection(
                       title: "Why this fits",
                       icon: Icons.thumb_up_alt_rounded,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: recipe.reasons.map((r) => ModernBulletPoint(text: r)).toList(),
+                        children: widget.recipe.reasons.map((r) => ModernBulletPoint(text: r)).toList(),
                       ),
                     ),
-                  if (recipe.reasons.isNotEmpty) SizedBox(height: 10.h),
+                  if (widget.recipe.reasons.isNotEmpty) SizedBox(height: 10.h),
 
                   // INGREDIENTS (Unified, shopping button only for tag == 'buy')
-                  if (recipe.requiredIngredients.isNotEmpty || recipe.optionalIngredients.isNotEmpty)
+                  if (widget.recipe.requiredIngredients.isNotEmpty || widget.recipe.optionalIngredients.isNotEmpty)
                     ModernSection(
                       title: "Ingredients",
                       icon: Icons.list_alt_rounded,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          ...recipe.requiredIngredients.map(
-                            (e) => ModernIngredientTile(
-                              data: e,
-                              initiallyInShopping: false,
-                              onToggleShopping: () {
-                                // TODO: persist add/remove selection
-                              },
-                            ),
-                          ),
-                          if (recipe.optionalIngredients.isNotEmpty) SizedBox(height: 12.h),
-                          ...recipe.optionalIngredients.map(
-                            (e) => ModernIngredientTile(
-                              data: e, // if you want, you may ensure e['tag'] is not 'buy'
-                              onToggleShopping: () {},
-                            ),
+                          // Required ingredients
+                          ...widget.recipe.requiredIngredients.map((e) {
+                            // Optional: derive whether this item is already in shopping with tag 'buy'
+                            bool initiallyInShopping = false;
+                            final name = _nameOf(e);
+                            if (name.isNotEmpty) {
+                              initiallyInShopping = widget.recipe.shopping.any(
+                                (s) => s.tag.toLowerCase() == 'buy' && s.name.toLowerCase().trim() == name.toLowerCase().trim(),
+                              );
+                            }
+
+                            return ModernIngredientTile(
+                                data: e,
+                                shopping: widget.recipe.shopping,
+                                optionalIngredients: widget.recipe.optionalIngredients,
+                                initiallyInShopping: initiallyInShopping,            // everything starts inactive
+                                selectAllSignal: selectAllSignal,      // ✅
+                                selectionDirtySignal: selectionDirtySignal, // ✅ NEW
+                                onToggleShopping: () {},
+                            );
+                          }),
+
+                          if (widget.recipe.optionalIngredients.isNotEmpty) SizedBox(height: 12.h),
+
+                          // Optional ingredients
+                          ...widget.recipe.optionalIngredients.map((e) => ModernIngredientTile(
+                            data: e,
+                            shopping: widget.recipe.shopping,
+                            optionalIngredients: widget.recipe.optionalIngredients,
+                            initiallyInShopping: false,
+                            selectAllSignal: selectAllSignal,           // NEW ←
+                            onToggleShopping: () {},
+                          )),
+
+
+                          SizedBox(height: 15.h),
+                          ModernCreateShoppingListButton(
+                            selectAllSignal: selectAllSignal,              // ✅
+                            selectionDirtySignal: selectionDirtySignal,    // ✅ NEW
+                            onCreate: () {
+                              // later: persist union of all ACTIVE controls per tile (bagSelected || plusSelected)
+                            },
                           ),
                         ],
                       ),
                     ),
-                  if (recipe.requiredIngredients.isNotEmpty || recipe.optionalIngredients.isNotEmpty)
+                  if (widget.recipe.requiredIngredients.isNotEmpty || widget.recipe.optionalIngredients.isNotEmpty)
                     SizedBox(height: 10.h),
 
                   // Instructions
-                  if (recipe.instructions.isNotEmpty)
+                  if (widget.recipe.instructions.isNotEmpty)
                     ModernSection(
                       title: "Instructions",
                       icon: Icons.menu_book_rounded,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: List.generate(
-                          recipe.instructions.length,
-                          (i) => ModernInstructionTile(index: i + 1, text: recipe.instructions[i].toString()),
+                          widget.recipe.instructions.length,
+                          (i) => ModernInstructionTile(index: i + 1, text: widget.recipe.instructions[i].toString()),
                         ),
                       ),
                     ),
-                  if (recipe.instructions.isNotEmpty) SizedBox(height: 10.h),
+                  if (widget.recipe.instructions.isNotEmpty) SizedBox(height: 10.h),
 
                   // Nutrition
-                  if (recipe.nutrition != null && recipe.nutrition!.isNotEmpty) ...[
+                  if (widget.recipe.nutrition != null && widget.recipe.nutrition!.isNotEmpty) ...[
                     SizedBox(height: 10.h),
                     ModernSection(
                       title: "Nutrition (approx. per serving)",
@@ -284,12 +340,12 @@ class CravingRecipePage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          ModernNutritionChips(nutrition: recipe.nutrition!),
+                          ModernNutritionChips(nutrition: widget.recipe.nutrition!),
 
                           SizedBox(height: 15.h),
 
                           ModernCaloricBreakdownFromNutrition(
-                            nutrition: recipe.nutrition ?? {},
+                            nutrition: widget.recipe.nutrition ?? {},
                             energyDv: 2000,
                             proteinDv: 50,
                             fatDv: 70,

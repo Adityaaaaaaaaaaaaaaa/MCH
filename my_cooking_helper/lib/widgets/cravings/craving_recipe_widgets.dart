@@ -756,17 +756,30 @@ class ModernFlagTag extends StatelessWidget {
 /// - shows need/unit/have and delta
 /// - no "count" word (empty unit for count)
 /// ------------------------------------------------------------
+// -------------------- ModernIngredientTile (revamped layout) --------------------
+// TOP-LEVEL (keep this where you already had it)
+enum _ShopVariant { bag, plus }
+
+// -------------------- ModernIngredientTile --------------------
 class ModernIngredientTile extends StatefulWidget {
   const ModernIngredientTile({
     super.key,
     required this.data,
-    this.initiallyInShopping = false,
+    this.initiallyInShopping = false,     // kept but NOT used to auto-activate
     this.onToggleShopping,
+    this.shopping,                        // List<ShoppingItemModel>
+    this.optionalIngredients,             // List<dynamic>
+    this.selectAllSignal,                 // broadcast: CTA → tiles
+    this.selectionDirtySignal,            // broadcast: tiles → CTA when a control is turned OFF
   });
 
   final dynamic data; // Map<String,dynamic> | String | ShoppingItemModel
   final bool initiallyInShopping;
   final VoidCallback? onToggleShopping;
+  final List<ShoppingItemModel>? shopping;
+  final List<dynamic>? optionalIngredients;
+  final ValueNotifier<int>? selectAllSignal;
+  final ValueNotifier<int>? selectionDirtySignal;
 
   @override
   State<ModernIngredientTile> createState() => _ModernIngredientTileState();
@@ -774,245 +787,123 @@ class ModernIngredientTile extends StatefulWidget {
 
 class _ModernIngredientTileState extends State<ModernIngredientTile>
     with SingleTickerProviderStateMixin {
-  late bool inShopping;
+  // independent internal states (both start INACTIVE)
+  bool bagSelected = false;
+  bool plusSelected = false;
+
   late final AnimationController _bounceController;
   late final Animation<double> _bounce;
+  VoidCallback? _selectAllListener;
 
   @override
   void initState() {
     super.initState();
-    inShopping = widget.initiallyInShopping;
-    _bounceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 480),
-    );
+    _bounceController = AnimationController(vsync: this, duration: const Duration(milliseconds: 480));
     _bounce = Tween<double>(begin: 1.0, end: 1.10).animate(
       CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut),
     );
+
+    // Listen to CTA broadcast: set the visible control ACTIVE (never toggle)
+    if (widget.selectAllSignal != null) {
+      _selectAllListener = () {
+        final variant = _computeVariant();
+        if (variant == _ShopVariant.bag && !bagSelected) {
+          setState(() => bagSelected = true);
+        } else if (variant == _ShopVariant.plus && !plusSelected) {
+          setState(() => plusSelected = true);
+        }
+      };
+      widget.selectAllSignal!.addListener(_selectAllListener!);
+    }
   }
 
   @override
   void dispose() {
+    if (_selectAllListener != null && widget.selectAllSignal != null) {
+      widget.selectAllSignal!.removeListener(_selectAllListener!);
+    }
     _bounceController.dispose();
     super.dispose();
   }
 
-  void _toggle() async {
-    _bounceController
-      ..value = 0
-      ..forward();
-    setState(() => inShopping = !inShopping);
-    widget.onToggleShopping?.call();
+  void _pulse() => _bounceController..value = 0..forward();
+
+  void _notifyDirtyIfDeselected(bool newValue) {
+    if (!newValue && widget.selectionDirtySignal != null) {
+      widget.selectionDirtySignal!.value = widget.selectionDirtySignal!.value + 1;
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
+  // ------ parsing helpers ---------------------------------------------------
+  String _norm(String s) => s.trim().toLowerCase();
 
-    // parse: name / unit / quantities / tag
+  String _extractName(dynamic e) {
+    if (e == null) return '';
+    if (e is String) return e;
+    if (e is ShoppingItemModel) return e.name;
+    if (e is Map) {
+      final v = e['name'] ?? e['original'] ?? e['title'];
+      return v?.toString() ?? e.toString();
+    }
+    return e.toString();
+  }
+
+  ShoppingItemModel? _findShoppingItemByName(String name) {
+    final list = widget.shopping;
+    if (list == null || name.isEmpty) return null;
+    final n = _norm(name);
+    for (final s in list) {
+      if (_norm(s.name) == n) return s;
+    }
+    return null;
+  }
+
+  bool _isOptionalByName(String name) {
+    final opts = widget.optionalIngredients;
+    if (opts == null || name.isEmpty) return false;
+    final n = _norm(name);
+    for (final e in opts) {
+      if (_norm(_extractName(e)) == n) return true;
+    }
+    return false;
+  }
+
+  bool _pantryLikely(dynamic data) {
+    if (data is Map) {
+      final v = data['pantryLikely'] ?? data['pantry_likely'];
+      if (v is bool) return v;
+      if (v is String) return v.toLowerCase() == 'true';
+    }
+    return true;
+  }
+
+  /// Decide which control this tile shows: bag if in shopping('buy'), else plus if pantryLikely==false, else none.
+  _ShopVariant? _computeVariant() {
+    // parse name & meta
     String name = "";
-    String unit = "";
-    double? need;
-    double? have;
-    String tag = "";
-
+    String? dataTag;
     if (widget.data is String) {
       name = widget.data as String;
-      unit = "";
-      tag = ""; // plain
     } else if (widget.data is ShoppingItemModel) {
       final s = widget.data as ShoppingItemModel;
-      name = s.name;
-      need = s.need;
-      have = s.have;
-      unit = (s.unit).trim().toLowerCase();
-      tag = (s.tag).toLowerCase();
+      name = s.name; dataTag = s.tag.toLowerCase();
     } else if (widget.data is Map) {
       final m = widget.data as Map;
       name = (m['name'] ?? '').toString();
-      need = (m['need'] as num?)?.toDouble() ?? (m['quantity'] as num?)?.toDouble();
-      have = (m['have'] as num?)?.toDouble();
-      unit = ((m['unit'] ?? '').toString()).trim().toLowerCase();
-      tag = (m['tag'] ?? '').toString().toLowerCase();
+      dataTag = (m['tag'] as String?)?.toLowerCase();
     }
 
-    final needsShopping = tag == 'buy';
-    final isOptional = tag == 'optional';
+    final shoppingItem = _findShoppingItemByName(name);
+    final tag = (shoppingItem?.tag.toLowerCase()) ?? dataTag ?? '';
+    if (shoppingItem != null && tag == 'buy') return _ShopVariant.bag;
 
-    String? qtyStr;
-    if (need != null && need > 0) {
-      final raw = (need % 1 == 0) ? need.toStringAsFixed(0) : need.toString();
-      qtyStr = (unit.isEmpty || unit == 'count') ? raw : "$raw $unit";
-    }
+    final pantry = _pantryLikely(widget.data);
+    if (shoppingItem == null && pantry == false) return _ShopVariant.plus;
 
-    String? haveStr;
-    if (have != null && have > 0) {
-      haveStr = (unit.isEmpty || unit == 'count')
-          ? (have % 1 == 0 ? have.toStringAsFixed(0) : have.toString())
-          : "${(have % 1 == 0 ? have.toStringAsFixed(0) : have.toString())} $unit";
-    }
-
-    final delta = (need ?? 0) - (have ?? 0);
-    final deltaPos = delta > 0.0001;
-
-    final qtyColor = isDark ? Colors.cyan[300]! : Colors.cyan[700]!;
-    final okCol = isDark ? Colors.green[300]! : Colors.green[600]!;
-    final warnCol = isDark ? Colors.orange[300]! : Colors.orange[700]!;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: 10.h),
-      child: ModernCard(
-        radius: 14,
-        padding: EdgeInsets.all(14.w),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? const [Color(0xFF242424), Color(0xFF1E1E1E)]
-              : const [Color(0xFFFFFFFF), Color(0xFFF9FAFB)],
-        ),
-        child: Row(
-          children: [
-            // icon with subtle border
-            Container(
-              width: 44.w,
-              height: 44.w,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12.r),
-                gradient: LinearGradient(
-                  colors: [primary.withOpacity(0.18), primary.withOpacity(0.08)],
-                ),
-                border: Border.all(color: primary.withOpacity(0.25), width: 1.1),
-              ),
-              child: Icon(Icons.restaurant_menu_rounded, size: 20.sp, color: primary),
-            ),
-            SizedBox(width: 14.w),
-
-            // name + quantities
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // top row: name + optional badge
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black87,
-                            fontSize: 15.5.sp,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                            height: 1.2,
-                          ),
-                        ),
-                      ),
-                      if (isOptional) ...[
-                        SizedBox(width: 8.w),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10.r),
-                            color: warnCol.withOpacity(0.10),
-                            border: Border.all(color: warnCol.withOpacity(0.38), width: 1.0),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.info_outline_rounded, size: 13.sp, color: warnCol),
-                              SizedBox(width: 4.w),
-                              Text(
-                                'Optional',
-                                style: TextStyle(
-                                  color: warnCol,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11.5.sp,
-                                  letterSpacing: .2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-
-                  // quantities / have / delta
-                  if (qtyStr != null || haveStr != null) ...[
-                    SizedBox(height: 8.h),
-                    Wrap(
-                      spacing: 8.w,
-                      runSpacing: 6.h,
-                      children: [
-                        if (qtyStr != null)
-                          _miniChip(
-                            icon: Icons.inventory_2_rounded,
-                            text: qtyStr,
-                            color: qtyColor,
-                          ),
-                        if (haveStr != null)
-                          _miniChip(
-                            icon: Icons.check_circle_rounded,
-                            text: "Have $haveStr",
-                            color: okCol,
-                          ),
-                        if (deltaPos)
-                          _miniChip(
-                            icon: Icons.remove_circle_outline_rounded,
-                            text: "Need ${delta % 1 == 0 ? delta.toStringAsFixed(0) : delta.toStringAsFixed(2)}"
-                                "${(unit.isEmpty || unit == 'count') ? '' : ' $unit'}",
-                            color: warnCol,
-                          ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            // shopping button (only for tag == buy)
-            if (needsShopping)
-              AnimatedBuilder(
-                animation: _bounce,
-                builder: (_, __) {
-                  return Transform.scale(
-                    scale: _bounce.value,
-                    child: GestureDetector(
-                      onTap: _toggle,
-                      child: Container(
-                        width: 44.w,
-                        height: 44.w,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12.r),
-                          gradient: LinearGradient(
-                            colors: inShopping
-                                ? [okCol.withOpacity(0.18), okCol.withOpacity(0.10)]
-                                : [primary.withOpacity(0.12), primary.withOpacity(0.06)],
-                          ),
-                          border: Border.all(
-                            color: inShopping ? okCol.withOpacity(0.45) : primary.withOpacity(0.22),
-                            width: 1.2,
-                          ),
-                        ),
-                        child: Icon(
-                          inShopping ? Icons.shopping_cart_rounded : Icons.add_shopping_cart_rounded,
-                          size: 20.sp,
-                          color: inShopping ? okCol : primary,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-          ],
-        ),
-      ),
-    );
+    return null; // show no control
   }
 
+  // ------ UI helpers --------------------------------------------------------
   Widget _miniChip({required IconData icon, required String text, required Color color}) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
@@ -1021,25 +912,325 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
         color: color.withOpacity(0.10),
         border: Border.all(color: color.withOpacity(0.32), width: 1),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12.5.sp, color: color),
-          SizedBox(width: 5.w),
-          Text(
-            text,
-            style: TextStyle(
-              color: color,
-              fontSize: 12.0.sp,
-              fontWeight: FontWeight.w700,
-              letterSpacing: .2,
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 12.5.sp, color: color),
+        SizedBox(width: 5.w),
+        Text(text, style: TextStyle(color: color, fontSize: 12.0.sp, fontWeight: FontWeight.w700, letterSpacing: .2)),
+      ]),
+    );
+  }
+
+  Widget _statusChip({required IconData icon, required String label, required Color color, VoidCallback? onTap, bool elevated = false}) {
+    final chip = AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10.r),
+        color: color.withOpacity(0.10),
+        border: Border.all(color: color.withOpacity(0.38), width: 1.0),
+        boxShadow: elevated ? [BoxShadow(color: color.withOpacity(0.18), blurRadius: 12, offset: const Offset(0, 4))] : [],
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 13.sp, color: color),
+        SizedBox(width: 4.w),
+        Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 11.5.sp, letterSpacing: .2)),
+      ]),
+    );
+    return onTap == null ? chip : GestureDetector(onTap: onTap, child: chip);
+  }
+
+  Widget _controlButton({
+    required bool active,
+    required _ShopVariant variant,
+    required Color primary,
+    required Color okCol,
+    required VoidCallback onTap,
+  }) {
+    final bgGrad = LinearGradient(
+      colors: active ? [okCol.withOpacity(0.22), okCol.withOpacity(0.10)]
+                     : [primary.withOpacity(0.16), primary.withOpacity(0.08)],
+    );
+    final borderCol = active ? okCol.withOpacity(0.48) : primary.withOpacity(0.28);
+    final IconData icon = active
+        ? (variant == _ShopVariant.plus ? Icons.check_circle_rounded : Icons.shopping_bag_rounded)
+        : (variant == _ShopVariant.plus ? Icons.add_circle_rounded : Icons.shopping_bag_outlined);
+    final iconColor = active ? okCol : primary;
+
+    return AnimatedBuilder(
+      animation: _bounce,
+      builder: (_, __) => Transform.scale(
+        scale: _bounce.value,
+        child: GestureDetector(
+          onTap: () { _pulse(); onTap(); widget.onToggleShopping?.call(); },
+          child: Container(
+            width: 44.w, height: 44.w,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12.r),
+              gradient: bgGrad,
+              border: Border.all(color: borderCol, width: 1.2),
+              boxShadow: active ? [BoxShadow(color: okCol.withOpacity(0.25), blurRadius: 16, offset: const Offset(0, 6))] : [],
             ),
+            child: Center(child: Icon(icon, size: 22.sp, color: iconColor)),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  // ------ build -------------------------------------------------------------
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+
+    // parse minimal quantities for chips (no auto-activation)
+    String name = "", unit = "";
+    double? need, have;
+    if (widget.data is String) {
+      name = widget.data as String;
+    } else if (widget.data is ShoppingItemModel) {
+      final s = widget.data as ShoppingItemModel;
+      name = s.name; need = s.need; have = s.have; unit = s.unit.trim().toLowerCase();
+    } else if (widget.data is Map) {
+      final m = widget.data as Map;
+      name = (m['name'] ?? '').toString();
+      need = (m['need'] as num?)?.toDouble() ?? (m['quantity'] as num?)?.toDouble();
+      have = (m['have'] as num?)?.toDouble();
+      unit = ((m['unit'] ?? '').toString()).trim().toLowerCase();
+    }
+
+    final isOptional = _isOptionalByName(name);
+    final shoppingItem = _findShoppingItemByName(name);
+    final isMissing = (() {
+      final tag = (shoppingItem?.tag.toLowerCase()) ?? '';
+      return shoppingItem != null && tag == 'missing';
+    })();
+
+    String? qtyStr;
+    if (need != null && need > 0) {
+      final raw = (need % 1 == 0) ? need.toStringAsFixed(0) : need.toString();
+      qtyStr = (unit.isEmpty || unit == 'count') ? raw : "$raw $unit";
+    }
+    String? haveStr;
+    if (have != null && have > 0) {
+      final raw = (have % 1 == 0) ? have.toStringAsFixed(0) : have.toString();
+      haveStr = (unit.isEmpty || unit == 'count') ? raw : "$raw $unit";
+    }
+
+    final qtyColor = isDark ? Colors.cyan[300]! : Colors.cyan[700]!;
+    final okCol    = isDark ? Colors.green[300]! : Colors.green[600]!;
+    final warnCol  = isDark ? Colors.orange[300]! : Colors.orange[700]!;
+    final missCol  = isDark ? Colors.red[300]! : Colors.red[600]!;
+
+    final double iconSize = 44.w, gap = 12.w;
+    final _ShopVariant? variant = _computeVariant();
+    final bool active = (variant == _ShopVariant.bag) ? bagSelected : (variant == _ShopVariant.plus) ? plusSelected : false;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10.h),
+      child: ModernCard(
+        radius: 14,
+        padding: EdgeInsets.all(14.w),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: isDark ? const [Color(0xFF242424), Color(0xFF1E1E1E)]
+                         : const [Color(0xFFFFFFFF), Color(0xFFF9FAFB)],
+        ),
+        onTap: () {},
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // centered title
+            Row(children: [
+              SizedBox(width: iconSize + gap),
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 15.5.sp,
+                    fontWeight: FontWeight.w800, letterSpacing: -0.2, height: 1.2),
+                ),
+              ),
+              SizedBox(width: 44.w), // right button space (one control)
+            ]),
+            SizedBox(height: 10.h),
+
+            // icon | chips | control (one of bag/plus or none)
+            Row(children: [
+              Container(
+                width: iconSize, height: iconSize,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12.r),
+                  gradient: LinearGradient(colors: [primary.withOpacity(0.18), primary.withOpacity(0.08)]),
+                  border: Border.all(color: primary.withOpacity(0.25), width: 1.1),
+                ),
+                child: Icon(Icons.restaurant_menu_rounded, size: 20.sp, color: primary),
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                child: Wrap(
+                  alignment: WrapAlignment.start, spacing: 8.w, runSpacing: 6.h,
+                  children: [
+                    if (qtyStr != null) _miniChip(icon: Icons.inventory_2_rounded, text: qtyStr, color: qtyColor),
+                    if (haveStr != null) _miniChip(icon: Icons.check_circle_rounded, text: "Have $haveStr", color: okCol),
+                  ],
+                ),
+              ),
+              if (variant != null)
+                _controlButton(
+                  active: active,
+                  variant: variant,
+                  primary: primary,
+                  okCol: okCol,
+                  onTap: () {
+                    setState(() {
+                      if (variant == _ShopVariant.bag) {
+                        bagSelected = !bagSelected;
+                        _notifyDirtyIfDeselected(bagSelected);
+                      } else {
+                        plusSelected = !plusSelected;
+                        _notifyDirtyIfDeselected(plusSelected);
+                      }
+                    });
+                  },
+                )
+              else
+                SizedBox(width: 44.w, height: 44.w),
+            ]),
+
+            // badges line (only for the visible control + optional/missing)
+            SizedBox(height: 10.h),
+            Row(children: [
+              SizedBox(width: iconSize + gap),
+              Expanded(
+                child: Wrap(
+                  alignment: WrapAlignment.center, spacing: 8.w, runSpacing: 6.h,
+                  children: [
+                    if (variant == _ShopVariant.bag)
+                      _statusChip(
+                        icon: active ? Icons.check_circle_rounded : Icons.shopping_bag_outlined,
+                        label: active ? 'Buy — added' : 'Buy',
+                        color: active ? okCol : primary,
+                        onTap: () {
+                          setState(() {
+                            bagSelected = !bagSelected;
+                            _notifyDirtyIfDeselected(bagSelected);
+                          });
+                        },
+                        elevated: active,
+                      ),
+                    if (variant == _ShopVariant.plus)
+                      _statusChip(
+                        icon: active ? Icons.check_circle_rounded : Icons.add_circle_rounded,
+                        label: active ? 'Add — added' : 'Add',
+                        color: active ? okCol : primary,
+                        onTap: () {
+                          setState(() {
+                            plusSelected = !plusSelected;
+                            _notifyDirtyIfDeselected(plusSelected);
+                          });
+                        },
+                        elevated: active,
+                      ),
+                    if (isOptional)
+                      _statusChip(icon: Icons.info_outline_rounded, label: 'Optional', color: warnCol),
+                    if (isMissing)
+                      _statusChip(icon: Icons.report_gmailerrorred_rounded, label: 'Missing', color: missCol),
+                  ],
+                ),
+              ),
+              SizedBox(width: 44.w),
+            ]),
+          ],
+        ),
       ),
     );
   }
 }
+
+class ModernCreateShoppingListButton extends StatefulWidget {
+  const ModernCreateShoppingListButton({
+    super.key,
+    required this.selectAllSignal,
+    required this.selectionDirtySignal,   // listen for any tile turning OFF
+    this.onCreate,
+  });
+
+  final ValueNotifier<int> selectAllSignal;
+  final ValueNotifier<int> selectionDirtySignal;
+  final VoidCallback? onCreate;
+
+  @override
+  State<ModernCreateShoppingListButton> createState() => _ModernCreateShoppingListButtonState();
+}
+
+class _ModernCreateShoppingListButtonState extends State<ModernCreateShoppingListButton> {
+  bool created = false;
+  int _lastDirtyTick = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.selectionDirtySignal.addListener(_onDirty);
+  }
+
+  void _onDirty() {
+    final v = widget.selectionDirtySignal.value;
+    if (v != _lastDirtyTick) {
+      _lastDirtyTick = v;
+      if (created) setState(() => created = false); // revert to idle only when a tile deselects
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.selectionDirtySignal.removeListener(_onDirty);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final okCol   = isDark ? Colors.green[300]! : Colors.green[600]!;
+
+    final bg = created ? LinearGradient(colors: [okCol.withOpacity(.22), okCol.withOpacity(.10)]) : null;
+    final borderCol = created ? okCol.withOpacity(.55) : primary.withOpacity(.35);
+    final textCol = created ? okCol : (isDark ? Colors.white : Colors.black87);
+    final icon = created ? Icons.check_rounded : Icons.playlist_add_check_rounded;
+
+    return GestureDetector(
+      onTap: () {
+        // idempotent: only sets ACTIVE, never toggles OFF
+        widget.selectAllSignal.value = widget.selectAllSignal.value + 1;
+        if (!created) setState(() => created = true);
+        widget.onCreate?.call();
+      },
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14.r),
+          gradient: bg,
+          border: Border.all(color: borderCol, width: 1.2),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: created ? okCol : primary, size: 20.sp),
+            SizedBox(width: 8.w),
+            Text(
+              created ? "Shopping list created" : "Create shopping list",
+              style: TextStyle(fontSize: 14.5.sp, fontWeight: FontWeight.w800, color: textCol, letterSpacing: .1),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 
 /// ------------------------------------------------------------
 /// INSTRUCTION STEP TILE (justified text)
@@ -1138,15 +1329,15 @@ class ModernNutritionChips extends StatelessWidget {
           ),
         if (p != null)
           _TapBounce(
-            child: PremiumChip(icon: Icons.egg_alt_rounded, label: "${p} g protein"),
+            child: PremiumChip(icon: Icons.egg_alt_rounded, label: "$p g protein"),
           ),
         if (f != null)
           _TapBounce(
-            child: PremiumChip(icon: Icons.water_drop_rounded, label: "${f} g fat"),
+            child: PremiumChip(icon: Icons.water_drop_rounded, label: "$f g fat"),
           ),
         if (c != null)
           _TapBounce(
-            child: PremiumChip(icon: Icons.bakery_dining_rounded, label: "${c} g carbs"),
+            child: PremiumChip(icon: Icons.bakery_dining_rounded, label: "$c g carbs"),
           ),
       ],
     );
