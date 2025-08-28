@@ -1,7 +1,7 @@
-// lib/widgets/cravings/craving_recipe_widgets.dart
 // ignore_for_file: deprecated_member_use
 
 import 'dart:typed_data';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:glass/glass.dart';
@@ -9,256 +9,346 @@ import '/models/cravings.dart';
 import '/utils/colors.dart';
 
 /// ------------------------------------------------------------
-/// GLASSY BASE - Enhanced with vibrant colors and effects
+/// MODERN CARD WITH ANIMATED GRADIENT BORDERS (+ glass blur)
+/// - subtle gradient border in both light/dark
+/// - optional sweep animated border
+/// - lightweight tap pulse + scale (no shader masks, smooth perf)
 /// ------------------------------------------------------------
-class GlassCard extends StatefulWidget {
-  const GlassCard({
+class ModernCard extends StatefulWidget {
+  const ModernCard({
     super.key,
     required this.child,
-    this.radius = 22,
-    this.tint,
-    this.blur = 10,
+    this.radius = 16,
     this.padding,
+    this.margin,
     this.gradient,
-    this.strokeColor,
-    this.strokeWidth,
-    this.glowColor,
-    this.animated = false,
-    this.interactive = false,
-    this.vibrantBorder = false,
+    this.animatedBorder = false,
+    this.borderWidth = 2.0,
+    this.shadowIntensity = 1.0,
+    this.onTap,
+    this.enableTapPulse = true,
   });
 
   final Widget child;
   final double radius;
-  final Color? tint;
-  final double blur;
   final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? margin;
   final Gradient? gradient;
-  final Color? strokeColor;
-  final double? strokeWidth;
-  final Color? glowColor;
-  final bool animated;
-  final bool interactive;
-  final bool vibrantBorder;
+  final bool animatedBorder;
+  final double borderWidth;
+  final double shadowIntensity;
+  final VoidCallback? onTap;
+  final bool enableTapPulse;
 
   @override
-  State<GlassCard> createState() => _GlassCardState();
+  State<ModernCard> createState() => _ModernCardState();
 }
 
-class _GlassCardState extends State<GlassCard>
-    with TickerProviderStateMixin {
-  late AnimationController _hoverController;
-  late AnimationController _borderController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _glowAnimation;
-  late Animation<double> _borderAnimation;
-  // ignore: unused_field
-  bool _isHovered = false;
+class _ModernCardState extends State<ModernCard> with TickerProviderStateMixin {
+  late final AnimationController _borderController;
+  late final AnimationController _pressController;
+  late final AnimationController _pulseController;
+  late final Animation<double> _borderAnimation;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _pulseOpacity;
+  late final Animation<double> _pulseRadius;
 
   @override
   void initState() {
     super.initState();
-    _hoverController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
     _borderController = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
     );
+    _pressController = AnimationController(
+      duration: const Duration(milliseconds: 110),
+      vsync: this,
+    );
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 380),
+      vsync: this,
+    );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
-      CurvedAnimation(parent: _hoverController, curve: Curves.easeOut),
-    );
-    _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _hoverController, curve: Curves.easeOut),
-    );
-    _borderAnimation = Tween<double>(begin: 0.0, end: 2 * 3.14159).animate(
+    _borderAnimation = Tween<double>(begin: 0.0, end: 2 * math.pi).animate(
       CurvedAnimation(parent: _borderController, curve: Curves.linear),
     );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.985).animate(
+      CurvedAnimation(parent: _pressController, curve: Curves.easeOutCubic),
+    );
 
-    if (widget.vibrantBorder) {
-      _borderController.repeat();
-    }
+    _pulseOpacity = Tween<double>(begin: 0.35, end: 0.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeOutCubic),
+    );
+    _pulseRadius = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeOutCubic),
+    );
+
+    if (widget.animatedBorder) _borderController.repeat();
   }
 
   @override
   void dispose() {
-    _hoverController.dispose();
     _borderController.dispose();
+    _pressController.dispose();
+    _pulseController.dispose();
     super.dispose();
+  }
+
+  void _handleTap() {
+    if (widget.enableTapPulse) {
+      _pulseController
+        ..value = 0
+        ..forward();
+    }
+    widget.onTap?.call();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final tintColor = widget.tint ??
-        (isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.35));
-    final border = widget.strokeColor ?? 
-        (isDark ? Colors.white.withOpacity(0.15) : Colors.black.withOpacity(0.08));
 
-    Widget container = GestureDetector(
-      onTapDown: widget.interactive ? (_) => _hoverController.forward() : null,
-      onTapUp: widget.interactive ? (_) => _hoverController.reverse() : null,
-      onTapCancel: widget.interactive ? () => _hoverController.reverse() : null,
+    final bgCol = isDark ? const Color(0xFF151515) : const Color(0xFFFDFDFE);
+    final subtleBorder = LinearGradient(
+      colors: isDark
+          ? [Colors.white.withOpacity(.09), Colors.white.withOpacity(.04)]
+          : [Colors.black.withOpacity(.06), Colors.black.withOpacity(.03)],
+    );
+
+    final content = RepaintBoundary(
       child: AnimatedBuilder(
-        animation: Listenable.merge([_scaleAnimation, _glowAnimation, _borderAnimation]),
-        builder: (context, child) {
+        animation: Listenable.merge([_borderAnimation, _scaleAnimation, _pulseController]),
+        builder: (context, _) {
           return Transform.scale(
-            scale: widget.interactive ? _scaleAnimation.value : 1.0,
-            child: Stack(
-              children: [
-                // ✅ Animated border sized to the Stack
-                if (widget.vibrantBorder)
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: VibrantBorderPainter(
-                        _borderAnimation.value,
-                        widget.radius.r,
+            scale: _scaleAnimation.value,
+            child: Container(
+              margin: widget.margin,
+              child: Stack(
+                children: [
+                  if (widget.animatedBorder)
+                    Positioned.fill(
+                      child: CustomPaint(
+                        painter: _AnimatedBorderPainter(
+                          animation: _borderAnimation.value,
+                          radius: widget.radius,
+                          borderWidth: widget.borderWidth,
+                          isDark: isDark,
+                        ),
                       ),
                     ),
-                  ),
 
-                // Main container (unchanged)
-                Container(
-                  margin:
-                      widget.vibrantBorder ? EdgeInsets.all(2.w) : EdgeInsets.zero,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(widget.radius.r),
-                    gradient: widget.gradient,
-                    border: widget.vibrantBorder
-                        ? null
-                        : Border.all(
-                            color: border,
-                            width: widget.strokeWidth ?? 1.2,
+                  // Static pretty border if not animated
+                  if (!widget.animatedBorder)
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(widget.radius.r),
+                          border: Border.all(width: 1.3, color: Colors.transparent),
+                          gradient: null,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(widget.radius.r),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(widget.radius.r),
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.white.withOpacity(.12)
+                                    : Colors.black.withOpacity(.10),
+                                width: 1.0,
+                              ),
+                            ),
                           ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isDark
-                            ? Colors.black.withOpacity(0.4)
-                            : Colors.black.withOpacity(0.08),
-                        blurRadius: 24,
-                        spreadRadius: 0,
-                        offset: const Offset(0, 8),
+                        ),
                       ),
-                      if (widget.interactive)
+                    ),
+
+                  // Main glass container
+                  Container(
+                    margin: widget.animatedBorder
+                        ? EdgeInsets.all(widget.borderWidth)
+                        : EdgeInsets.zero,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(widget.radius.r),
+                      color: bgCol,
+                      gradient: widget.gradient ?? subtleBorder,
+                      boxShadow: [
                         BoxShadow(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.3 * _glowAnimation.value),
-                          blurRadius: 32,
-                          spreadRadius: 2,
-                          offset: const Offset(0, 4),
+                          color: isDark
+                              ? Colors.black.withOpacity(0.35 * widget.shadowIntensity)
+                              : Colors.black.withOpacity(0.06 * widget.shadowIntensity),
+                          blurRadius: 18 * widget.shadowIntensity,
+                          offset: Offset(0, 8 * widget.shadowIntensity),
                         ),
-                      if (widget.glowColor != null)
-                        BoxShadow(
-                          color: widget.glowColor!.withOpacity(isDark ? 0.25 : 0.15),
-                          blurRadius: 32,
-                          spreadRadius: 2,
-                          offset: const Offset(0, 4),
-                        ),
-                    ],
-                  ),
-                  child: (widget.padding != null
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(widget.radius.r),
+                      child: widget.padding != null
                           ? Padding(padding: widget.padding!, child: widget.child)
-                          : widget.child)
-                      .asGlass(
-                    tintColor: tintColor,
+                          : widget.child,
+                    ),
+                  ).asGlass(
+                    blurX: 8,
+                    blurY: 8,
+                    tintColor: isDark
+                        ? Colors.white.withOpacity(0.03)
+                        : Colors.white.withOpacity(0.22),
                     frosted: true,
-                    blurX: widget.blur,
-                    blurY: widget.blur,
                     clipBorderRadius: BorderRadius.circular(widget.radius.r),
                   ),
-                ),
-              ],
+
+                  // Tap pulse (one-shot)
+                  if (widget.enableTapPulse)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Opacity(
+                          opacity: _pulseOpacity.value,
+                          child: CustomPaint(
+                            painter: _PulsePainter(
+                              progress: _pulseRadius.value,
+                              color: (isDark
+                                      ? Colors.white.withOpacity(0.35)
+                                      : Colors.black.withOpacity(0.25))
+                                  .withOpacity(0.16),
+                              radius: widget.radius,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           );
         },
       ),
     );
 
-    if (widget.animated) {
-      return TweenAnimationBuilder<double>(
-        duration: const Duration(milliseconds: 800),
-        tween: Tween(begin: 0.0, end: 1.0),
-        curve: Curves.easeOutCubic,
-        builder: (context, value, child) {
-          return Transform.translate(
-            offset: Offset(0, 30 * (1 - value)),
-            child: Opacity(
-              opacity: value,
-              child: container,
-            ),
-          );
+    if (widget.onTap != null) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => _pressController.forward(),
+        onTapUp: (_) {
+          _pressController.reverse();
+          _handleTap();
         },
+        onTapCancel: () => _pressController.reverse(),
+        child: content,
       );
     }
-
-    return container;
+    return content;
   }
 }
 
-class VibrantBorderPainter extends CustomPainter {
-  final double animationValue;
+class _PulsePainter extends CustomPainter {
+  _PulsePainter({required this.progress, required this.color, required this.radius});
+  final double progress;
+  final Color color;
   final double radius;
-
-  VibrantBorderPainter(this.animationValue, this.radius);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final center = size.center(Offset.zero);
+    final maxR = size.shortestSide * 0.66;
+    // ignore: unused_local_variable
+    final r = maxR * progress;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 10 * (1 - progress)
+      ..color = color;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: center, width: size.width, height: size.height),
+        Radius.circular(radius),
+      ),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _PulsePainter old) => old.progress != progress || old.color != color;
+}
+
+class _AnimatedBorderPainter extends CustomPainter {
+  final double animation;
+  final double radius;
+  final double borderWidth;
+  final bool isDark;
+
+  _AnimatedBorderPainter({
+    required this.animation,
+    required this.radius,
+    required this.borderWidth,
+    required this.isDark,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
     final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
-    
+
     final gradient = SweepGradient(
       center: Alignment.center,
-      startAngle: animationValue,
-      colors: const [
-        Color(0xFF6366F1), // Indigo
-        Color(0xFF8B5CF6), // Purple
-        Color(0xFFEC4899), // Pink
-        Color(0xFFF59E0B), // Amber
-        Color(0xFF10B981), // Emerald
-        Color(0xFF3B82F6), // Blue
-        Color(0xFF6366F1), // Back to Indigo
-      ],
+      startAngle: animation,
+      endAngle: animation + 2 * math.pi,
+      colors: isDark
+          ? const [
+              Color(0xFF00D4FF),
+              Color(0xFF7B2FF7),
+              Color(0xFFFF107F),
+              Color(0xFFFFB800),
+              Color(0xFF00FF94),
+              Color(0xFF00D4FF),
+            ]
+          : const [
+              Color(0xFF667EEA),
+              Color(0xFF764BA2),
+              Color(0xFFF093FB),
+              Color(0xFF7EE8FA),
+              Color(0xFF80FF72),
+              Color(0xFF667EEA),
+            ],
+      stops: const [0, .2, .4, .6, .8, 1],
     );
-    
+
     final paint = Paint()
       ..shader = gradient.createShader(rect)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-    
+      ..strokeWidth = borderWidth;
+
     canvas.drawRRect(rrect, paint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _AnimatedBorderPainter old) =>
+      old.animation != animation || old.isDark != isDark || old.borderWidth != borderWidth;
 }
 
-/// Enhanced hero image with particle effects
-class GlassHeroImage extends StatefulWidget {
-  const GlassHeroImage({super.key, required this.bytes});
+/// ------------------------------------------------------------
+/// HERO IMAGE WITH SHIMMER
+/// ------------------------------------------------------------
+class ModernHeroImage extends StatefulWidget {
+  const ModernHeroImage({super.key, required this.bytes});
   final Uint8List bytes;
 
   @override
-  State<GlassHeroImage> createState() => _GlassHeroImageState();
+  State<ModernHeroImage> createState() => _ModernHeroImageState();
 }
 
-class _GlassHeroImageState extends State<GlassHeroImage>
+class _ModernHeroImageState extends State<ModernHeroImage>
     with SingleTickerProviderStateMixin {
-  late AnimationController _shimmerController;
-  late Animation<double> _shimmerAnimation;
+  late final AnimationController _shimmerController;
+  late final Animation<double> _shimmerAnimation;
 
   @override
   void initState() {
     super.initState();
     _shimmerController = AnimationController(
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 4),
       vsync: this,
     )..repeat();
-    _shimmerAnimation = Tween<double>(begin: -2, end: 2).animate(
-      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
+    _shimmerAnimation = Tween<double>(begin: -2.0, end: 2.0).animate(
+      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOutSine),
     );
   }
 
@@ -270,110 +360,133 @@ class _GlassHeroImageState extends State<GlassHeroImage>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return GlassCard(
-      radius: 28,
-      blur: 20,
-      animated: true,
-      interactive: true,
-      vibrantBorder: true,
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: isDark
-            ? [
-                Colors.purple.withOpacity(0.1),
-                Colors.blue.withOpacity(0.05),
-                Colors.pink.withOpacity(0.08),
-              ]
-            : [
-                Colors.purple.withOpacity(0.15),
-                Colors.blue.withOpacity(0.1),
-                Colors.pink.withOpacity(0.12),
-              ],
-      ),
-      padding: EdgeInsets.all(6.w),
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20.r),
-            child: AspectRatio(
-              aspectRatio: 4 / 3,
-              child: Image.memory(widget.bytes, fit: BoxFit.cover),
+    return RepaintBoundary(
+      child: ModernCard(
+        radius: 20,
+        animatedBorder: true,
+        borderWidth: 2.0,
+        shadowIntensity: 1.0,
+        padding: EdgeInsets.all(3.w),
+        child: Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16.r),
+              child: AspectRatio(
+                aspectRatio: 16 / 10,
+                child: Image.memory(widget.bytes, fit: BoxFit.cover),
+              ),
             ),
-          ),
-          // Shimmer effect
-          AnimatedBuilder(
-            animation: _shimmerAnimation,
-            builder: (context, child) {
-              return Positioned.fill(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20.r),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment(_shimmerAnimation.value, -1),
-                        end: Alignment(_shimmerAnimation.value + 0.5, 0),
-                        colors: [
-                          Colors.transparent,
-                          Colors.white.withOpacity(0.1),
-                          Colors.transparent,
-                        ],
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _shimmerAnimation,
+                builder: (_, __) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(16.r),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment(_shimmerAnimation.value - 0.5, -0.5),
+                          end: Alignment(_shimmerAnimation.value + 0.5, 0.5),
+                          colors: [
+                            Colors.transparent,
+                            Colors.white.withOpacity(0.10),
+                            Colors.transparent,
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
 /// ------------------------------------------------------------
-/// SECTIONS with vibrant accents
+/// ANIMATED TIME BADGE (same animated border language)
+/// Usage: ModernTimeBadge(minutes: model.readyInMinutes)
 /// ------------------------------------------------------------
-class GlassSectionFancy extends StatelessWidget {
-  const GlassSectionFancy({
+class ModernTimeBadge extends StatelessWidget {
+  const ModernTimeBadge({super.key, required this.minutes});
+  final int? minutes;
+
+  String _format(int m) {
+    if (m < 60) return '$m min';
+    final h = m ~/ 60;
+    final r = m % 60;
+    return r == 0 ? '${h}h' : '${h}h ${r}m';
+    // e.g. 75 -> 1h 15m; 60 -> 1h
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (minutes == null) return const SizedBox.shrink();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return RepaintBoundary(
+      child: ModernCard(
+        radius: 20,
+        animatedBorder: true,
+        borderWidth: 1.5,
+        shadowIntensity: .8,
+        enableTapPulse: true,
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.timer_rounded, size: 15.sp, color: primary),
+            SizedBox(width: 6.w),
+            Text(
+              _format(minutes!),
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 14.sp,
+                color: isDark ? Colors.white : Colors.white,
+                letterSpacing: .2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// ------------------------------------------------------------
+/// SECTION CONTAINER
+/// ------------------------------------------------------------
+class ModernSection extends StatelessWidget {
+  const ModernSection({
     super.key,
     this.title,
     required this.child,
+    this.icon,
   });
 
   final String? title;
   final Widget child;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
-    final tc = textColor(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
-    
-    return GlassCard(
-      radius: 24,
-      padding: EdgeInsets.all(20.w),
-      animated: true,
-      interactive: true,
+
+    return ModernCard(
+      radius: 16,
+      padding: EdgeInsets.all(16.w),
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: isDark
-            ? [
-                primary.withOpacity(0.08),
-                Colors.purple.withOpacity(0.04),
-                Colors.blue.withOpacity(0.06),
-              ]
-            : [
-                primary.withOpacity(0.12),
-                Colors.purple.withOpacity(0.08),
-                Colors.blue.withOpacity(0.1),
-              ],
+            ? const [Color(0xFF1E1E1E), Color(0xFF181818)]
+            : const [Color(0xFFFDFDFE), Color(0xFFF8F8FA)],
       ),
-      strokeColor: primary.withOpacity(isDark ? 0.2 : 0.15),
-      glowColor: primary,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -381,39 +494,44 @@ class GlassSectionFancy extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 4.w,
-                  height: 24.h,
+                  width: 40.w,
+                  height: 40.w,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2.r),
+                    borderRadius: BorderRadius.circular(12.r),
                     gradient: LinearGradient(
-                      colors: [
-                        primary,
-                        primary.withOpacity(0.6),
-                        Colors.purple.withOpacity(0.8),
-                      ],
+                      colors: [primary.withOpacity(0.95), primary.withOpacity(0.75)],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: primary.withOpacity(0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    border: Border.all(
+                      color: textColor(context),
+                      width: 1.1,
+                    ),
                   ),
+                  child: Icon(icon ?? Icons.auto_awesome_rounded,
+                      color: Colors.white, size: 20.sp),
                 ),
-                SizedBox(width: 16.w),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Text(
                     title!,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: tc,
-                          letterSpacing: -0.3,
-                          fontSize: 18.sp,
-                        ),
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : Colors.black87,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ),
               ],
+            ),
+            SizedBox(height: 18.h),
+            Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.transparent, primary.withOpacity(0.22), Colors.transparent],
+                ),
+              ),
             ),
             SizedBox(height: 18.h),
           ],
@@ -425,126 +543,73 @@ class GlassSectionFancy extends StatelessWidget {
 }
 
 /// ------------------------------------------------------------
-/// TYPOGRAPHY with animated effects
+/// SUBHEADER / BULLET
 /// ------------------------------------------------------------
-class SubHeaderFancy extends StatefulWidget {
-  const SubHeaderFancy(this.text, {super.key});
+class ModernSubHeader extends StatelessWidget {
+  const ModernSubHeader(this.text, {super.key});
   final String text;
 
   @override
-  State<SubHeaderFancy> createState() => _SubHeaderFancyState();
-}
-
-class _SubHeaderFancyState extends State<SubHeaderFancy>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _slideAnimation;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _slideAnimation = Tween<double>(begin: 30, end: 0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
-    
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, _slideAnimation.value),
-          child: Opacity(
-            opacity: _fadeAnimation.value,
-            child: ShaderMask(
-              shaderCallback: (bounds) {
-                return LinearGradient(
-                  colors: [
-                    primary,
-                    Colors.purple,
-                    primary,
-                  ],
-                ).createShader(bounds);
-              },
-              child: Text(
-                widget.text,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.2,
-                      color: Colors.white,
-                      fontSize: 16.sp,
-                    ),
-              ),
-            ),
+
+    return Row(
+      children: [
+        Container(
+          width: 4.w,
+          height: 22.h,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(2.r),
+            gradient: LinearGradient(colors: [primary, primary.withOpacity(0.6)]),
           ),
-        );
-      },
+        ),
+        SizedBox(width: 10.w),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : Colors.black87,
+            letterSpacing: -0.3,
+          ),
+        ),
+      ],
     );
   }
 }
 
-class BulletLineFancy extends StatelessWidget {
-  const BulletLineFancy({super.key, required this.text});
+class ModernBulletPoint extends StatelessWidget {
+  const ModernBulletPoint({super.key, required this.text});
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    final tc = textColor(context);
-    final primary = Theme.of(context).colorScheme.primary;
-    
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: EdgeInsets.only(top: 8.h, right: 16.w),
+            margin: EdgeInsets.only(top: 7.h),
             width: 8.w,
             height: 8.h,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  primary,
-                  Colors.purple,
-                  primary.withOpacity(0.7),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: primary.withOpacity(0.5),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              gradient: RadialGradient(colors: [textColor(context), textColor(context).withOpacity(0.6)]),
             ),
           ),
+          SizedBox(width: 12.w),
           Expanded(
             child: Text(
               text,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: tc.withOpacity(0.92),
-                    height: 1.5,
-                    fontSize: 15.sp,
-                  ),
+              textAlign: TextAlign.justify,
+              style: TextStyle(
+                color: textColor(context),
+                fontSize: 12.sp,
+                height: 1.5,
+                letterSpacing: 0.1,
+              ),
             ),
           ),
         ],
@@ -554,225 +619,127 @@ class BulletLineFancy extends StatelessWidget {
 }
 
 /// ------------------------------------------------------------
-/// CHIPS with enhanced interactions
+/// PREMIUM CHIPS / TAGS
 /// ------------------------------------------------------------
-enum ChipTone { neutral, primary }
-
-class TinyChipFancy extends StatefulWidget {
-  const TinyChipFancy({
+class PremiumChip extends StatelessWidget {
+  const PremiumChip({
     super.key,
     required this.icon,
     required this.label,
-    this.tone = ChipTone.neutral,
+    this.isPrimary = false,
   });
 
   final IconData icon;
   final String label;
-  final ChipTone tone;
-
-  @override
-  State<TinyChipFancy> createState() => _TinyChipFancyState();
-}
-
-class _TinyChipFancyState extends State<TinyChipFancy>
-    with TickerProviderStateMixin {
-  late AnimationController _pulseController;
-  late AnimationController _colorController;
-  late Animation<double> _pulseAnimation;
-  Animation<Color?>? _colorAnimation; // <-- nullable now
-  // ignore: unused_field
-  bool _isPressed = false;
-
-  bool _colorTweenInitialized = false; // guard to avoid re-creating tween
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _colorController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    );
-
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Safe to access Theme here
-    if (widget.tone == ChipTone.primary && !_colorTweenInitialized) {
-      final primary = Theme.of(context).colorScheme.primary;
-      _colorAnimation = ColorTween(
-        begin: primary,
-        end: Colors.purple,
-      ).animate(_colorController);
-      _colorController.repeat(reverse: true);
-      _colorTweenInitialized = true;
-    }
-  }
-
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    _colorController.dispose();
-    super.dispose();
-  }
+  final bool isPrimary;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = widget.tone == ChipTone.primary
-        ? Theme.of(context).colorScheme.primary
-        : (isDark ? Colors.white : Colors.grey.shade700);
+    final primary = Theme.of(context).colorScheme.primary;
 
-    return GestureDetector(
-      onTapDown: (_) {
-        setState(() => _isPressed = true);
-        _pulseController.forward();
-      },
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        _pulseController.reverse();
-      },
-      onTapCancel: () {
-        setState(() => _isPressed = false);
-        _pulseController.reverse();
-      },
-      child: AnimatedBuilder(
-        animation: widget.tone == ChipTone.primary
-            ? Listenable.merge([
-                _pulseAnimation,
-                if (_colorAnimation != null) _colorAnimation!,
-              ])
-            : _pulseAnimation,
-        builder: (context, child) {
-          final currentColor = widget.tone == ChipTone.primary
-              ? (_colorAnimation?.value ?? baseColor)
-              : baseColor;
+    final bg = isPrimary
+        ? primary.withOpacity(0.15)
+        : (isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06));
+    final border = isPrimary
+        ? primary.withOpacity(0.40)
+        : (isDark ? Colors.white.withOpacity(0.18) : Colors.black.withOpacity(0.12));
+    final content = isPrimary ? primary : (isDark ? Colors.white : Colors.black87);
 
-          return Transform.scale(
-            scale: _pulseAnimation.value,
-            child: GlassCard(
-              radius: 18,
-              blur: 12,
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-              tint: currentColor.withOpacity(isDark ? 0.15 : 0.12),
-              strokeColor: currentColor.withOpacity(isDark ? 0.4 : 0.25),
-              glowColor: widget.tone == ChipTone.primary ? currentColor : null,
-              vibrantBorder: widget.tone == ChipTone.primary,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    widget.icon,
-                    size: 16.sp,
-                    color: widget.tone == ChipTone.primary
-                        ? Colors.white
-                        : textColor(context),
-                  ),
-                  SizedBox(width: 8.w),
-                  Text(
-                    widget.label,
-                    style: TextStyle(
-                      color: widget.tone == ChipTone.primary
-                          ? Colors.white
-                          : textColor(context),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13.sp,
-                    ),
-                  ),
-                ],
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18.r),
+        color: bg,
+        border: Border.all(color: border, width: 1.15),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14.sp, color: content),
+          SizedBox(width: 6.w),
+          Text(label,
+                style: TextStyle(
+                  color: content, 
+                  fontWeight: FontWeight.w600, 
+                  fontSize: 12.5.sp
+                )
               ),
-            ),
-          );
-        },
+        ],
       ),
     );
   }
 }
 
-class PillTagFancy extends StatelessWidget {
-  const PillTagFancy({super.key, required this.text});
+class ModernPillTag extends StatelessWidget {
+  const ModernPillTag({super.key, required this.text});
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    final tc = textColor(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return GlassCard(
-      radius: 20,
-      blur: 10,
-      interactive: true,
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-      tint: tc.withOpacity(isDark ? 0.1 : 0.08),
-      strokeColor: tc.withOpacity(isDark ? 0.25 : 0.18),
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18.r),
+        gradient: LinearGradient(
+          colors: isDark
+              ? [Colors.white.withOpacity(0.08), Colors.white.withOpacity(0.04)]
+              : [Colors.black.withOpacity(0.06), Colors.black.withOpacity(0.03)],
+        ),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.18) : Colors.black.withOpacity(0.12),
+          width: 1.0,
+        ),
+      ),
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 13.sp,
-          color: tc.withOpacity(0.9),
+          fontSize: 12.5.sp,
+          color: isDark ? Colors.white : Colors.black87,
           fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
+          letterSpacing: 0.2,
         ),
       ),
     );
   }
 }
 
-class FlagTagFancy extends StatelessWidget {
-  const FlagTagFancy({super.key, required this.text, required this.emoji});
+class ModernFlagTag extends StatelessWidget {
+  const ModernFlagTag({super.key, required this.text, required this.emoji});
   final String text;
   final String emoji;
 
   @override
   Widget build(BuildContext context) {
-    final tc = textColor(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
-    
-    return GlassCard(
-      radius: 22,
-      blur: 12,
-      interactive: true,
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-      gradient: LinearGradient(
-        colors: [
-          primary.withOpacity(isDark ? 0.1 : 0.08),
-          Colors.blue.withOpacity(isDark ? 0.05 : 0.04),
-        ],
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18.r),
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF2A2A2A), const Color(0xFF1F1F1F)]
+              : [const Color(0xFFF5F5F5), const Color(0xFFEEEEEE)],
+        ),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.15) : Colors.black.withOpacity(0.12),
+          width: 1.0,
+        ),
       ),
-      strokeColor: primary.withOpacity(isDark ? 0.25 : 0.18),
-      glowColor: primary.withOpacity(0.1),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: EdgeInsets.all(6.w),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8.r),
-              color: Colors.white.withOpacity(isDark ? 0.15 : 0.25),
-              border: Border.all(
-                color: primary.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Text(emoji, style: TextStyle(fontSize: 16.sp)),
-          ),
-          SizedBox(width: 12.w),
+          Text(emoji, style: TextStyle(fontSize: 15.sp)),
+          SizedBox(width: 8.w),
           Text(
             text,
             style: TextStyle(
               fontSize: 13.sp,
-              color: tc.withOpacity(0.9),
+              color: isDark ? Colors.white : Colors.black87,
               fontWeight: FontWeight.w600,
-              letterSpacing: 0.2,
             ),
           ),
         ],
@@ -782,160 +749,358 @@ class FlagTagFancy extends StatelessWidget {
 }
 
 /// ------------------------------------------------------------
-/// DETAIL TILES with enhanced interactions
+/// ENHANCED INGREDIENT TILE
+/// - supports: String | Map | ShoppingItemModel
+/// - only shows shopping toggle when tag == 'buy'
+/// - tag == 'optional' -> shows Optional badge
+/// - shows need/unit/have and delta
+/// - no "count" word (empty unit for count)
 /// ------------------------------------------------------------
-class IngredientTileFancy extends StatelessWidget {
-  const IngredientTileFancy({super.key, required this.data});
-  final dynamic data;
+class ModernIngredientTile extends StatefulWidget {
+  const ModernIngredientTile({
+    super.key,
+    required this.data,
+    this.initiallyInShopping = false,
+    this.onToggleShopping,
+  });
+
+  final dynamic data; // Map<String,dynamic> | String | ShoppingItemModel
+  final bool initiallyInShopping;
+  final VoidCallback? onToggleShopping;
+
+  @override
+  State<ModernIngredientTile> createState() => _ModernIngredientTileState();
+}
+
+class _ModernIngredientTileState extends State<ModernIngredientTile>
+    with SingleTickerProviderStateMixin {
+  late bool inShopping;
+  late final AnimationController _bounceController;
+  late final Animation<double> _bounce;
+
+  @override
+  void initState() {
+    super.initState();
+    inShopping = widget.initiallyInShopping;
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
+    _bounce = Tween<double>(begin: 1.0, end: 1.10).animate(
+      CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _bounceController.dispose();
+    super.dispose();
+  }
+
+  void _toggle() async {
+    _bounceController
+      ..value = 0
+      ..forward();
+    setState(() => inShopping = !inShopping);
+    widget.onToggleShopping?.call();
+  }
 
   @override
   Widget build(BuildContext context) {
-    String label;
-    if (data is String) {
-      label = data;
-    } else if (data is Map) {
-      final name = (data['name'] ?? '').toString();
-      final q = (data['quantity'] as num?)?.toDouble();
-      final unit = (data['unit'] ?? '').toString();
-      if (q == null || q == 0) {
-        label = name;
-      } else {
-        final qStr = q % 1 == 0 ? q.toStringAsFixed(0) : q.toString();
-        label = unit.isEmpty ? "$name — $qStr" : "$name — $qStr $unit";
-      }
-    } else {
-      label = data.toString();
-    }
-
-    final tc = textColor(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
 
+    // parse: name / unit / quantities / tag
+    String name = "";
+    String unit = "";
+    double? need;
+    double? have;
+    String tag = "";
+
+    if (widget.data is String) {
+      name = widget.data as String;
+      unit = "";
+      tag = ""; // plain
+    } else if (widget.data is ShoppingItemModel) {
+      final s = widget.data as ShoppingItemModel;
+      name = s.name;
+      need = s.need;
+      have = s.have;
+      unit = (s.unit).trim().toLowerCase();
+      tag = (s.tag).toLowerCase();
+    } else if (widget.data is Map) {
+      final m = widget.data as Map;
+      name = (m['name'] ?? '').toString();
+      need = (m['need'] as num?)?.toDouble() ?? (m['quantity'] as num?)?.toDouble();
+      have = (m['have'] as num?)?.toDouble();
+      unit = ((m['unit'] ?? '').toString()).trim().toLowerCase();
+      tag = (m['tag'] ?? '').toString().toLowerCase();
+    }
+
+    final needsShopping = tag == 'buy';
+    final isOptional = tag == 'optional';
+
+    String? qtyStr;
+    if (need != null && need > 0) {
+      final raw = (need % 1 == 0) ? need.toStringAsFixed(0) : need.toString();
+      qtyStr = (unit.isEmpty || unit == 'count') ? raw : "$raw $unit";
+    }
+
+    String? haveStr;
+    if (have != null && have > 0) {
+      haveStr = (unit.isEmpty || unit == 'count')
+          ? (have % 1 == 0 ? have.toStringAsFixed(0) : have.toString())
+          : "${(have % 1 == 0 ? have.toStringAsFixed(0) : have.toString())} $unit";
+    }
+
+    final delta = (need ?? 0) - (have ?? 0);
+    final deltaPos = delta > 0.0001;
+
+    final qtyColor = isDark ? Colors.cyan[300]! : Colors.cyan[700]!;
+    final okCol = isDark ? Colors.green[300]! : Colors.green[600]!;
+    final warnCol = isDark ? Colors.orange[300]! : Colors.orange[700]!;
+
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
-      child: GlassCard(
-        radius: 18,
-        blur: 10,
-        interactive: true,
-        padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 14.h),
+      child: ModernCard(
+        radius: 14,
+        padding: EdgeInsets.all(14.w),
         gradient: LinearGradient(
-          colors: [
-            primary.withOpacity(isDark ? 0.08 : 0.06),
-            Colors.green.withOpacity(isDark ? 0.04 : 0.03),
-          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [Color(0xFF242424), Color(0xFF1E1E1E)]
+              : const [Color(0xFFFFFFFF), Color(0xFFF9FAFB)],
         ),
-        strokeColor: primary.withOpacity(isDark ? 0.2 : 0.15),
         child: Row(
           children: [
+            // icon with subtle border
             Container(
-              padding: EdgeInsets.all(10.w),
+              width: 44.w,
+              height: 44.w,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14.r),
+                borderRadius: BorderRadius.circular(12.r),
                 gradient: LinearGradient(
-                  colors: [
-                    primary,
-                    Colors.green,
-                  ],
+                  colors: [primary.withOpacity(0.18), primary.withOpacity(0.08)],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: primary.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                border: Border.all(color: primary.withOpacity(0.25), width: 1.1),
               ),
-              child: Icon(
-                Icons.eco_rounded,
-                size: 16.sp,
-                color: Colors.white,
-              ),
+              child: Icon(Icons.restaurant_menu_rounded, size: 20.sp, color: primary),
             ),
             SizedBox(width: 14.w),
+
+            // name + quantities
             Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: tc.withOpacity(0.92),
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w500,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // top row: name + optional badge
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black87,
+                            fontSize: 15.5.sp,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                      if (isOptional) ...[
+                        SizedBox(width: 8.w),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10.r),
+                            color: warnCol.withOpacity(0.10),
+                            border: Border.all(color: warnCol.withOpacity(0.38), width: 1.0),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline_rounded, size: 13.sp, color: warnCol),
+                              SizedBox(width: 4.w),
+                              Text(
+                                'Optional',
+                                style: TextStyle(
+                                  color: warnCol,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11.5.sp,
+                                  letterSpacing: .2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+
+                  // quantities / have / delta
+                  if (qtyStr != null || haveStr != null) ...[
+                    SizedBox(height: 8.h),
+                    Wrap(
+                      spacing: 8.w,
+                      runSpacing: 6.h,
+                      children: [
+                        if (qtyStr != null)
+                          _miniChip(
+                            icon: Icons.inventory_2_rounded,
+                            text: qtyStr,
+                            color: qtyColor,
+                          ),
+                        if (haveStr != null)
+                          _miniChip(
+                            icon: Icons.check_circle_rounded,
+                            text: "Have $haveStr",
+                            color: okCol,
+                          ),
+                        if (deltaPos)
+                          _miniChip(
+                            icon: Icons.remove_circle_outline_rounded,
+                            text: "Need ${delta % 1 == 0 ? delta.toStringAsFixed(0) : delta.toStringAsFixed(2)}"
+                                "${(unit.isEmpty || unit == 'count') ? '' : ' $unit'}",
+                            color: warnCol,
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
               ),
             ),
+
+            // shopping button (only for tag == buy)
+            if (needsShopping)
+              AnimatedBuilder(
+                animation: _bounce,
+                builder: (_, __) {
+                  return Transform.scale(
+                    scale: _bounce.value,
+                    child: GestureDetector(
+                      onTap: _toggle,
+                      child: Container(
+                        width: 44.w,
+                        height: 44.w,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12.r),
+                          gradient: LinearGradient(
+                            colors: inShopping
+                                ? [okCol.withOpacity(0.18), okCol.withOpacity(0.10)]
+                                : [primary.withOpacity(0.12), primary.withOpacity(0.06)],
+                          ),
+                          border: Border.all(
+                            color: inShopping ? okCol.withOpacity(0.45) : primary.withOpacity(0.22),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Icon(
+                          inShopping ? Icons.shopping_cart_rounded : Icons.add_shopping_cart_rounded,
+                          size: 20.sp,
+                          color: inShopping ? okCol : primary,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),
     );
   }
+
+  Widget _miniChip({required IconData icon, required String text, required Color color}) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8.r),
+        color: color.withOpacity(0.10),
+        border: Border.all(color: color.withOpacity(0.32), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12.5.sp, color: color),
+          SizedBox(width: 5.w),
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 12.0.sp,
+              fontWeight: FontWeight.w700,
+              letterSpacing: .2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class InstructionTileFancy extends StatelessWidget {
-  const InstructionTileFancy({super.key, required this.index, required this.text});
+/// ------------------------------------------------------------
+/// INSTRUCTION STEP TILE (justified text)
+/// ------------------------------------------------------------
+class ModernInstructionTile extends StatelessWidget {
+  const ModernInstructionTile({
+    super.key,
+    required this.index,
+    required this.text,
+  });
+
   final int index;
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    final tc = textColor(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: 14.h),
-      child: GlassCard(
-        radius: 20,
-        blur: 10,
-        interactive: true,
-        padding: EdgeInsets.all(18.w),
-        gradient: LinearGradient(
-          colors: [
-            primary.withOpacity(isDark ? 0.06 : 0.04),
-            Colors.purple.withOpacity(isDark ? 0.04 : 0.02),
-          ],
-        ),
-        strokeColor: primary.withOpacity(isDark ? 0.15 : 0.12),
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: ModernCard(
+        radius: 14,
+        padding: EdgeInsets.all(16.w),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: 32.w,
-              height: 32.h,
+              height: 32.w,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16.r),
+                shape: BoxShape.circle,
                 gradient: LinearGradient(
-                  colors: [primary, Colors.purple],
+                  colors: [primary, primary.withOpacity(0.85)],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: primary.withOpacity(0.4),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                border: Border.all(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  width: 1,
+                ),
               ),
               child: Center(
                 child: Text(
                   "$index",
                   style: TextStyle(
-                    fontWeight: FontWeight.w700,
                     color: Colors.white,
-                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14.5.sp,
                   ),
                 ),
               ),
             ),
-            SizedBox(width: 18.w),
+            SizedBox(width: 14.w),
             Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(top: 6.h),
-                child: Text(
-                  text,
-                  style: TextStyle(
-                    color: tc.withOpacity(0.92),
-                    fontSize: 15.sp,
-                    height: 1.4,
-                    fontWeight: FontWeight.w400,
-                  ),
+              child: Text(
+                text,
+                textAlign: TextAlign.justify,
+                style: TextStyle(
+                  color: isDark ? Colors.white.withOpacity(0.92) : Colors.black87,
+                  fontSize: 14.sp,
+                  height: 1.5,
+                  letterSpacing: 0.1,
                 ),
               ),
             ),
@@ -946,133 +1111,372 @@ class InstructionTileFancy extends StatelessWidget {
   }
 }
 
-class ShoppingTileFancy extends StatelessWidget {
-  const ShoppingTileFancy({super.key, required this.item});
-  final ShoppingItemModel item;
+// ---- Nutrition chips (unchanged API, adds subtle bounce on tap) ----
+class ModernNutritionChips extends StatelessWidget {
+  const ModernNutritionChips({super.key, required this.nutrition});
+  final Map<String, dynamic> nutrition;
 
   @override
   Widget build(BuildContext context) {
-    final need = item.need.toStringAsFixed(item.need % 1 == 0 ? 0 : 1);
-    final have = item.have.toStringAsFixed(item.have % 1 == 0 ? 0 : 1);
-    final isMissing = item.tag == 'missing';
-    final tc = textColor(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    final chipColor = isMissing
-        ? (isDark ? Colors.amber.shade300 : Colors.amber.shade700)
-        : Theme.of(context).colorScheme.tertiary;
+    final cal = nutrition['calories'];
+    final p = nutrition['protein_g'];
+    final f = nutrition['fat_g'];
+    final c = nutrition['carbs_g'];
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: 12.h),
-      child: GlassCard(
-        radius: 20,
-        interactive: true,
-        vibrantBorder: isMissing,
-        padding: EdgeInsets.all(18.w),
-        gradient: LinearGradient(
-          colors: [
-            chipColor.withOpacity(isDark ? 0.1 : 0.06),
-            chipColor.withOpacity(isDark ? 0.05 : 0.03),
-          ],
-        ),
-        strokeColor: chipColor.withOpacity(isDark ? 0.2 : 0.15),
-        glowColor: isMissing ? Colors.amber.withOpacity(0.2) : null,
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(12.w),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16.r),
-                gradient: LinearGradient(
-                  colors: [
-                    chipColor,
-                    chipColor.withOpacity(0.8),
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: chipColor.withOpacity(0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.shopping_cart_outlined,
-                size: 18.sp,
-                color: Colors.white,
-              ),
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 8.w,
+      runSpacing: 8.h,
+      children: [
+        if (cal != null)
+          _TapBounce(
+            child: PremiumChip(
+              icon: Icons.local_fire_department_rounded,
+              label: "$cal kcal",
+              isPrimary: true,
             ),
-            SizedBox(width: 16.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: tc.withOpacity(0.95),
-                      fontSize: 15.sp,
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        color: tc.withOpacity(0.7),
-                        fontSize: 13.sp,
-                      ),
-                      children: [
-                        const TextSpan(text: "Need: "),
-                        TextSpan(
-                          text: "$need ${item.unit}",
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const TextSpan(text: " • Have: "),
-                        TextSpan(
-                          text: "$have ${item.unit}",
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14.r),
-                gradient: LinearGradient(
-                  colors: [
-                    chipColor.withOpacity(0.2),
-                    chipColor.withOpacity(0.15),
-                  ],
-                ),
-                border: Border.all(color: chipColor.withOpacity(0.5)),
-              ),
-              child: Text(
-                item.tag.toUpperCase(),
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: chipColor,
-                  fontSize: 11.sp,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        if (p != null)
+          _TapBounce(
+            child: PremiumChip(icon: Icons.egg_alt_rounded, label: "${p} g protein"),
+          ),
+        if (f != null)
+          _TapBounce(
+            child: PremiumChip(icon: Icons.water_drop_rounded, label: "${f} g fat"),
+          ),
+        if (c != null)
+          _TapBounce(
+            child: PremiumChip(icon: Icons.bakery_dining_rounded, label: "${c} g carbs"),
+          ),
+      ],
+    );
+  }
+}
+
+// ---- Caloric breakdown (unchanged API). Percentages come from props. ----
+class ModernCaloricBreakdown extends StatelessWidget {
+  const ModernCaloricBreakdown({
+    super.key,
+    required this.percentProtein,
+    required this.percentFat,
+    required this.percentCarbs,
+    required this.percentEnergy, // not used, but could be
+  });
+
+  final double? percentProtein;
+  final double? percentFat;
+  final double? percentCarbs;
+  final double? percentEnergy; // not used, but could be
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final energyCol  = isDark ? Colors.orange[300]! : Colors.orange[600]!;
+    final proteinCol = isDark ? Colors.green[300]! : Colors.green[600]!;
+    final fatCol     = isDark ? Colors.red[300]!   : Colors.red[600]!;
+    final carbsCol   = isDark ? Colors.blue[300]!  : Colors.blue[600]!;
+
+    return ModernCard(
+      radius: 14,
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 16.h),
+      gradient: LinearGradient(
+        colors: isDark
+            ? [const Color(0xFF232323), const Color(0xFF1C1C1C)]
+            : [const Color(0xFFFFFFFF), const Color(0xFFF8F9FA)],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        spacing: 5.w,
+        children: [
+          _Ring(label: "Energy",  value: (percentEnergy ?? 0).clamp(0, 100),  color: energyCol),
+          _Ring(label: "Protein", value: (percentProtein ?? 0).clamp(0, 100), color: proteinCol),
+          _Ring(label: "Fat",     value: (percentFat ?? 0).clamp(0, 100),     color: fatCol),
+          _Ring(label: "Carbs",   value: (percentCarbs ?? 0).clamp(0, 100),   color: carbsCol),
+        ],
       ),
     );
   }
 }
 
+// ---- NEW: Convenience wrapper that derives percentages from nutrition map ----
+// Note: Daily Values (DV) assumed for reference intake (RI): 
+// Energy 2000 kcal, Protein 50 g, Fat 70 g, Carbs 260 g.
+// These are generic guideline values; we clamp to [0,100] and show a small note.
+class ModernCaloricBreakdownFromNutrition extends StatelessWidget {
+  const ModernCaloricBreakdownFromNutrition({
+    super.key,
+    required this.nutrition,
+    this.energyDv = 2000, // kcal
+    this.proteinDv = 50,  // g
+    this.fatDv = 70,      // g
+    this.carbsDv = 260,   // g
+    this.showNote = true,
+  });
+
+  final Map<String, dynamic> nutrition;
+  final double energyDv;
+  final double proteinDv;
+  final double fatDv;
+  final double carbsDv;
+  final bool showNote;
+
+  double _pct(num? v, double dv) {
+    if (v == null) return 0;
+    final val = v.toDouble();
+    return (100 * (val / dv)).clamp(0, 100);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final e = nutrition['calories'] as num?;
+    final p = nutrition['protein_g'] as num?;
+    final f = nutrition['fat_g'] as num?;
+    final c = nutrition['carbs_g'] as num?;
+
+    final percentEnergy  = _pct(e, energyDv);
+    final percentProtein = _pct(p, proteinDv);
+    final percentFat     = _pct(f, fatDv);
+    final percentCarbs   = _pct(c, carbsDv);
+
+    final column = Column(
+      children: [
+        ModernCaloricBreakdown(
+          percentProtein: percentProtein,
+          percentFat: percentFat,
+          percentCarbs: percentCarbs,
+          percentEnergy: percentEnergy,
+        ),
+        if (showNote) ...[
+          SizedBox(height: 15.h),
+          Text(
+            "Based on generic Daily Values: ${energyDv.toStringAsFixed(0)} kcal, "
+            "${proteinDv.toStringAsFixed(0)} g protein, ${fatDv.toStringAsFixed(0)} g fat, "
+            "${carbsDv.toStringAsFixed(0)} g carbs.",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white70
+                  : Colors.black54,
+            ),
+          ),
+        ]
+      ],
+    );
+
+    return column;
+  }
+}
+
+// ---- Ring with glow + tap-to-play fill animation (same API as before) ----
+class _Ring extends StatefulWidget {
+  const _Ring({required this.label, required this.value, required this.color});
+  final String label;
+  final double value; // 0..100
+  final Color color;
+
+  @override
+  State<_Ring> createState() => _RingState();
+}
+
+class _RingState extends State<_Ring> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late double _target; // 0..1
+  static const _stroke = 8.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _target = (widget.value.clamp(0, 100)) / 100.0;
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+      lowerBound: 0,
+      upperBound: 1,
+    )..value = _target; // start filled to current value
+  }
+
+  @override
+  void didUpdateWidget(covariant _Ring oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final newTarget = (widget.value.clamp(0, 100)) / 100.0;
+    if (newTarget != _target) {
+      _target = newTarget;
+      _ctrl.animateTo(_target, curve: Curves.easeOutCubic);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _play() {
+    // replay fill animation from 0 -> target
+    _ctrl
+      ..value = 0
+      ..animateTo(_target, curve: Curves.easeOutCubic);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: _play,
+          child: SizedBox(
+            width: 64.w,
+            height: 64.w,
+            child: AnimatedBuilder(
+              animation: _ctrl,
+              builder: (_, __) {
+                return CustomPaint(
+                  painter: _GlowRingPainter(
+                    progress: _ctrl.value,          // 0..1
+                    color: widget.color,
+                    trackColor: isDark ? Colors.white12 : Colors.black12,
+                    strokeWidth: _stroke,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Text(
+          widget.label,
+          style: TextStyle(
+            fontSize: 13.sp,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white70 : Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GlowRingPainter extends CustomPainter {
+  _GlowRingPainter({
+    required this.progress,
+    required this.color,
+    required this.trackColor,
+    required this.strokeWidth,
+  });
+
+  final double progress; // 0..1
+  final Color color;
+  final Color trackColor;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final center = rect.center;
+    final radius = (size.shortestSide - strokeWidth) / 2.0;
+
+    // Track
+    final track = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(center, radius, track);
+
+    // Glow (blurred arc)
+    final glow = Paint()
+      ..color = color.withOpacity(0.75)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    final sweepAngle = 2 * math.pi * progress;
+    final rectArc = Rect.fromCircle(center: center, radius: radius);
+    canvas.drawArc(rectArc, -math.pi / 2, sweepAngle, false, glow);
+
+    // Foreground solid arc
+    final fg = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(rectArc, -math.pi / 2, sweepAngle, false, fg);
+
+    // Center text
+    final tp = TextPainter(
+      text: TextSpan(
+        text: "${(progress * 100).round()}%",
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 13.sp,
+          color: color,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(
+      canvas,
+      Offset(center.dx - tp.width / 2, center.dy - tp.height / 2),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GlowRingPainter old) =>
+      old.progress != progress || old.color != color || old.trackColor != trackColor;
+}
+
+// ---- tiny helper: tactile bounce for chips (visual only) ----
+class _TapBounce extends StatefulWidget {
+  const _TapBounce({required this.child});
+  final Widget child;
+  @override
+  State<_TapBounce> createState() => _TapBounceState();
+}
+
+class _TapBounceState extends State<_TapBounce> with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  late final Animation<double> _s;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 140));
+    _s = Tween<double>(begin: 1.0, end: 0.94).animate(
+      CurvedAnimation(parent: _c, curve: Curves.easeOutCubic),
+    );
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  void _down(_) => _c.forward();
+  void _up([_]) => _c.reverse();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: _down,
+      onTapUp: _up,
+      onTapCancel: _up,
+      child: AnimatedBuilder(
+        animation: _s,
+        builder: (_, __) => Transform.scale(scale: _s.value, child: widget.child),
+      ),
+    );
+  }
+}
+
+
 /// ------------------------------------------------------------
-/// ENHANCED CAUTION FOOTER with popup and animations
+/// ENHANCED CAUTION BAR - Clean, informative design (ModernCard)
 /// ------------------------------------------------------------
-// --- Revamped, tappable, serious caution bar ---
 class AiCautionBarFancy extends StatefulWidget {
   const AiCautionBarFancy({super.key});
 
@@ -1081,230 +1485,296 @@ class AiCautionBarFancy extends StatefulWidget {
 }
 
 class _AiCautionBarFancyState extends State<AiCautionBarFancy>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _borderController;
-  late final Animation<double> _borderAnim;
-  bool _open = false;
+  late final AnimationController _pressController;
+  late final Animation<double> _borderAnimation;
+  late final Animation<double> _pressAnimation;
+  bool _expanded = false;
 
   @override
   void initState() {
     super.initState();
+
     _borderController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
+      duration: const Duration(seconds: 6),
     )..repeat();
-    _borderAnim = Tween<double>(begin: 0, end: 2 * 3.1415926535).animate(
+
+    _pressController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+    );
+
+    _borderAnimation = Tween<double>(begin: 0, end: 2 * 3.1415926535).animate(
       CurvedAnimation(parent: _borderController, curve: Curves.linear),
+    );
+
+    _pressAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
+      CurvedAnimation(parent: _pressController, curve: Curves.easeOut),
     );
   }
 
   @override
   void dispose() {
     _borderController.dispose();
+    _pressController.dispose();
     super.dispose();
   }
 
-  void _toggle() => setState(() => _open = !_open);
+  void _toggle() => setState(() => _expanded = !_expanded);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final tc = textColor(context);
-
-    // Neutral, serious palette
-    final baseTint = isDark
-        ? Colors.white.withOpacity(0.05)
-        : Colors.white.withOpacity(0.22);
-    final borderCol = (isDark ? Colors.red[300] : Colors.red[700])!.withOpacity(0.25);
-    final iconAccent = isDark ? Colors.amber[300] : Colors.amber[700];
+    final warningColor = isDark ? Colors.amber[300]! : Colors.amber[700]!;
+    // ignore: unused_local_variable
+    final borderBase = isDark
+        ? Colors.white.withOpacity(0.10)
+        : Colors.black.withOpacity(0.08);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Main bar (always visible)
-        InkWell(
-          onTap: _toggle,
-          borderRadius: BorderRadius.circular(18.r),
-          child: GlassCard(
-            radius: 18,
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-            tint: baseTint,
-            strokeColor: borderCol,
-            blur: 10,
-            child: Row(
-              children: [
-                // Animated border badge
-                AnimatedBuilder(
-                  animation: _borderAnim,
-                  builder: (context, _) {
-                    return Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // rotating sweep ring
-                        Transform.rotate(
-                          angle: _borderAnim.value,
-                          child: Container(
-                            width: 34.w,
-                            height: 34.w,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: SweepGradient(
-                                colors: [
-                                  (isDark ? Colors.red[400] : Colors.red[600])!.withOpacity(0.00),
-                                  (isDark ? Colors.red[400] : Colors.red[600])!.withOpacity(0.45),
-                                  (isDark ? Colors.orange[400] : Colors.orange[700])!.withOpacity(0.65),
-                                  (isDark ? Colors.amber[300] : Colors.amber[700])!.withOpacity(0.45),
-                                  (isDark ? Colors.red[400] : Colors.red[600])!.withOpacity(0.00),
-                                ],
+        // Tap row
+        GestureDetector(
+          onTapDown: (_) => _pressController.forward(),
+          onTapUp: (_) {
+            _pressController.reverse();
+            _toggle();
+          },
+          onTapCancel: () => _pressController.reverse(),
+          child: AnimatedBuilder(
+            animation: _pressAnimation,
+            builder: (_, __) {
+              return Transform.scale(
+                scale: _pressAnimation.value,
+                child: ModernCard(
+                  radius: 16,
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? [const Color(0xFF232323), const Color(0xFF1B1B1B)]
+                        : [Colors.white, const Color(0xFFFAFAFA)],
+                  ),
+                  // subtle static border (serious look)
+                  borderWidth: 1.5,
+                  child: Row(
+                    children: [
+                      // Animated ring + icon
+                      AnimatedBuilder(
+                        animation: _borderAnimation,
+                        builder: (context, _) {
+                          return Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Transform.rotate(
+                                angle: _borderAnimation.value,
+                                child: Container(
+                                  width: 30.w,
+                                  height: 30.w,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: SweepGradient(
+                                      colors: [
+                                        warningColor.withOpacity(0.0),
+                                        warningColor.withOpacity(0.55),
+                                        Colors.orange.withOpacity(0.7),
+                                        warningColor.withOpacity(0.55),
+                                        warningColor.withOpacity(0.0),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: 24.w,
+                                height: 24.w,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDark ? const Color(0xFF0E0E0E) : Colors.white,
+                                  border: Border.all(
+                                    color: warningColor.withOpacity(0.35),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.shield_outlined,
+                                  size: 13.sp,
+                                  color: warningColor,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      SizedBox(width: 10.w),
+
+                      // Texts
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "AI-generated recipe",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13.sp,
+                                color: tc,
+                                letterSpacing: 0.1,
                               ),
                             ),
-                          ),
-                        ),
-                        // inner cutout + icon
-                        Container(
-                          width: 28.w,
-                          height: 28.w,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isDark ? Colors.black.withOpacity(0.75) : Colors.white,
-                            border: Border.all(
-                              color: (isDark ? Colors.red[200] : Colors.red[600])!.withOpacity(0.25),
-                              width: 1.4,
+                            Text(
+                              "Tap for safety guidelines",
+                              style: TextStyle(
+                                color: tc.withOpacity(0.6),
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                          child: Icon(
-                            Icons.psychology_rounded,
-                            size: 16.sp,
-                            color: iconAccent,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                SizedBox(width: 12.w),
-                // Texts
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "AI-generated recipe",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14.sp,
-                          letterSpacing: 0.2,
-                          color: tc,
+                          ],
                         ),
                       ),
-                      SizedBox(height: 2.h),
-                      Text(
-                        "Review safety notes before cooking",
-                        style: TextStyle(
-                          color: tc.withOpacity(0.72),
-                          fontSize: 12.5.sp,
+
+                      // Chevron
+                      AnimatedRotation(
+                        turns: _expanded ? 0.5 : 0.0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 18.sp,
+                          color: tc.withOpacity(0.7),
                         ),
                       ),
                     ],
                   ),
                 ),
-                Icon(
-                  _open ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-                  size: 20.sp,
-                  color: tc.withOpacity(0.9),
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ),
 
-        // Collapsible content (expands below; never blocks taps)
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeInCubic,
-          child: !_open
-              ? const SizedBox.shrink()
-              : Padding(
-                  padding: EdgeInsets.only(top: 8.h),
-                  child: GlassCard(
-                    radius: 16,
-                    padding: EdgeInsets.all(14.w),
-                    tint: isDark
-                        ? Colors.white.withOpacity(0.04)
-                        : Colors.white.withOpacity(0.18),
-                    strokeColor: (isDark ? Colors.grey[400] : Colors.grey[700])!.withOpacity(0.25),
-                    blur: 10,
+        // Expanded content
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          child: _expanded
+              ? Padding(
+                  padding: EdgeInsets.only(top: 6.h),
+                  child: ModernCard(
+                    radius: 14,
+                    padding: EdgeInsets.all(12.w),
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [const Color(0xFF1F1F1F), const Color(0xFF181818)]
+                          : [Colors.white, const Color(0xFFF7F7F7)],
+                    ),
+                    borderWidth: 1.2,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _point(context, "Verify ingredient quantities and taste as you go."),
-                        _point(context, "Double-check allergens and dietary restrictions."),
-                        _point(context, "Validate cooking times/temperatures for doneness."),
-                        _point(context, "Follow standard food-safety practices."),
-                        _point(context, "Consult a professional for medical or dietary advice."),
-                        _point(context, "Check for raw or undercooked ingredients."),
-                        _point(context, "Be cautious with unfamiliar ingredients or techniques."),
-                        _point(context, "Adjust recipes for children, elderly, or immunocompromised."),
-                        _point(context, "Do not rely on AI for emergency or critical health situations."),
-                        SizedBox(height: 10.h),
-                        Text(
-                          "Use this as inspiration, not medical or professional advice.",
-                          style: TextStyle(
-                            color: tc.withOpacity(0.8),
-                            fontSize: 12.5.sp,
-                            fontStyle: FontStyle.italic,
-                          ),
+                        _SafetyPoint(text: "Verify ingredient quantities and taste as you go."),
+                        _SafetyPoint(text: "Double-check allergens and dietary restrictions."),
+                        _SafetyPoint(text: "Validate cooking times/temperatures for doneness."),
+                        _SafetyPoint(text: "Follow standard food-safety practices."),
+                        _SafetyPoint(text: "Consult a professional for medical/dietary advice."),
+                        _SafetyPoint(text: "Watch for raw/undercooked ingredients."),
+                        _SafetyPoint(text: "Be cautious with unfamiliar ingredients/techniques."),
+                        _SafetyPoint(text: "Adjust for kids, elderly, or immunocompromised."),
+                        _SafetyPoint(
+                          text:
+                              "Do not rely on AI for emergencies or critical health decisions.",
+                          isLast: true,
                         ),
                         SizedBox(height: 8.h),
+                        Text(
+                          "Use this for inspiration — not medical or professional advice.",
+                          style: TextStyle(
+                            color: tc.withOpacity(0.7),
+                            fontSize: 11.sp,
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 10.h),
                         Align(
                           alignment: Alignment.centerRight,
-                          child: TextButton.icon(
-                            onPressed: _toggle,
-                            icon: const Icon(Icons.check_circle_outline_rounded),
-                            label: const Text("Got it"),
-                            style: TextButton.styleFrom(
-                              foregroundColor: isDark ? Colors.amber[300] : Colors.amber[800],
-                              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+                          child: GestureDetector(
+                            onTap: _toggle,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12.r),
+                                color: warningColor.withOpacity(0.12),
+                                border: Border.all(
+                                  color: warningColor.withOpacity(0.35),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.check_rounded, size: 14.sp, color: warningColor),
+                                  SizedBox(width: 4.w),
+                                  Text(
+                                    "Got it",
+                                    style: TextStyle(
+                                      color: warningColor,
+                                      fontSize: 11.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
-                ),
+                )
+              : const SizedBox.shrink(),
         ),
       ],
     );
   }
+}
 
-  Widget _point(BuildContext context, String text) {
+class _SafetyPoint extends StatelessWidget {
+  const _SafetyPoint({required this.text, this.isLast = false});
+  final String text;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
     final tc = textColor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final warningColor = isDark ? Colors.amber[300]! : Colors.amber[700]!;
+
     return Padding(
-      padding: EdgeInsets.only(bottom: 6.h),
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 5.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             margin: EdgeInsets.only(top: 7.h),
-            width: 6.w,
-            height: 6.w,
+            width: 5.w,
+            height: 5.w,
             decoration: BoxDecoration(
-              color: (Theme.of(context).brightness == Brightness.dark
-                      ? Colors.red[300]
-                      : Colors.red[700])!
-                  .withOpacity(0.85),
+              color: warningColor.withOpacity(0.85),
               shape: BoxShape.circle,
             ),
           ),
-          SizedBox(width: 10.w),
+          SizedBox(width: 8.w),
           Expanded(
             child: Text(
               text,
+              textAlign: TextAlign.justify,
               style: TextStyle(
-                color: tc.withOpacity(0.95),
-                fontSize: 13.5.sp,
+                color: tc.withOpacity(0.85),
+                fontSize: 12.sp,
                 height: 1.35,
+                fontWeight: FontWeight.w400,
               ),
             ),
           ),
@@ -1314,19 +1784,20 @@ class _AiCautionBarFancyState extends State<AiCautionBarFancy>
   }
 }
 
+
 /// ------------------------------------------------------------
-/// CUISINE → FLAG EMOJI (Updated with actual country flags)
+/// CUISINE FLAG EMOJI MAPPER (UNCHANGED, do not edit list)
 /// ------------------------------------------------------------
 String cuisineFlagEmoji(String name) {
   final key = name.trim().toLowerCase();
   const map = {
     'italian': '🇮🇹',
-    'asian': '🌏', // General Asia
-    'caribbean': '🏝️', // Caribbean islands
+    'asian': '🌏',
+    'caribbean': '🏝️',
     'eastern european': '🇷🇺',
     'european': '🇪🇺',
     'irish': '🇮🇪',
-    'latin american': '🌎', // Latin America
+    'latin american': '🌎',
     'chinese': '🇨🇳',
     'mexican': '🇲🇽',
     'indian': '🇮🇳',
@@ -1336,7 +1807,7 @@ String cuisineFlagEmoji(String name) {
     'vietnamese': '🇻🇳',
     'spanish': '🇪🇸',
     'french': '🇫🇷',
-    'middle eastern': '🇱🇧', // Lebanon as representative
+    'middle eastern': '🇱🇧',
     'mediterranean': '🇬🇷',
     'american': '🇺🇸',
     'british': '🇬🇧',

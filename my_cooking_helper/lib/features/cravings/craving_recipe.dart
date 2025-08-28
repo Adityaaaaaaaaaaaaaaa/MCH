@@ -100,19 +100,29 @@ class CravingRecipePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Glassy hero with parallax-ish feel
+                  // HERO
                   if (bytes != null)
                     Hero(
                       tag: 'craving-hero-${recipe.id}',
-                      child: GlassHeroImage(bytes: bytes),
+                      child: Stack(
+                        children: [
+                          ModernHeroImage(bytes: bytes),
+                          Positioned(
+                            left: 12.w,
+                            bottom: 12.h,
+                            child: ModernTimeBadge(minutes: recipe.readyInMinutes),
+                          ),
+                        ],
+                      )
+
                     ),
                   if (bytes != null) SizedBox(height: 12.h),
 
-                  // Title + chips
-                  GlassSectionFancy(
+                  // TITLE + META CHIPS
+                  ModernSection(
                     child: Center(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
                             recipe.title,
@@ -124,23 +134,24 @@ class CravingRecipePage extends StatelessWidget {
                           ),
                           SizedBox(height: 8.h),
                           Wrap(
+                            alignment: WrapAlignment.center,
                             spacing: 8.w,
                             runSpacing: 8.h,
                             children: [
-                              if (recipe.readyInMinutes != null)
-                                TinyChipFancy(
-                                  icon: Icons.timer_rounded,
-                                  label: formatHm(recipe.readyInMinutes!),
-                                  tone: ChipTone.primary,
-                                ),
+                              // if (recipe.readyInMinutes != null)
+                              //   PremiumChip(
+                              //     icon: Icons.timer_rounded,
+                              //     label: formatHm(recipe.readyInMinutes!),
+                              //     isPrimary: true,
+                              //   ),
                               if (recipe.vegetarian == true)
-                                TinyChipFancy(icon: Icons.eco_rounded, label: "Vegetarian"),
+                                PremiumChip(icon: Icons.restaurant_rounded, label: "Vegetarian"),
                               if (recipe.vegan == true)
-                                TinyChipFancy(icon: Icons.spa_rounded, label: "Vegan"),
+                                PremiumChip(icon: Icons.spa_rounded, label: "Vegan"),
                               if (recipe.glutenFree == true)
-                                TinyChipFancy(icon: Icons.no_food_rounded, label: "Gluten-free"),
+                                PremiumChip(icon: Icons.no_food_rounded, label: "Gluten-free"),
                               if (recipe.dairyFree == true)
-                                TinyChipFancy(icon: Icons.free_breakfast_rounded, label: "Dairy-free"),
+                                PremiumChip(icon: Icons.free_breakfast_rounded, label: "Dairy-free"),
                             ],
                           ),
                         ],
@@ -149,33 +160,40 @@ class CravingRecipePage extends StatelessWidget {
                   ),
                   SizedBox(height: 10.h),
 
-                  // Cuisines / Diets
+                  // CUISINES / DIETS
                   if (recipe.cuisines.isNotEmpty || recipe.diets.isNotEmpty)
                     Row(
                       children: [
                         if (recipe.cuisines.isNotEmpty)
                           Expanded(
-                            child: GlassSectionFancy(
+                            child: ModernSection(
                               title: "Cuisines",
-                              child: Wrap(
-                                spacing: 6.w,
-                                runSpacing: 6.h,
-                                children: recipe.cuisines
-                                    .map((c) => FlagTagFancy(text: c, emoji: cuisineFlagEmoji(c)))
-                                    .toList(),
+                              icon: Icons.flag_rounded,
+                              child: Center(
+                                child: Wrap(
+                                  alignment: WrapAlignment.center,
+                                  spacing: 6.w,
+                                  runSpacing: 6.h,
+                                  children: recipe.cuisines
+                                      .map((c) => ModernFlagTag(text: c, emoji: cuisineFlagEmoji(c)))
+                                      .toList(),
+                                ),
                               ),
                             ),
                           ),
-                        if (recipe.cuisines.isNotEmpty && recipe.diets.isNotEmpty)
-                          SizedBox(width: 8.w),
+                        if (recipe.cuisines.isNotEmpty && recipe.diets.isNotEmpty) SizedBox(width: 8.w),
                         if (recipe.diets.isNotEmpty)
                           Expanded(
-                            child: GlassSectionFancy(
+                            child: ModernSection(
                               title: "Diets",
-                              child: Wrap(
-                                spacing: 6.w,
-                                runSpacing: 6.h,
-                                children: recipe.diets.map((d) => PillTagFancy(text: d)).toList(),
+                              icon: Icons.emoji_food_beverage_rounded,
+                              child: Center(
+                                child: Wrap(
+                                  alignment: WrapAlignment.center,
+                                  spacing: 6.w,
+                                  runSpacing: 6.h,
+                                  children: recipe.diets.map((d) => ModernPillTag(text: d)).toList(),
+                                ),
                               ),
                             ),
                           ),
@@ -184,12 +202,14 @@ class CravingRecipePage extends StatelessWidget {
                   if (recipe.cuisines.isNotEmpty || recipe.diets.isNotEmpty)
                     SizedBox(height: 10.h),
 
-                  // Summary
+                  // SUMMARY
                   if ((recipe.summary ?? '').isNotEmpty)
-                    GlassSectionFancy(
+                    ModernSection(
                       title: "Summary",
+                      icon: Icons.description_rounded,
                       child: Text(
                         recipe.summary!,
+                        textAlign: TextAlign.justify,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               height: 1.5,
                               color: textColor(context).withOpacity(0.92),
@@ -200,33 +220,40 @@ class CravingRecipePage extends StatelessWidget {
 
                   // Why this fits
                   if (recipe.reasons.isNotEmpty)
-                    GlassSectionFancy(
+                    ModernSection(
                       title: "Why this fits",
+                      icon: Icons.thumb_up_alt_rounded,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: recipe.reasons.map((r) => BulletLineFancy(text: r)).toList(),
+                        children: recipe.reasons.map((r) => ModernBulletPoint(text: r)).toList(),
                       ),
                     ),
                   if (recipe.reasons.isNotEmpty) SizedBox(height: 10.h),
 
-                  // Ingredients
+                  // INGREDIENTS (Unified, shopping button only for tag == 'buy')
                   if (recipe.requiredIngredients.isNotEmpty || recipe.optionalIngredients.isNotEmpty)
-                    GlassSectionFancy(
+                    ModernSection(
                       title: "Ingredients",
+                      icon: Icons.list_alt_rounded,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (recipe.requiredIngredients.isNotEmpty) ...[
-                            SubHeaderFancy("Required"),
-                            SizedBox(height: 6.h),
-                            ...recipe.requiredIngredients.map((e) => IngredientTileFancy(data: e)),
-                          ],
-                          if (recipe.optionalIngredients.isNotEmpty) ...[
-                            SizedBox(height: 12.h),
-                            SubHeaderFancy("Optional"),
-                            SizedBox(height: 6.h),
-                            ...recipe.optionalIngredients.map((e) => IngredientTileFancy(data: e)),
-                          ],
+                          ...recipe.requiredIngredients.map(
+                            (e) => ModernIngredientTile(
+                              data: e,
+                              initiallyInShopping: false,
+                              onToggleShopping: () {
+                                // TODO: persist add/remove selection
+                              },
+                            ),
+                          ),
+                          if (recipe.optionalIngredients.isNotEmpty) SizedBox(height: 12.h),
+                          ...recipe.optionalIngredients.map(
+                            (e) => ModernIngredientTile(
+                              data: e, // if you want, you may ensure e['tag'] is not 'buy'
+                              onToggleShopping: () {},
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -235,49 +262,46 @@ class CravingRecipePage extends StatelessWidget {
 
                   // Instructions
                   if (recipe.instructions.isNotEmpty)
-                    GlassSectionFancy(
+                    ModernSection(
                       title: "Instructions",
+                      icon: Icons.menu_book_rounded,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: List.generate(
                           recipe.instructions.length,
-                          (i) => InstructionTileFancy(index: i + 1, text: recipe.instructions[i].toString()),
+                          (i) => ModernInstructionTile(index: i + 1, text: recipe.instructions[i].toString()),
                         ),
                       ),
                     ),
                   if (recipe.instructions.isNotEmpty) SizedBox(height: 10.h),
 
-                  // Shopping list
-                  if (recipe.shopping.isNotEmpty)
-                    GlassSectionFancy(
-                      title: "Shopping",
-                      child: Column(
-                        children: recipe.shopping.map((s) => ShoppingTileFancy(item: s)).toList(),
-                      ),
-                    ),
-                  if (recipe.shopping.isNotEmpty) SizedBox(height: 10.h),
-
                   // Nutrition
-                  if (recipe.nutrition != null && recipe.nutrition!.isNotEmpty)
-                    GlassSectionFancy(
+                  if (recipe.nutrition != null && recipe.nutrition!.isNotEmpty) ...[
+                    SizedBox(height: 10.h),
+                    ModernSection(
                       title: "Nutrition (approx. per serving)",
-                      child: Wrap(
-                        spacing: 8.w,
-                        runSpacing: 8.h,
+                      icon: Icons.health_and_safety_rounded,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          if (recipe.nutrition!['calories'] != null)
-                            TinyChipFancy(icon: Icons.local_fire_department_rounded, label: "${recipe.nutrition!['calories']} kcal"),
-                          if (recipe.nutrition!['protein_g'] != null)
-                            TinyChipFancy(icon: Icons.egg_alt_rounded, label: "${recipe.nutrition!['protein_g']} g protein"),
-                          if (recipe.nutrition!['fat_g'] != null)
-                            TinyChipFancy(icon: Icons.water_drop_rounded, label: "${recipe.nutrition!['fat_g']} g fat"),
-                          if (recipe.nutrition!['carbs_g'] != null)
-                            TinyChipFancy(icon: Icons.bakery_dining_rounded, label: "${recipe.nutrition!['carbs_g']} g carbs"),
+                          ModernNutritionChips(nutrition: recipe.nutrition!),
+
+                          SizedBox(height: 15.h),
+
+                          ModernCaloricBreakdownFromNutrition(
+                            nutrition: recipe.nutrition ?? {},
+                            energyDv: 2000,
+                            proteinDv: 50,
+                            fatDv: 70,
+                            carbsDv: 260,
+                            showNote: true,
+                          ),
                         ],
                       ),
                     ),
-
-                  SizedBox(height: 14.h),
+                  ],
+                  SizedBox(height: 15.h),
+                  
                   const AiCautionBarFancy(),
                 ],
               ),
