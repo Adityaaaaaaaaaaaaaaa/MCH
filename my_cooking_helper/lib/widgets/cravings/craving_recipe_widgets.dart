@@ -3,6 +3,7 @@
 import 'dart:typed_data';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:glass/glass.dart';
 import '/models/cravings.dart';
@@ -757,10 +758,11 @@ class ModernFlagTag extends StatelessWidget {
 /// - no "count" word (empty unit for count)
 /// ------------------------------------------------------------
 // -------------------- ModernIngredientTile (revamped layout) --------------------
-// TOP-LEVEL (keep this where you already had it)
+// ===== enums (keep these at the very top of the file) =====
 enum _ShopVariant { bag, plus }
+enum _CtaMode { idle, createdSubset, createdAll }
 
-// -------------------- ModernIngredientTile --------------------
+// ================== ModernIngredientTile ==================
 class ModernIngredientTile extends StatefulWidget {
   const ModernIngredientTile({
     super.key,
@@ -770,7 +772,8 @@ class ModernIngredientTile extends StatefulWidget {
     this.shopping,                        // List<ShoppingItemModel>
     this.optionalIngredients,             // List<dynamic>
     this.selectAllSignal,                 // broadcast: CTA → tiles
-    this.selectionDirtySignal,            // broadcast: tiles → CTA when a control is turned OFF
+    this.selectionDirtySignal,            // tiles → CTA when a control is turned OFF
+    this.selectionCount,                  // tiles increment/decrement this
   });
 
   final dynamic data; // Map<String,dynamic> | String | ShoppingItemModel
@@ -780,6 +783,7 @@ class ModernIngredientTile extends StatefulWidget {
   final List<dynamic>? optionalIngredients;
   final ValueNotifier<int>? selectAllSignal;
   final ValueNotifier<int>? selectionDirtySignal;
+  final ValueNotifier<int>? selectionCount;
 
   @override
   State<ModernIngredientTile> createState() => _ModernIngredientTileState();
@@ -806,14 +810,41 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
     // Listen to CTA broadcast: set the visible control ACTIVE (never toggle)
     if (widget.selectAllSignal != null) {
       _selectAllListener = () {
-        final variant = _computeVariant();
-        if (variant == _ShopVariant.bag && !bagSelected) {
+        final v = _computeVariant();
+        if (v == _ShopVariant.bag && !bagSelected) {
           setState(() => bagSelected = true);
-        } else if (variant == _ShopVariant.plus && !plusSelected) {
+          widget.selectionCount?.value = (widget.selectionCount?.value ?? 0) + 1;
+        } else if (v == _ShopVariant.plus && !plusSelected) {
           setState(() => plusSelected = true);
+          widget.selectionCount?.value = (widget.selectionCount?.value ?? 0) + 1;
         }
       };
       widget.selectAllSignal!.addListener(_selectAllListener!);
+    }
+  }
+
+  void _setActive(bool value) {
+    final v = _computeVariant();                 // bag or plus
+    final was = (v == _ShopVariant.bag) ? bagSelected : plusSelected;
+    if (was == value) return;                    // idempotent
+
+    setState(() {
+      if (v == _ShopVariant.bag) {
+        bagSelected = value;
+      } else {
+        plusSelected = value;
+      }
+    });
+
+    // keep a global count of selected tiles
+    if (widget.selectionCount != null) {
+      final next = (widget.selectionCount!.value + (value ? 1 : -1)).clamp(0, 1 << 30);
+      widget.selectionCount!.value = (next as num).toInt(); // cast clamp(num) → int
+    }
+
+    // only notify “dirty” when something turns OFF (to revert CTA from green)
+    if (!value && widget.selectionDirtySignal != null) {
+      widget.selectionDirtySignal!.value = widget.selectionDirtySignal!.value + 1;
     }
   }
 
@@ -827,12 +858,6 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
   }
 
   void _pulse() => _bounceController..value = 0..forward();
-
-  void _notifyDirtyIfDeselected(bool newValue) {
-    if (!newValue && widget.selectionDirtySignal != null) {
-      widget.selectionDirtySignal!.value = widget.selectionDirtySignal!.value + 1;
-    }
-  }
 
   // ------ parsing helpers ---------------------------------------------------
   String _norm(String s) => s.trim().toLowerCase();
@@ -868,39 +893,22 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
     return false;
   }
 
-  bool _pantryLikely(dynamic data) {
-    if (data is Map) {
-      final v = data['pantryLikely'] ?? data['pantry_likely'];
-      if (v is bool) return v;
-      if (v is String) return v.toLowerCase() == 'true';
-    }
-    return true;
-  }
-
-  /// Decide which control this tile shows: bag if in shopping('buy'), else plus if pantryLikely==false, else none.
-  _ShopVariant? _computeVariant() {
-    // parse name & meta
+  /// Decide which control this tile shows:
+  /// bag if in shopping('buy'), otherwise plus (irrespective of pantry).
+  _ShopVariant _computeVariant() {
     String name = "";
-    String? dataTag;
     if (widget.data is String) {
       name = widget.data as String;
     } else if (widget.data is ShoppingItemModel) {
-      final s = widget.data as ShoppingItemModel;
-      name = s.name; dataTag = s.tag.toLowerCase();
+      name = (widget.data as ShoppingItemModel).name;
     } else if (widget.data is Map) {
-      final m = widget.data as Map;
-      name = (m['name'] ?? '').toString();
-      dataTag = (m['tag'] as String?)?.toLowerCase();
+      name = ((widget.data as Map)['name'] ?? '').toString();
     }
 
-    final shoppingItem = _findShoppingItemByName(name);
-    final tag = (shoppingItem?.tag.toLowerCase()) ?? dataTag ?? '';
-    if (shoppingItem != null && tag == 'buy') return _ShopVariant.bag;
-
-    final pantry = _pantryLikely(widget.data);
-    if (shoppingItem == null && pantry == false) return _ShopVariant.plus;
-
-    return null; // show no control
+    final s = _findShoppingItemByName(name);
+    final tag = (s?.tag.toLowerCase()) ?? '';
+    if (s != null && tag == 'buy') return _ShopVariant.bag;
+    return _ShopVariant.plus;
   }
 
   // ------ UI helpers --------------------------------------------------------
@@ -920,7 +928,13 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
     );
   }
 
-  Widget _statusChip({required IconData icon, required String label, required Color color, VoidCallback? onTap, bool elevated = false}) {
+  Widget _statusChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    VoidCallback? onTap,
+    bool elevated = false,
+  }) {
     final chip = AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOut,
@@ -952,7 +966,7 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
                      : [primary.withOpacity(0.16), primary.withOpacity(0.08)],
     );
     final borderCol = active ? okCol.withOpacity(0.48) : primary.withOpacity(0.28);
-    final IconData icon = active
+    final icon = active
         ? (variant == _ShopVariant.plus ? Icons.check_circle_rounded : Icons.shopping_bag_rounded)
         : (variant == _ShopVariant.plus ? Icons.add_circle_rounded : Icons.shopping_bag_outlined);
     final iconColor = active ? okCol : primary;
@@ -1024,8 +1038,8 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
     final missCol  = isDark ? Colors.red[300]! : Colors.red[600]!;
 
     final double iconSize = 44.w, gap = 12.w;
-    final _ShopVariant? variant = _computeVariant();
-    final bool active = (variant == _ShopVariant.bag) ? bagSelected : (variant == _ShopVariant.plus) ? plusSelected : false;
+    final _ShopVariant variant = _computeVariant();
+    final bool active = (variant == _ShopVariant.bag) ? bagSelected : plusSelected;
 
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
@@ -1056,7 +1070,7 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
             ]),
             SizedBox(height: 10.h),
 
-            // icon | chips | control (one of bag/plus or none)
+            // icon | chips | control (bag or plus)
             Row(children: [
               Container(
                 width: iconSize, height: iconSize,
@@ -1077,26 +1091,13 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
                   ],
                 ),
               ),
-              if (variant != null)
-                _controlButton(
-                  active: active,
-                  variant: variant,
-                  primary: primary,
-                  okCol: okCol,
-                  onTap: () {
-                    setState(() {
-                      if (variant == _ShopVariant.bag) {
-                        bagSelected = !bagSelected;
-                        _notifyDirtyIfDeselected(bagSelected);
-                      } else {
-                        plusSelected = !plusSelected;
-                        _notifyDirtyIfDeselected(plusSelected);
-                      }
-                    });
-                  },
-                )
-              else
-                SizedBox(width: 44.w, height: 44.w),
+              _controlButton(
+                active: active,
+                variant: variant,
+                primary: primary,
+                okCol: okCol,
+                onTap: () => _setActive(!active),
+              ),
             ]),
 
             // badges line (only for the visible control + optional/missing)
@@ -1105,19 +1106,14 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
               SizedBox(width: iconSize + gap),
               Expanded(
                 child: Wrap(
-                  alignment: WrapAlignment.center, spacing: 8.w, runSpacing: 6.h,
+                  alignment: WrapAlignment.start, spacing: 8.w, runSpacing: 6.h,
                   children: [
                     if (variant == _ShopVariant.bag)
                       _statusChip(
                         icon: active ? Icons.check_circle_rounded : Icons.shopping_bag_outlined,
                         label: active ? 'Buy — added' : 'Buy',
                         color: active ? okCol : primary,
-                        onTap: () {
-                          setState(() {
-                            bagSelected = !bagSelected;
-                            _notifyDirtyIfDeselected(bagSelected);
-                          });
-                        },
+                        onTap: () => _setActive(!active),
                         elevated: active,
                       ),
                     if (variant == _ShopVariant.plus)
@@ -1125,12 +1121,7 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
                         icon: active ? Icons.check_circle_rounded : Icons.add_circle_rounded,
                         label: active ? 'Add — added' : 'Add',
                         color: active ? okCol : primary,
-                        onTap: () {
-                          setState(() {
-                            plusSelected = !plusSelected;
-                            _notifyDirtyIfDeselected(plusSelected);
-                          });
-                        },
+                        onTap: () => _setActive(!active),
                         elevated: active,
                       ),
                     if (isOptional)
@@ -1149,16 +1140,21 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
   }
 }
 
+// ================= ModernCreateShoppingListButton =================
 class ModernCreateShoppingListButton extends StatefulWidget {
   const ModernCreateShoppingListButton({
     super.key,
-    required this.selectAllSignal,
-    required this.selectionDirtySignal,   // listen for any tile turning OFF
+    required this.selectAllSignal,       // broadcast to tiles to select-all
+    required this.selectionDirtySignal,  // tiles notify when something turns OFF
+    required this.selectedCount,         // live selected tiles count
+    required this.eligibleCount,         // total eligible tiles (controls shown)
     this.onCreate,
   });
 
   final ValueNotifier<int> selectAllSignal;
   final ValueNotifier<int> selectionDirtySignal;
+  final ValueNotifier<int> selectedCount;
+  final int eligibleCount;
   final VoidCallback? onCreate;
 
   @override
@@ -1166,46 +1162,110 @@ class ModernCreateShoppingListButton extends StatefulWidget {
 }
 
 class _ModernCreateShoppingListButtonState extends State<ModernCreateShoppingListButton> {
-  bool created = false;
+  // explicit CTA states so tapping never “toggles off”
+  _CtaMode _mode = _CtaMode.idle;
+  _CtaMode _submitted = _CtaMode.idle; // last mode we fired onCreate for
+
   int _lastDirtyTick = 0;
+  int _lastSelected = 0;
 
   @override
   void initState() {
     super.initState();
     widget.selectionDirtySignal.addListener(_onDirty);
+    widget.selectedCount.addListener(_onSelectedChange);
+  }
+
+  void _setMode(_CtaMode m, {bool dueToDirty = false}) {
+    if (_mode == m) return;
+    setState(() => _mode = m);
+    if (dueToDirty) _submitted = _CtaMode.idle; // allow creating again after user changes selection
   }
 
   void _onDirty() {
     final v = widget.selectionDirtySignal.value;
     if (v != _lastDirtyTick) {
       _lastDirtyTick = v;
-      if (created) setState(() => created = false); // revert to idle only when a tile deselects
+      // any tile turned OFF after we were “created” → go back to neutral
+      if (_mode != _CtaMode.idle) _setMode(_CtaMode.idle, dueToDirty: true);
+    }
+  }
+
+  void _onSelectedChange() {
+    final s = widget.selectedCount.value;
+    if (s == _lastSelected) return;
+    _lastSelected = s;
+
+    // Don’t auto-switch to created; we only show green after user taps.
+    // We only reset to idle when selection becomes 0 (user cleared all manually).
+    if (s == 0 && _mode != _CtaMode.idle) {
+      _setMode(_CtaMode.idle, dueToDirty: true);
     }
   }
 
   @override
   void dispose() {
     widget.selectionDirtySignal.removeListener(_onDirty);
+    widget.selectedCount.removeListener(_onSelectedChange);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark  = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
     final okCol   = isDark ? Colors.green[300]! : Colors.green[600]!;
 
-    final bg = created ? LinearGradient(colors: [okCol.withOpacity(.22), okCol.withOpacity(.10)]) : null;
-    final borderCol = created ? okCol.withOpacity(.55) : primary.withOpacity(.35);
-    final textCol = created ? okCol : (isDark ? Colors.white : Colors.black87);
-    final icon = created ? Icons.check_rounded : Icons.playlist_add_check_rounded;
+    final selected    = widget.selectedCount.value;
+    final total       = widget.eligibleCount;
+    final some        = selected > 0 && selected < total;
+    final all         = total > 0 && selected >= total;
+
+    // label + visual state (green only when _mode is a created state)
+    String label;
+    IconData icon;
+    bool ready = (_mode == _CtaMode.createdSubset || _mode == _CtaMode.createdAll);
+
+    if (selected == 0) {
+      label = "Create shopping list";
+      icon  = Icons.playlist_add_check_rounded;
+      ready = false; // neutral until tapped
+    } else if (some) {
+      label = (_mode == _CtaMode.createdSubset) ? "List created with selected" : "Create list with selected";
+      icon  = (_mode == _CtaMode.createdSubset) ? Icons.check_rounded : Icons.playlist_add_check_rounded;
+    } else { // all
+      label = (_mode == _CtaMode.createdAll) ? "Shopping list ready" : "Create shopping list";
+      icon  = (_mode == _CtaMode.createdAll) ? Icons.check_rounded : Icons.playlist_add_check_rounded;
+    }
+
+    final bg       = ready ? LinearGradient(colors: [okCol.withOpacity(.22), okCol.withOpacity(.10)]) : null;
+    final border   = ready ? okCol.withOpacity(.55) : primary.withOpacity(.35);
+    final textCol  = ready ? okCol : (isDark ? Colors.white : Colors.black87);
+    final iconCol  = ready ? okCol : primary;
 
     return GestureDetector(
       onTap: () {
-        // idempotent: only sets ACTIVE, never toggles OFF
-        widget.selectAllSignal.value = widget.selectAllSignal.value + 1;
-        if (!created) setState(() => created = true);
-        widget.onCreate?.call();
+        if (selected == 0 && total > 0) {
+          // Select every eligible tile ONCE (idempotent at tile level)
+          widget.selectAllSignal.value = widget.selectAllSignal.value + 1;
+          _setMode(_CtaMode.createdAll);
+          if (_submitted != _CtaMode.createdAll) {
+            _submitted = _CtaMode.createdAll;
+            widget.onCreate?.call();
+          }
+        } else if (some) {
+          _setMode(_CtaMode.createdSubset);
+          if (_submitted != _CtaMode.createdSubset) {
+            _submitted = _CtaMode.createdSubset;
+            widget.onCreate?.call();
+          }
+        } else if (all) {
+          _setMode(_CtaMode.createdAll);
+          if (_submitted != _CtaMode.createdAll) {
+            _submitted = _CtaMode.createdAll;
+            widget.onCreate?.call();
+          }
+        }
       },
       child: Container(
         width: double.infinity,
@@ -1213,15 +1273,15 @@ class _ModernCreateShoppingListButtonState extends State<ModernCreateShoppingLis
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14.r),
           gradient: bg,
-          border: Border.all(color: borderCol, width: 1.2),
+          border: Border.all(color: border, width: 1.2),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: created ? okCol : primary, size: 20.sp),
+            Icon(icon, color: iconCol, size: 20.sp),
             SizedBox(width: 8.w),
             Text(
-              created ? "Shopping list created" : "Create shopping list",
+              label,
               style: TextStyle(fontSize: 14.5.sp, fontWeight: FontWeight.w800, color: textCol, letterSpacing: .1),
             ),
           ],
@@ -1235,7 +1295,7 @@ class _ModernCreateShoppingListButtonState extends State<ModernCreateShoppingLis
 /// ------------------------------------------------------------
 /// INSTRUCTION STEP TILE (justified text)
 /// ------------------------------------------------------------
-class ModernInstructionTile extends StatelessWidget {
+class ModernInstructionTile extends StatefulWidget {
   const ModernInstructionTile({
     super.key,
     required this.index,
@@ -1246,53 +1306,291 @@ class ModernInstructionTile extends StatelessWidget {
   final String text;
 
   @override
+  State<ModernInstructionTile> createState() => _ModernInstructionTileState();
+}
+
+class _ModernInstructionTileState extends State<ModernInstructionTile>
+    with SingleTickerProviderStateMixin {
+  bool done = false;      // tap to toggle complete
+  bool expanded = false;  // More/Less
+
+  late final AnimationController _ctrl;
+  late final Animation<double> _progress; // ring 0→1
+  late final Animation<double> _glow;     // halo intensity
+
+  // Heuristic: when to show “More”
+  bool get _isExpandable {
+    // Show “More” for long text or if manual newlines present
+    final len = widget.text.runes.length;
+    if (widget.text.contains('\n')) return true;
+    return len > 160; // tweak threshold as you like
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 520));
+    _progress = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
+    _glow     = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _toggleDone() {
+    setState(() => done = !done);
+    if (done) {
+      _ctrl.forward();
+    } else {
+      _ctrl.reverse();
+    }
+  }
+
+  Future<void> _copy() async {
+    await Clipboard.setData(ClipboardData(text: widget.text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: const Text('Step copied'),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(milliseconds: 900),
+          margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+        ),
+      );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
+    final theme   = Theme.of(context);
+    final isDark  = theme.brightness == Brightness.dark;
+    final primary = theme.colorScheme.primary;
+
+    // Adaptive colours
+    final trackCol  = isDark ? Colors.white12 : Colors.black12;
+    final textCol   = isDark ? Colors.white.withOpacity(done ? 0.70 : 0.92)
+                             : Colors.black.withOpacity(done ? 0.70 : 0.88);
+    final haloCol   = isDark ? primary.withOpacity(0.50) : primary.withOpacity(0.35);
+    final borderCol = isDark ? Colors.white.withOpacity(0.18) : Colors.black.withOpacity(0.12);
 
     return Padding(
       padding: EdgeInsets.only(bottom: 12.h),
       child: ModernCard(
         radius: 14,
         padding: EdgeInsets.all(16.w),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 32.w,
-              height: 32.w,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [primary, primary.withOpacity(0.85)],
-                ),
-                border: Border.all(
-                  color: isDark ? Colors.white24 : Colors.black12,
-                  width: 1,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  "$index",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14.5.sp,
-                  ),
-                ),
-              ),
+        // stronger border via ModernCard’s default + an inner outline
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [Color(0xFF232323), Color(0xFF1C1C1C)]
+              : const [Color(0xFFFFFFFF), Color(0xFFF7F8FA)],
+        ),
+        onTap: _toggleDone,
+        child: Container(
+          // inner outline to make the border pop in both themes
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(
+              color: done
+                  ? primary.withOpacity(isDark ? 0.45 : 0.35) // subtle success outline when completed
+                  : borderCol,
+              width: 1.0,
             ),
-            SizedBox(width: 14.w),
-            Expanded(
-              child: Text(
-                text,
-                textAlign: TextAlign.justify,
-                style: TextStyle(
-                  color: isDark ? Colors.white.withOpacity(0.92) : Colors.black87,
-                  fontSize: 14.sp,
-                  height: 1.5,
-                  letterSpacing: 0.1,
-                ),
+          ),
+          padding: EdgeInsets.all(12.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Row: badge + text (animated)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // —— Step badge with animated halo + ring ——
+                  SizedBox(
+                    width: 36.w,
+                    height: 36.w,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        AnimatedBuilder(
+                          animation: _glow,
+                          builder: (_, __) => Opacity(
+                            opacity: _glow.value,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: haloCol,
+                                    blurRadius: 16 * _glow.value,
+                                    spreadRadius: 1.6 * _glow.value,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Track
+                        CircularProgressIndicator(
+                          value: 1,
+                          strokeWidth: 4,
+                          valueColor: AlwaysStoppedAnimation(trackCol),
+                          backgroundColor: Colors.transparent,
+                        ),
+
+                        // Fill
+                        AnimatedBuilder(
+                          animation: _progress,
+                          builder: (_, __) => CircularProgressIndicator(
+                            value: _progress.value,
+                            strokeWidth: 4,
+                            valueColor: AlwaysStoppedAnimation(primary),
+                            backgroundColor: Colors.transparent,
+                          ),
+                        ),
+
+                        // Core circle (number → check)
+                        Container(
+                          margin: EdgeInsets.all(4.w),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [primary, primary.withOpacity(0.85)],
+                            ),
+                            border: Border.all(
+                              color: isDark ? Colors.white24 : Colors.black12,
+                              width: 1,
+                            ),
+                          ),
+                          child: Center(
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 220),
+                              switchInCurve: Curves.easeOut,
+                              switchOutCurve: Curves.easeOut,
+                              child: done
+                                  ? Icon(Icons.check_rounded,
+                                      key: const ValueKey('check'),
+                                      color: Colors.white,
+                                      size: 18.sp)
+                                  : Text(
+                                      "${widget.index}",
+                                      key: const ValueKey('num'),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14.5.sp,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(width: 14.w),
+
+                  // —— Body text —— (strike-through when done, expand when needed)
+                  Expanded(
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOut,
+                      style: TextStyle(
+                        color: textCol,
+                        fontSize: 14.sp,
+                        height: 1.5,
+                        letterSpacing: 0.1,
+                        decoration: done ? TextDecoration.lineThrough : TextDecoration.none,
+                        decorationThickness: 2,
+                        decorationColor: isDark ? Colors.white24 : Colors.black26,
+                      ),
+                      child: AnimatedSize(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOut,
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          widget.text,
+                          textAlign: TextAlign.justify,
+                          maxLines: _isExpandable && !expanded ? 5 : null,
+                          overflow: _isExpandable && !expanded
+                              ? TextOverflow.ellipsis
+                              : TextOverflow.visible,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 12.h),
+
+              // —— Actions: Copy (always) + More/Less (only if long) ——
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _ghostActionChip(
+                    icon: Icons.copy_rounded,
+                    label: "Copy",
+                    onTap: _copy,
+                    primary: primary,
+                    isDark: isDark,
+                  ),
+                  if (_isExpandable) ...[
+                    SizedBox(width: 8.w),
+                    _ghostActionChip(
+                      icon: expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                      label: expanded ? "Less" : "More",
+                      onTap: () => setState(() => expanded = !expanded),
+                      primary: primary,
+                      isDark: isDark,
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _ghostActionChip({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required Color primary,
+    required bool isDark,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10.r),
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05),
+          border: Border.all(
+            color: isDark ? Colors.white.withOpacity(0.18) : Colors.black.withOpacity(0.12),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14.sp, color: primary),
+            SizedBox(width: 6.w),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 12.5.sp,
+                color: isDark ? Colors.white : Colors.black87,
               ),
             ),
           ],
@@ -1301,6 +1599,7 @@ class ModernInstructionTile extends StatelessWidget {
     );
   }
 }
+
 
 // ---- Nutrition chips (unchanged API, adds subtle bounce on tap) ----
 class ModernNutritionChips extends StatelessWidget {
