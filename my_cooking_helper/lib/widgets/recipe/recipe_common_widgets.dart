@@ -440,7 +440,7 @@ class InstructionsList extends StatelessWidget {
         final idx = entry.key;
         final step = entry.value;
 
-        // --- Enhanced type detection ---
+        // --- Enhanced type detection (unchanged) ---
         String stepText = '';
         int? number;
         List<dynamic> ingredients = [];
@@ -448,14 +448,12 @@ class InstructionsList extends StatelessWidget {
         Map<String, dynamic>? length;
 
         if (step is Map && step.containsKey('step')) {
-          // Map from API
           stepText = step['step'] ?? '';
           number = step['number'];
           ingredients = step['ingredients'] ?? [];
           equipment = step['equipment'] ?? [];
           length = step['length'] is Map ? step['length'] : null;
         } else if (step.runtimeType.toString().contains('InstructionStep')) {
-          // Likely a model object, use reflection-like access
           try {
             stepText = step.step ?? '';
             number = step.number;
@@ -468,133 +466,332 @@ class InstructionsList extends StatelessWidget {
         } else if (step is String) {
           stepText = step;
         } else {
-          // Fallback
           stepText = step.toString();
         }
 
-        return AnimatedContainer(
-          duration: Duration(milliseconds: 200 + idx * 70),
-          curve: Curves.easeOutBack,
-          margin: EdgeInsets.only(bottom: 14),
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: isDark
-                ? Colors.deepPurple[800]?.withOpacity(0.15)
-                : Colors.deepPurple.withOpacity(0.07),
-            border: Border.all(
-              color: isDark
-                  ? Colors.deepPurple[300]!.withOpacity(0.7)
-                  : Colors.deepPurple.withOpacity(0.18),
-              width: 1.2,
-            ),
-          ),
+        return _InstructionTileAnimated(
+          index: number ?? idx + 1,
+          stepText: stepText,
+          ingredients: ingredients,
+          equipment: equipment,
+          length: length,
+          isDark: isDark,
+          // preserve your existing entrance animation timings
+          outerAnimMs: 200 + idx * 70,
+        );
+      }).toList(),
+    );
+  }
+}
+
+///
+/// Private stateful tile that adds:
+///  - tap to toggle completion
+///  - strike-through on text when done
+///  - animated index badge: halo + ring fill + number→check
+///
+class _InstructionTileAnimated extends StatefulWidget {
+  const _InstructionTileAnimated({
+    required this.index,
+    required this.stepText,
+    required this.ingredients,
+    required this.equipment,
+    required this.length,
+    required this.isDark,
+    required this.outerAnimMs,
+  });
+
+  final int index;
+  final String stepText;
+  final List<dynamic> ingredients;
+  final List<dynamic> equipment;
+  final Map<String, dynamic>? length;
+  final bool isDark;
+  final int outerAnimMs;
+
+  @override
+  State<_InstructionTileAnimated> createState() => _InstructionTileAnimatedState();
+}
+
+class _InstructionTileAnimatedState extends State<_InstructionTileAnimated>
+    with SingleTickerProviderStateMixin {
+  bool done = false;
+
+  late final AnimationController _ctrl;
+  late final Animation<double> _progress;
+  late final Animation<double> _glow;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 520));
+    _progress = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
+    _glow = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _toggleDone() {
+    setState(() => done = !done);
+    if (done) {
+      _ctrl.forward();
+    } else {
+      _ctrl.reverse();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+
+    // keep your card colors/border as close as possible
+    final cardBg = isDark
+        ? Colors.deepPurple[800]?.withOpacity(0.15)
+        : Colors.deepPurple.withOpacity(0.07);
+    final cardBorder = Border.all(
+      color: isDark
+          ? Colors.deepPurple[300]!.withOpacity(0.7)
+          : Colors.deepPurple.withOpacity(0.18),
+      width: 1.2,
+    );
+
+    // adaptive text colors similar to your previous logic
+    final textColor = theme.textTheme.bodyLarge?.color?.withOpacity(done ? 0.75 : 0.95);
+
+    // progress ring track
+    final trackCol = isDark ? Colors.white12 : Colors.black12;
+    final haloCol = isDark ? primary.withOpacity(0.50) : primary.withOpacity(0.35);
+
+    return AnimatedContainer(
+      duration: Duration(milliseconds: widget.outerAnimMs),
+      curve: Curves.easeOutBack,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: cardBg,
+        border: cardBorder,
+      ),
+      child: InkWell(
+        onTap: _toggleDone,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(2.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Row: animated badge + body
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    backgroundColor: isDark ? Colors.deepPurple[400] : Colors.deepPurple[200],
-                    radius: 18,
-                    child: Text(
-                      (number ?? idx + 1).toString(),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
+                  // —— Animated index badge (halo + ring + number→check) ——
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Halo
+                        AnimatedBuilder(
+                          animation: _glow,
+                          builder: (_, __) => Opacity(
+                            opacity: _glow.value,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: haloCol,
+                                    blurRadius: 16 * _glow.value,
+                                    spreadRadius: 1.6 * _glow.value,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Track
+                        CircularProgressIndicator(
+                          value: 1,
+                          strokeWidth: 4,
+                          valueColor: AlwaysStoppedAnimation<Color>(trackCol),
+                          backgroundColor: Colors.transparent,
+                        ),
+
+                        // Fill
+                        AnimatedBuilder(
+                          animation: _progress,
+                          builder: (_, __) => CircularProgressIndicator(
+                            value: _progress.value,
+                            strokeWidth: 4,
+                            valueColor: AlwaysStoppedAnimation<Color>(primary),
+                            backgroundColor: Colors.transparent,
+                          ),
+                        ),
+
+                        // Core circle (number → check)
+                        Container(
+                          margin: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [primary, primary.withOpacity(0.85)],
+                            ),
+                            border: Border.all(
+                              color: isDark ? Colors.white24 : Colors.black12,
+                              width: 1,
+                            ),
+                          ),
+                          child: Center(
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 220),
+                              switchInCurve: Curves.easeOut,
+                              switchOutCurve: Curves.easeOut,
+                              child: done
+                                  ? const Icon(Icons.check_rounded,
+                                      key: ValueKey('check'), color: Colors.white, size: 18)
+                                  : Text(
+                                      "${widget.index}",
+                                      key: const ValueKey('num'),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14.5,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(width: 14),
+
+                  const SizedBox(width: 14),
+
+                  // —— Body text with strike-through when done ——
                   Expanded(
-                    child: Text(
-                      stepText,
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOut,
                       style: TextStyle(
+                        color: textColor,
                         fontSize: 15.5,
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
                         height: 1.6,
                         fontWeight: FontWeight.w500,
+                        decoration: done ? TextDecoration.lineThrough : TextDecoration.none,
+                        decorationThickness: 1,
+                        decorationColor: isDark ? Colors.red : Colors.red,
+                      ),
+                      child: Text(
+                        widget.stepText,
+                        textAlign: TextAlign.justify,
                       ),
                     ),
                   ),
                 ],
               ),
-              if (ingredients.isNotEmpty) ...[
-                SizedBox(height: 10),
-                Wrap(
-                  spacing: 9,
-                  children: ingredients.map<Widget>((ing) {
-                    final name = ing['name'] ?? ing.name ?? '';
-                    final imgUrl = ing['image'] != null
-                        ? (ing['image'] is String && ing['image'].startsWith('http')
-                            ? ing['image']
-                            : 'https://spoonacular.com/cdn/ingredients_100x100/${ing['image']}')
-                        : null;
-                    return Chip(
-                      avatar: imgUrl != null
-                          ? CircleAvatar(
-                              backgroundImage: NetworkImage(imgUrl),
-                              backgroundColor: Colors.transparent,
-                            )
-                          : null,
-                      label: Text(name),
-                      backgroundColor: isDark
-                          ? Colors.deepPurple[900]?.withOpacity(0.18)
-                          : Colors.deepPurple.withOpacity(0.11),
-                    );
-                  }).toList(),
+
+              // —— Chips and time (unchanged) ——
+              if (widget.ingredients.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Center(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 9,
+                    children: widget.ingredients.map<Widget>((ing) {
+                      final name = ing is Map
+                          ? (ing['name'] ?? '')
+                          : (ing?.name ?? '');
+                      final rawImg = ing is Map ? ing['image'] : ing?.image;
+                      final imgUrl = rawImg != null
+                          ? (rawImg is String && rawImg.startsWith('http')
+                              ? rawImg
+                              : 'https://spoonacular.com/cdn/ingredients_100x100/$rawImg')
+                          : null;
+                      return Chip(
+                        avatar: imgUrl != null
+                            ? CircleAvatar(
+                                backgroundImage: NetworkImage(imgUrl),
+                                backgroundColor: Colors.transparent,
+                              )
+                            : null,
+                        label: Text(name),
+                        backgroundColor: widget.isDark
+                            ? Colors.deepPurple[900]?.withOpacity(0.18)
+                            : Colors.deepPurple.withOpacity(0.11),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ],
-              if (equipment.isNotEmpty) ...[
-                SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: equipment.map<Widget>((eq) {
-                    final name = eq['name'] ?? eq.name ?? '';
-                    final imgUrl = eq['image'] != null
-                        ? (eq['image'] is String && eq['image'].startsWith('http')
-                            ? eq['image']
-                            : 'https://spoonacular.com/cdn/equipment_100x100/${eq['image']}')
-                        : null;
-                    return Chip(
-                      avatar: imgUrl != null
-                          ? CircleAvatar(
-                              backgroundImage: NetworkImage(imgUrl),
-                              backgroundColor: Colors.transparent,
-                            )
-                          : null,
-                      label: Text(name),
-                      backgroundColor: isDark
-                          ? Colors.blueGrey[900]?.withOpacity(0.18)
-                          : Colors.blueGrey.withOpacity(0.13),
-                    );
-                  }).toList(),
+              if (widget.equipment.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Center(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    children: widget.equipment.map<Widget>((eq) {
+                      final name = eq is Map
+                          ? (eq['name'] ?? '')
+                          : (eq?.name ?? '');
+                      final rawImg = eq is Map ? eq['image'] : eq?.image;
+                      final imgUrl = rawImg != null
+                          ? (rawImg is String && rawImg.startsWith('http')
+                              ? rawImg
+                              : 'https://spoonacular.com/cdn/equipment_100x100/$rawImg')
+                          : null;
+                      return Chip(
+                        avatar: imgUrl != null
+                            ? CircleAvatar(
+                                backgroundImage: NetworkImage(imgUrl),
+                                backgroundColor: Colors.transparent,
+                              )
+                            : null,
+                        label: Text(name),
+                        backgroundColor: widget.isDark
+                            ? Colors.blueGrey[900]?.withOpacity(0.18)
+                            : Colors.blueGrey.withOpacity(0.13),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ],
-              if (length != null && (length['number'] != null && length['unit'] != null))
-                Padding(
-                  padding: EdgeInsets.only(top: 10),
-                  child: Row(
-                    children: [
-                      Icon(Icons.timer_rounded, size: 18, color: isDark ? Colors.orange[300] : Colors.orange[700]),
-                      SizedBox(width: 6),
-                      Text(
-                        '${length['number']} ${length['unit']}',
-                        style: TextStyle(
-                          color: isDark ? Colors.orange[200] : Colors.orange[800],
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
+              if (widget.length != null && (widget.length!['number'] != null && widget.length!['unit'] != null))
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 15),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min, // keeps icon+text centered together
+                      children: [
+                        Icon(
+                          Icons.timer_rounded,
+                          size: 18.sp,
+                          color: widget.isDark ? Colors.orange[300] : Colors.orange[700],
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          '${widget.length!['number']} ${widget.length!['unit']}',
+                          style: TextStyle(
+                            color: widget.isDark ? Colors.orange[200] : Colors.orange[800],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13.sp,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
             ],
           ),
-        );
-      }).toList(),
+        ),
+      ),
     );
   }
 }
@@ -609,6 +806,7 @@ class EquipmentChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
+      alignment: WrapAlignment.center,
       spacing: 10.w,
       runSpacing: 10.h,
       children: equipment.map((e) => Chip(
