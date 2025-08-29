@@ -964,6 +964,7 @@ class CravingsResultsGrid extends StatelessWidget {
     // phone: 1 column -> use ListView to avoid any grid tile height math (no gaps)
     if (crossAxisCount == 1) {
       return ListView.separated(
+        cacheExtent: MediaQuery.of(context).size.height,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: items.length,
@@ -1019,6 +1020,7 @@ class CravingsResultsGrid extends StatelessWidget {
 
     // grid (tablet)
     return GridView.builder(
+      cacheExtent: MediaQuery.of(context).size.height,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: items.length,

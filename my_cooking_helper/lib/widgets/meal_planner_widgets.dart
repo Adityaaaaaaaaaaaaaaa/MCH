@@ -124,6 +124,7 @@ class DayRowCarousel extends StatelessWidget {
           SizedBox(
             height: math.max(160.h, 150.0), // Updated to match card height
             child: ListView.separated(
+              cacheExtent: MediaQuery.of(context).size.height,
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               itemCount: meals.length,
