@@ -26,10 +26,10 @@ import 'features/splash/splash_screen.dart';
 import 'features/settings/settings.dart'; 
 import 'features/cook/recipe_page.dart';
 import 'features/cook/cook.dart';
-import 'features/cook/recipe_history.dart';
+import 'features/history/recipe_history.dart';
 import 'features/cook/recipe_search.dart';
 import 'features/inventory/inventory.dart';
-import 'features/cook/recipe_favourites.dart';
+import 'features/history/recipe_favourites.dart';
 import 'features/meal_planner/planner.dart';
 import 'features/cravings/cravings.dart';
 

@@ -1507,8 +1507,8 @@ class _ModernInstructionTileState extends State<ModernInstructionTile>
                         height: 1.5,
                         letterSpacing: 0.1,
                         decoration: done ? TextDecoration.lineThrough : TextDecoration.none,
-                        decorationThickness: 2,
-                        decorationColor: isDark ? Colors.white24 : Colors.black26,
+                        decorationThickness: 1,
+                        decorationColor: isDark ? Colors.red : Colors.red,
                       ),
                       child: AnimatedSize(
                         duration: const Duration(milliseconds: 220),
@@ -2307,4 +2307,178 @@ String cuisineFlagEmoji(String name) {
     'other': '🌍',
   };
   return map[key] ?? '🌍';
+}
+
+// ================== DualActionButton (Favourite + Mark Cooked) ==================
+class DualActionButton extends StatelessWidget {
+  final bool isFavourited;
+  final bool cookedSuccess;
+  final VoidCallback onFavourite;
+  final VoidCallback onMarkCooked;
+
+  const DualActionButton({
+    Key? key,
+    required this.isFavourited,
+    required this.cookedSuccess,
+    required this.onFavourite,
+    required this.onMarkCooked,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(36.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8.r,
+            offset: Offset(0, 3.h),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // FAVOURITE
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 260),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(34.r),
+              boxShadow: isFavourited
+                  ? [
+                      BoxShadow(
+                        color: Colors.pinkAccent.withOpacity(0.27),
+                        blurRadius: 16.r,
+                        spreadRadius: 3.r,
+                      )
+                    ]
+                  : [],
+              color: isFavourited
+                  ? Colors.pinkAccent.withOpacity(0.18)
+                  : Colors.white.withOpacity(0.13),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(34.r),
+              onTap: onFavourite,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 13.h),
+                child: Icon(
+                  isFavourited ? Icons.favorite : Icons.favorite_border,
+                  color: isFavourited ? Colors.pinkAccent : Colors.grey[500],
+                  size: 32.sp,
+                ),
+              ),
+            ),
+          ).asGlass(
+            tintColor: isFavourited ? Colors.pink : Colors.white,
+            frosted: true,
+            blurX: 2,
+            blurY: 2,
+            clipBorderRadius: BorderRadius.circular(34.r),
+          ),
+
+          // Divider
+          Container(
+            width: 1.5.w,
+            height: 35.h,
+            margin: EdgeInsets.symmetric(horizontal: 3.w),
+            color: Colors.white,
+          ),
+
+          // MARK AS COOKED
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 260),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28.r),
+              boxShadow: cookedSuccess
+                  ? [
+                      BoxShadow(
+                        color: Colors.greenAccent.withOpacity(0.25),
+                        blurRadius: 14.r,
+                        spreadRadius: 2.r,
+                      )
+                    ]
+                  : [],
+              color: cookedSuccess
+                  ? Colors.green.withOpacity(0.15)
+                  : Colors.white.withOpacity(0.10),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(28.r),
+              onTap: onMarkCooked,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 13.h),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle_rounded,
+                      color: cookedSuccess ? Colors.green : Colors.grey[700],
+                      size: 32.sp,
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(
+                      "Mark as Cooked",
+                      style: TextStyle(
+                        color: cookedSuccess ? Colors.white : Colors.black87,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15.sp,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ).asGlass(
+            tintColor: cookedSuccess ? Colors.green : Colors.white,
+            frosted: true,
+            blurX: 2,
+            blurY: 2,
+            clipBorderRadius: BorderRadius.circular(28.r),
+          ),
+        ],
+      ).asGlass(
+        tintColor: Colors.white,
+        frosted: true,
+        blurX: 5,
+        blurY: 5,
+        clipBorderRadius: BorderRadius.circular(36.r),
+      ),
+    );
+  }
+}
+
+// ================== CravingActionBar (Positioned wrapper for pages) ==================
+class CravingActionBar extends StatelessWidget {
+  final bool isFavourited;
+  final bool cookedSuccess;
+  final VoidCallback onFavourite;
+  final VoidCallback onMarkCooked;
+  final double bottom;
+  final double right;
+
+  const CravingActionBar({
+    super.key,
+    required this.isFavourited,
+    required this.cookedSuccess,
+    required this.onFavourite,
+    required this.onMarkCooked,
+    this.bottom = 20,
+    this.right = 15,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      bottom: bottom,
+      right: right,
+      child: DualActionButton(
+        isFavourited: isFavourited,
+        cookedSuccess: cookedSuccess,
+        onFavourite: onFavourite,
+        onMarkCooked: onMarkCooked,
+      ),
+    );
+  }
 }
