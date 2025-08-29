@@ -337,9 +337,31 @@ class RecipePage extends ConsumerWidget {
                           }
                           // add ai summary and yt videos 
                           final aiSummary = extractSummaryText(geminiSummaryData);
-                          final List<RecipeVideo> videos = (videosAndSummaryAsync.value?['videos'] as List?)
-                            ?.map((e) => RecipeVideo.fromJson(e as Map<String, dynamic>))
-                            .toList() ?? [];
+                          final dynamic rawVideos = videosAndSummaryAsync.value?['videos'];
+                          final List<RecipeVideo> videos =
+                              rawVideos is List<RecipeVideo> ? rawVideos
+                            : rawVideos is List
+                                ? rawVideos.map((e) {
+                                    if (e is RecipeVideo) return e;
+                                    if (e is Map<String, dynamic>) return RecipeVideo.fromJson(e);
+                                    if (e is Map) {
+                                      // tolerate Map<Object,Object>
+                                      final m = e.map((k, v) => MapEntry(k.toString(), v));
+                                      return RecipeVideo.fromJson(m);
+                                    }
+                                    // If something like RecipeYoutubeVideo sneaks in and has toJson()
+                                    try {
+                                      final toJson = (e as dynamic).toJson;
+                                      if (toJson != null) {
+                                        final m = (e as dynamic).toJson() as Map;
+                                        return RecipeVideo.fromJson(
+                                          m.map((k, v) => MapEntry(k.toString(), v)),
+                                        );
+                                      }
+                                    } catch (_) {/* ignore */}
+                                    return null;
+                                  }).whereType<RecipeVideo>().toList()
+                                : <RecipeVideo>[];
 
                           final enrichedRecipe = recipe.copyWith(
                             geminiSummary: geminiSummaryData,

@@ -26,7 +26,7 @@ class CravingsRecipeService {
     final opt = r.optionalIngredients.map(_ingredientName).toList();
     final ingredients = [...req, ...opt]..sort();
 
-    // Normalized instructions (you can truncate if you want).
+    // Normalized instructions.
     final steps = r.instructions.map((e) => _normStr(e.toString())).toList();
 
     final payload = jsonEncode(<String, dynamic>{
@@ -48,6 +48,7 @@ class CravingsRecipeService {
   }
 
   // ===== Favourite toggle (real-time) =======================================
+  // Mirrors to session tracker and user canonical tracker.
   static Future<void> updateFavouriteStatus({
     required String uid,
     required CravingRecipeModel recipe,
@@ -76,13 +77,15 @@ class CravingsRecipeService {
       'lastUpdatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    // User-level canonical
+    // User-level canonical (+ pointers for quick navigation)
     batch.set(userTrackerRef, {
       'isFavourite': isFavourite,
       'markFavOn': isFavourite ? FieldValue.serverTimestamp() : FieldValue.delete(),
       'recipeTitle': recipe.title,
       'hasImage': recipe.hasImage == true,
       'source': 'ai',
+      'lastSeenSessionId': ids.sessionId,
+      'lastSeenTrackerId': ids.trackerId,
     }, SetOptions(merge: true));
 
     await batch.commit();
@@ -136,7 +139,7 @@ class CravingsRecipeService {
         .collection('trackers').doc(ids.trackerId);
     final sessionCookEventRef = sessionTrackerRef.collection('cookEvents').doc();
 
-    // Use a batch with atomic increments—simpler and very reliable.
+    // Use a batch with atomic increments—simple and reliable.
     final batch = db.batch();
 
     // Session tracker: increment and event
@@ -159,6 +162,8 @@ class CravingsRecipeService {
       'recipeTitle': recipe.title,
       'hasImage': recipe.hasImage == true,
       'source': 'ai',
+      'lastSeenSessionId': ids.sessionId,   // pointers for fast navigation
+      'lastSeenTrackerId': ids.trackerId,
     }, SetOptions(merge: true));
     batch.set(userCookEventRef, {
       'cookedAt': FieldValue.serverTimestamp(),
@@ -188,6 +193,87 @@ class CravingsRecipeService {
       if (name != null) return _normStr(name);
     } catch (_) {/* ignore */}
     return _normStr(e.toString());
+  }
+
+  // ===== Lightweight helpers for history screen ==============================
+
+  /// Toggle favourite directly by recipeKey (used from History card).
+  static Future<void> updateFavouriteStatusByKey({
+    required String uid,
+    required String recipeKey,
+    required bool isFavourite,
+    String? recipeTitle,
+    bool? hasImage,
+    String? lastSeenSessionId,
+    String? lastSeenTrackerId,
+  }) async {
+    final db = FirebaseFirestore.instance;
+    final userTrackerRef = db
+        .collection('users').doc(uid)
+        .collection('userTrackers').doc(recipeKey);
+
+    final batch = db.batch();
+    batch.set(userTrackerRef, {
+      'isFavourite': isFavourite,
+      'markFavOn': isFavourite ? FieldValue.serverTimestamp() : FieldValue.delete(),
+      if (recipeTitle != null) 'recipeTitle': recipeTitle,
+      if (hasImage != null) 'hasImage': hasImage,
+      if (lastSeenSessionId != null) 'lastSeenSessionId': lastSeenSessionId,
+      if (lastSeenTrackerId != null) 'lastSeenTrackerId': lastSeenTrackerId,
+      'source': 'ai',
+    }, SetOptions(merge: true));
+    await batch.commit();
+  }
+
+  /// Fetch the AI craving recipe document by session+tracker.
+  static Future<CravingRecipeModel?> fetchCravingBySessionTracker({
+    required String uid,
+    required String sessionId,
+    required String trackerId,
+  }) async {
+    final snap = await FirebaseFirestore.instance
+        .collection('users').doc(uid)
+        .collection('aiCravings').doc(sessionId)
+        .collection('recipes').doc(trackerId)
+        .get();
+
+    if (!snap.exists || snap.data() == null) return null;
+    return CravingRecipeModel.fromFirestore(snap.data()!);
+  }
+
+  /// Try pointers first, then fallback to a collectionGroup('trackers') lookup.
+  static Future<({String sessionId, String trackerId})?> resolvePointersForKey({
+    required String uid,
+    required String recipeKey,
+  }) async {
+    final db = FirebaseFirestore.instance;
+
+    // 1) Read userTrackers/{recipeKey} for saved pointers
+    final ut = await db.collection('users').doc(uid)
+        .collection('userTrackers').doc(recipeKey).get();
+
+    final m = ut.data() ?? {};
+    final sId = (m['lastSeenSessionId'] as String?) ?? '';
+    final tId = (m['lastSeenTrackerId'] as String?) ?? '';
+    if (sId.isNotEmpty && tId.isNotEmpty) {
+      return (sessionId: sId, trackerId: tId);
+    }
+
+    // 2) Fallback: collectionGroup search under current user for trackers with this recipeKey
+    final cg = await db
+        .collectionGroup('trackers')
+        .where('recipeKey', isEqualTo: recipeKey)
+        .limit(1)
+        .get();
+
+    if (cg.docs.isEmpty) return null;
+
+    // Path: users/{uid}/aiCravings/{sessionId}/trackers/{trackerId}
+    final segments = cg.docs.first.reference.path.split('/');
+    // ["users", uid, "aiCravings", sessionId, "trackers", trackerId]
+    final sessionId = segments[3];
+    final trackerId = segments[5];
+    return (sessionId: sessionId, trackerId: trackerId);
   }
 }
 
