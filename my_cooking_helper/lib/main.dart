@@ -140,8 +140,31 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/cravingRecipe',
       builder: (ctx, state) {
-        final model = state.extra as CravingRecipeModel;
-        return CravingRecipePage(recipe: model);
+        final extra = state.extra;
+
+        // Back-compat: older callers pass the model directly
+        if (extra is CravingRecipeModel) {
+          return CravingRecipePage(recipe: extra);
+        }
+
+        // New path: callers pass a Map
+        if (extra is Map) {
+          // Ensure typed map to avoid _Map<String,Object> casting issues
+          final m = Map<String, dynamic>.from(extra);
+
+          final model = m['recipe'] as CravingRecipeModel;
+          final fromHistory = (m['fromHistory'] == true);
+          final recipeKey = m['recipeKey'] as String?;
+
+          return CravingRecipePage(
+            recipe: model,
+            openedFromHistory: fromHistory,
+            recipeKey: recipeKey,
+          );
+        }
+
+        // Graceful fallback (helps during dev)
+        throw ArgumentError('Invalid /cravingRecipe extra: ${state.extra}');
       },
     ),
   ],

@@ -169,13 +169,12 @@ class RecipeHistoryPage extends ConsumerWidget {
                               showDialog(
                                 context: context,
                                 barrierDismissible: false,
-                                builder: (_) =>
-                                    const Center(child: CircularProgressIndicator()),
+                                builder: (_) => const Center(child: CircularProgressIndicator()),
                               );
 
+                              // ===== normal recipe (unchanged) =====
                               if (it.source == RecipeSource.normal) {
-                                final detail = await RecipeTrackerService
-                                    .fetchFullRecipeDetail(it.id);
+                                final detail = await RecipeTrackerService.fetchFullRecipeDetail(it.id);
                                 Navigator.of(context, rootNavigator: true).pop();
                                 if (detail != null) {
                                   context.push('/recipePage', extra: {
@@ -184,49 +183,35 @@ class RecipeHistoryPage extends ConsumerWidget {
                                   });
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text('Recipe details not found.')),
+                                    const SnackBar(content: Text('Recipe details not found.')),
                                   );
                                 }
                                 return;
                               }
 
-                              // AI: use pointers, fallback to collectionGroup
-                              final ptr = await CravingsRecipeService
-                                  .resolvePointersForKey(
+                              // --- AI recipe open (safe, no collectionGroup) ---
+                              final found = await CravingsRecipeService.fetchCravingByRecipeKey(
                                 uid: uid,
-                                recipeKey: it.id,
-                              );
-
-                              if (ptr == null) {
-                                Navigator.of(context, rootNavigator: true).pop();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        'Cannot locate AI recipe document (no pointers).'),
-                                  ),
-                                );
-                                return;
-                              }
-
-                              final aiRecipe = await CravingsRecipeService
-                                  .fetchCravingBySessionTracker(
-                                uid: uid,
-                                sessionId: ptr.sessionId,
-                                trackerId: ptr.trackerId,
+                                recipeKey: it.id, // this is the ai:<hash>
                               );
 
                               Navigator.of(context, rootNavigator: true).pop();
 
-                              if (aiRecipe == null) {
+                              if (found == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('AI recipe not found.')),
+                                  const SnackBar(content: Text('AI recipe not found.')),
                                 );
                                 return;
                               }
 
-                              context.push('/cravingRecipe', extra: {'recipe': aiRecipe});
+                              // pass pointers too so the page can reflect "from history" state, etc.
+                              context.push('/cravingRecipe', extra: {
+                                'recipe': found.recipe,
+                                'fromHistory': true,
+                                'recipeKey': it.id,            // <-- 'ai:<hash>' from the history item
+                                'sessionId': found.sessionId,  // optional
+                                'trackerId': found.trackerId,  // optional
+                              });
                             },
                           );
                         }).toList(),

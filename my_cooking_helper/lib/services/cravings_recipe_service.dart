@@ -241,39 +241,99 @@ class CravingsRecipeService {
     return CravingRecipeModel.fromFirestore(snap.data()!);
   }
 
-  /// Try pointers first, then fallback to a collectionGroup('trackers') lookup.
+  // Try pointers in userTrackers; if missing, scan THIS user's sessions.
+  // NOTE: no collectionGroup is used -> compliant with your rules.
   static Future<({String sessionId, String trackerId})?> resolvePointersForKey({
     required String uid,
     required String recipeKey,
   }) async {
     final db = FirebaseFirestore.instance;
 
-    // 1) Read userTrackers/{recipeKey} for saved pointers
-    final ut = await db.collection('users').doc(uid)
-        .collection('userTrackers').doc(recipeKey).get();
-
-    final m = ut.data() ?? {};
-    final sId = (m['lastSeenSessionId'] as String?) ?? '';
-    final tId = (m['lastSeenTrackerId'] as String?) ?? '';
+    // 1) Check cached pointers on userTrackers/{recipeKey}
+    final utRef = db.collection('users').doc(uid)
+        .collection('userTrackers').doc(recipeKey);
+    final utSnap = await utRef.get();
+    final um = utSnap.data() ?? {};
+    final sId = (um['lastSeenSessionId'] as String?) ?? '';
+    final tId = (um['lastSeenTrackerId'] as String?) ?? '';
     if (sId.isNotEmpty && tId.isNotEmpty) {
       return (sessionId: sId, trackerId: tId);
     }
 
-    // 2) Fallback: collectionGroup search under current user for trackers with this recipeKey
-    final cg = await db
-        .collectionGroup('trackers')
-        .where('recipeKey', isEqualTo: recipeKey)
-        .limit(1)
+    // 2) Fallback: scan ONLY this user's sessions, and query trackers inside each
+    final sessions = await db.collection('users').doc(uid)
+        .collection('aiCravings').get();
+
+    for (final s in sessions.docs) {
+      final q = await s.reference.collection('trackers')
+          .where('recipeKey', isEqualTo: recipeKey)
+          .limit(1)
+          .get();
+
+      if (q.docs.isNotEmpty) {
+        final trackerId = q.docs.first.id;
+        final sessionId = s.id;
+
+        // Cache for next time
+        await utRef.set({
+          'lastSeenSessionId': sessionId,
+          'lastSeenTrackerId': trackerId,
+        }, SetOptions(merge: true));
+
+        return (sessionId: sessionId, trackerId: trackerId);
+      }
+    }
+
+    return null;
+  }
+
+  // Fetch a Craving recipe by stable recipeKey ('ai:<hash>').
+  // Uses saved pointers if present; otherwise does a collectionGroup fallback.
+  // Also persists the pointers so the next open is instant.
+  // Fetch full recipe by recipeKey, using the safe resolver above.
+  static Future<({
+    CravingRecipeModel recipe,
+    String sessionId,
+    String trackerId,
+  })?> fetchCravingByRecipeKey({
+    required String uid,
+    required String recipeKey,
+  }) async {
+    final db = FirebaseFirestore.instance;
+
+    final ptr = await resolvePointersForKey(uid: uid, recipeKey: recipeKey);
+    if (ptr == null) return null;
+
+    final snap = await db.collection('users').doc(uid)
+        .collection('aiCravings').doc(ptr.sessionId)
+        .collection('recipes').doc(ptr.trackerId)
         .get();
 
-    if (cg.docs.isEmpty) return null;
+    if (!snap.exists || snap.data() == null) return null;
 
-    // Path: users/{uid}/aiCravings/{sessionId}/trackers/{trackerId}
-    final segments = cg.docs.first.reference.path.split('/');
-    // ["users", uid, "aiCravings", sessionId, "trackers", trackerId]
-    final sessionId = segments[3];
-    final trackerId = segments[5];
-    return (sessionId: sessionId, trackerId: trackerId);
+    return (
+      recipe: CravingRecipeModel.fromFirestore(snap.data()!),
+      sessionId: ptr.sessionId,
+      trackerId: ptr.trackerId
+    );
+  }
+
+  // Write-only helper to persist lastSeen pointers without touching favourite, etc.
+  static Future<void> rememberPointers({
+    required String uid,
+    required String recipeKey,
+    required String sessionId,
+    required String trackerId,
+  }) async {
+    final db = FirebaseFirestore.instance;
+    final ref = db.collection('users').doc(uid)
+        .collection('userTrackers').doc(recipeKey);
+
+    await ref.set({
+      'lastSeenSessionId': sessionId,
+      'lastSeenTrackerId': trackerId,
+      'source': 'ai',
+    }, SetOptions(merge: true));
   }
 }
 

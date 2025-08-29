@@ -426,7 +426,6 @@ class ModernTimeBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (minutes == null) return const SizedBox.shrink();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
 
     return RepaintBoundary(
@@ -447,7 +446,7 @@ class ModernTimeBadge extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w900,
                 fontSize: 14.sp,
-                color: isDark ? Colors.white : Colors.white,
+                color: textColor(context),
                 letterSpacing: .2,
               ),
             ),
