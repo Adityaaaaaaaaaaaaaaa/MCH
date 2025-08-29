@@ -1119,6 +1119,7 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection> {
           ),
         if (showAll && widget.videos.length > 1)
           ListView.builder(
+            cacheExtent: MediaQuery.of(context).size.height,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: widget.videos.length,

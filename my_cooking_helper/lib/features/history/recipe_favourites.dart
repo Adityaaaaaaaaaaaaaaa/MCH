@@ -124,6 +124,7 @@ class RecipeFavouritesPage extends ConsumerWidget {
                 }
 
                 return ListView.separated(
+                  cacheExtent: MediaQuery.of(context).size.height,
                   padding: EdgeInsets.only(bottom: 24.h),
                   itemCount: favs.length,
                   separatorBuilder: (_, __) => SizedBox(height: 12.h),

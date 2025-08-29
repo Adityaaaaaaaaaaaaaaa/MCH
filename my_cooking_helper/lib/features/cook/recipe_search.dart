@@ -943,6 +943,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                 // Recipes list
                 Expanded(
                   child: ListView.builder(
+                    cacheExtent: MediaQuery.of(context).size.height,
                     padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 20.h),
                     // itemCount logic:
                     // - If there are more recipes to show, show a "Show More" button as the last item.

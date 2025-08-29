@@ -997,6 +997,7 @@ Widget _buildIngredientGrid(
   return Container(
     margin: EdgeInsets.symmetric(horizontal: 20.w),
     child: GridView.builder(
+      cacheExtent: MediaQuery.of(context).size.height,
       controller: scrollController,
       physics: BouncingScrollPhysics(),
       padding: EdgeInsets.symmetric(vertical: 12.h),

@@ -130,6 +130,7 @@ class RecipeHistoryPage extends ConsumerWidget {
                 }
 
                 return ListView.separated(
+                  cacheExtent: MediaQuery.of(context).size.height,
                   padding: EdgeInsets.only(bottom: 24.h),
                   itemCount: groups.length,
                   separatorBuilder: (_, __) => SizedBox(height: 12.h),
