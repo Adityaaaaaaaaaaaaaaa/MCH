@@ -773,6 +773,7 @@ class ModernIngredientTile extends StatefulWidget {
     this.selectAllSignal,                 // broadcast: CTA → tiles
     this.selectionDirtySignal,            // tiles → CTA when a control is turned OFF
     this.selectionCount,                  // tiles increment/decrement this
+    this.forcePlusOnly = false,
   });
 
   final dynamic data; // Map<String,dynamic> | String | ShoppingItemModel
@@ -783,6 +784,7 @@ class ModernIngredientTile extends StatefulWidget {
   final ValueNotifier<int>? selectAllSignal;
   final ValueNotifier<int>? selectionDirtySignal;
   final ValueNotifier<int>? selectionCount;
+  final bool forcePlusOnly;
 
   @override
   State<ModernIngredientTile> createState() => _ModernIngredientTileState();
@@ -895,6 +897,10 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
   /// Decide which control this tile shows:
   /// bag if in shopping('buy'), otherwise plus (irrespective of pantry).
   _ShopVariant _computeVariant() {
+
+    // 👇 hard override when opened from history
+    if (widget.forcePlusOnly == true) return _ShopVariant.plus;
+
     String name = "";
     if (widget.data is String) {
       name = widget.data as String;

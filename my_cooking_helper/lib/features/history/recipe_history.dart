@@ -147,11 +147,24 @@ class RecipeHistoryPage extends ConsumerWidget {
                         ),
                         SizedBox(height: 6.h),
                         ...g.items.map((it) {
+
+                          final isAi = it.source == RecipeSource.ai;
+
+                          // ✅ Live favourite for AI items (falls back to list value while loading)
+                          bool fav = it.isFavourite;
+                          if (isAi) {
+                            final favAsync = ref.watch(cravingFavouriteStatusProvider(it.id));
+                            fav = favAsync.maybeWhen(
+                              data: (v) => v,
+                              orElse: () => it.isFavourite,
+                            );
+                          }
+
                           // 🔁 Adapt UnifiedHistoryItem -> RecipeHistoryEntry for the shared card
                           final entry = RecipeHistoryEntry(
                             recipeId: it.id,
                             recipeTitle: it.title,
-                            isFavourite: it.isFavourite,
+                            isFavourite: fav,                 // 👈 use the live flag
                             lastCookedAt: it.lastCookedAt,
                             timesCooked: it.timesCooked,
                             imageUrl: it.imageUrl,
@@ -159,9 +172,10 @@ class RecipeHistoryPage extends ConsumerWidget {
                           );
 
                           return CookedRecipeCard(
+                            key: ValueKey('${isAi ? "ai" : "n"}-${it.id}-${fav ? 1 : 0}'), // 👈 force rebuild when fav changes
                             recipe: entry,
                             imageUrl: it.imageUrl,
-                            isAi: it.source == RecipeSource.ai,
+                            isAi: isAi,
                             onTap: () async {
                               if (uid == null) return;
 

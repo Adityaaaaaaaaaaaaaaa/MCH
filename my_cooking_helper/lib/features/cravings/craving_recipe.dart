@@ -308,6 +308,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                               selectionCount: selectedCount, // NEW
                               initiallyInShopping: false, // never auto-activate
                               onToggleShopping: () {}, // hook later
+                              forcePlusOnly: widget.openedFromHistory,
                             ),
                           ),
 
@@ -324,6 +325,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                               selectionCount: selectedCount, // NEW
                               initiallyInShopping: false,
                               onToggleShopping: () {},
+                              forcePlusOnly: widget.openedFromHistory,
                             ),
                           ),
 
