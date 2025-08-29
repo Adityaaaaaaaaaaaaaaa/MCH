@@ -2,8 +2,11 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:typed_data';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/services/cravings_recipe_service.dart';
 import '/models/cravings.dart';
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
@@ -31,10 +34,9 @@ class CravingRecipePage extends StatefulWidget {
 }
 
 class _CravingRecipePageState extends State<CravingRecipePage> {
-
-  final ValueNotifier<int> selectAllSignal     = ValueNotifier<int>(0);
-  final ValueNotifier<int> selectionDirtySignal= ValueNotifier<int>(0);
-  final ValueNotifier<int> selectedCount       = ValueNotifier<int>(0);
+  final ValueNotifier<int> selectAllSignal = ValueNotifier<int>(0);
+  final ValueNotifier<int> selectionDirtySignal = ValueNotifier<int>(0);
+  final ValueNotifier<int> selectedCount = ValueNotifier<int>(0);
 
   // Convert a data URL -> bytes (when you only have imageDataUrl on the model)
   Uint8List? _bytesFromDataUrl(String? dataUrl) {
@@ -103,10 +105,9 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
     }
     return _ShopVariant.plus;
   }
-  
+
   int _eligibleCount() {
-    return widget.recipe.requiredIngredients.length +
-          widget.recipe.optionalIngredients.length;
+    return widget.recipe.requiredIngredients.length + widget.recipe.optionalIngredients.length;
   }
 
   @override
@@ -118,6 +119,10 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
     // choose image in priority order:
     // 1) passed preview bytes  2) hydrated model imageDataUrl  3) none
     final bytes = widget.previewImageBytes ?? _bytesFromDataUrl(widget.recipe.imageDataUrl);
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final recipeKey = CravingsRecipeService.computeRecipeKey(widget.recipe);
+    // Note: service splits sessionId/trackerId internally from widget.recipe.id.
 
     return Scaffold(
       backgroundColor: bg,
@@ -141,9 +146,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [bg.withOpacity(1.0), bg.withOpacity(0.92)]
-                      : [bg.withOpacity(1.0), bg.withOpacity(0.96)],
+                  colors: isDark ? [bg.withOpacity(1.0), bg.withOpacity(0.92)] : [bg.withOpacity(1.0), bg.withOpacity(0.96)],
                 ),
               ),
             ),
@@ -177,8 +180,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                             child: ModernTimeBadge(minutes: widget.recipe.readyInMinutes),
                           ),
                         ],
-                      )
-
+                      ),
                     ),
                   if (bytes != null) SizedBox(height: 12.h),
 
@@ -208,14 +210,10 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                               //     label: formatHm(recipe.readyInMinutes!),
                               //     isPrimary: true,
                               //   ),
-                              if (widget.recipe.vegetarian == true)
-                                PremiumChip(icon: Icons.restaurant_rounded, label: "Vegetarian"),
-                              if (widget.recipe.vegan == true)
-                                PremiumChip(icon: Icons.spa_rounded, label: "Vegan"),
-                              if (widget.recipe.glutenFree == true)
-                                PremiumChip(icon: Icons.no_food_rounded, label: "Gluten-free"),
-                              if (widget.recipe.dairyFree == true)
-                                PremiumChip(icon: Icons.free_breakfast_rounded, label: "Dairy-free"),
+                              if (widget.recipe.vegetarian == true) PremiumChip(icon: Icons.restaurant_rounded, label: "Vegetarian"),
+                              if (widget.recipe.vegan == true) PremiumChip(icon: Icons.spa_rounded, label: "Vegan"),
+                              if (widget.recipe.glutenFree == true) PremiumChip(icon: Icons.no_food_rounded, label: "Gluten-free"),
+                              if (widget.recipe.dairyFree == true) PremiumChip(icon: Icons.free_breakfast_rounded, label: "Dairy-free"),
                             ],
                           ),
                         ],
@@ -238,9 +236,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                                   alignment: WrapAlignment.center,
                                   spacing: 6.w,
                                   runSpacing: 6.h,
-                                  children: widget.recipe.cuisines
-                                      .map((c) => ModernFlagTag(text: c, emoji: cuisineFlagEmoji(c)))
-                                      .toList(),
+                                  children: widget.recipe.cuisines.map((c) => ModernFlagTag(text: c, emoji: cuisineFlagEmoji(c))).toList(),
                                 ),
                               ),
                             ),
@@ -263,8 +259,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                           ),
                       ],
                     ),
-                  if (widget.recipe.cuisines.isNotEmpty || widget.recipe.diets.isNotEmpty)
-                    SizedBox(height: 10.h),
+                  if (widget.recipe.cuisines.isNotEmpty || widget.recipe.diets.isNotEmpty) SizedBox(height: 10.h),
 
                   // SUMMARY
                   if ((widget.recipe.summary ?? '').isNotEmpty)
@@ -303,38 +298,41 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Required ingredients
-                          ...widget.recipe.requiredIngredients.map((e) => ModernIngredientTile(
-                            data: e,
-                            shopping: widget.recipe.shopping,
-                            optionalIngredients: widget.recipe.optionalIngredients,
-                            selectAllSignal: selectAllSignal,
-                            selectionDirtySignal: selectionDirtySignal,
-                            selectionCount: selectedCount,             // NEW
-                            initiallyInShopping: false,                // never auto-activate
-                            onToggleShopping: () {},                   // hook later
-                          )),
+                          ...widget.recipe.requiredIngredients.map(
+                            (e) => ModernIngredientTile(
+                              data: e,
+                              shopping: widget.recipe.shopping,
+                              optionalIngredients: widget.recipe.optionalIngredients,
+                              selectAllSignal: selectAllSignal,
+                              selectionDirtySignal: selectionDirtySignal,
+                              selectionCount: selectedCount, // NEW
+                              initiallyInShopping: false, // never auto-activate
+                              onToggleShopping: () {}, // hook later
+                            ),
+                          ),
 
                           if (widget.recipe.optionalIngredients.isNotEmpty) SizedBox(height: 12.h),
 
                           // Optional ingredients
-                          ...widget.recipe.optionalIngredients.map((e) => ModernIngredientTile(
-                            data: e,
-                            shopping: widget.recipe.shopping,
-                            optionalIngredients: widget.recipe.optionalIngredients,
-                            selectAllSignal: selectAllSignal,
-                            selectionDirtySignal: selectionDirtySignal,
-                            selectionCount: selectedCount,             // NEW
-                            initiallyInShopping: false,
-                            onToggleShopping: () {},
-                          )),
-
+                          ...widget.recipe.optionalIngredients.map(
+                            (e) => ModernIngredientTile(
+                              data: e,
+                              shopping: widget.recipe.shopping,
+                              optionalIngredients: widget.recipe.optionalIngredients,
+                              selectAllSignal: selectAllSignal,
+                              selectionDirtySignal: selectionDirtySignal,
+                              selectionCount: selectedCount, // NEW
+                              initiallyInShopping: false,
+                              onToggleShopping: () {},
+                            ),
+                          ),
 
                           SizedBox(height: 15.h),
                           ModernCreateShoppingListButton(
                             selectAllSignal: selectAllSignal,
                             selectionDirtySignal: selectionDirtySignal,
-                            selectedCount: selectedCount,              // NEW
-                            eligibleCount: eligible,                   // NEW
+                            selectedCount: selectedCount, // NEW
+                            eligibleCount: eligible, // NEW
                             onCreate: () {
                               // Persist current selection snapshot (bagSelected/plusSelected) as you prefer.
                               // (No duplicates; tiles are idempotent and you can de-dupe server-side too.)
@@ -371,9 +369,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           ModernNutritionChips(nutrition: widget.recipe.nutrition!),
-
                           SizedBox(height: 15.h),
-
                           ModernCaloricBreakdownFromNutrition(
                             nutrition: widget.recipe.nutrition ?? {},
                             energyDv: 2000,
@@ -387,11 +383,78 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                     ),
                   ],
                   SizedBox(height: 15.h),
-                  
+
                   const AiCautionBarFancy(),
                 ],
               ),
             ),
+          ),
+
+          // === Real-time action bar (favourite + cooked), driven by providers ===
+          Consumer(
+            builder: (context, ref, _) {
+              final favAsync = ref.watch(cravingFavouriteStatusProvider(recipeKey));
+              final cookedSuccess = ref.watch(cravingCookedSuccessProvider(recipeKey));
+
+              return favAsync.when(
+                data: (isFavourite) => CravingActionBar(
+                  isFavourited: isFavourite,
+                  cookedSuccess: cookedSuccess,
+                  onFavourite: () async {
+                    if (uid == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text("Please log in to use Favourites."),
+                          backgroundColor: Colors.red[600],
+                        ),
+                      );
+                      return;
+                    }
+                    await CravingsRecipeService.updateFavouriteStatus(
+                      uid: uid,
+                      recipe: widget.recipe,
+                      isFavourite: !isFavourite,
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(!isFavourite ? "Added to Favourites!" : "Removed from Favourites."),
+                        backgroundColor: !isFavourite ? Colors.pink[400] : Colors.grey[600],
+                      ),
+                    );
+                  },
+                  onMarkCooked: () async {
+                    if (uid == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text("Please log in to mark as cooked."),
+                          backgroundColor: Colors.red[600],
+                        ),
+                      );
+                      return;
+                    }
+                    await CravingsRecipeService.markAsCooked(
+                      uid: uid,
+                      recipe: widget.recipe,
+                      keepFavourite: isFavourite,
+                    );
+                    ref.read(cravingCookedSuccessProvider(recipeKey).notifier).state = true;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text("Marked as cooked!"),
+                        backgroundColor: Colors.green[600],
+                      ),
+                    );
+                  },
+                ),
+                loading: () => CravingActionBar(
+                  isFavourited: false,
+                  cookedSuccess: false,
+                  onFavourite: () {},
+                  onMarkCooked: () {},
+                ),
+                error: (e, st) => const Icon(Icons.error, color: Colors.red),
+              );
+            },
           ),
         ],
       ),
