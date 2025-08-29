@@ -21,6 +21,8 @@ class CravingRecipePage extends StatefulWidget {
     super.key,
     required this.recipe,
     this.previewImageBytes,
+    this.openedFromHistory = false, // NEW
+    this.recipeKey,                 
   });
 
   /// Full recipe from Firestore (already hydrated in your flow)
@@ -28,6 +30,10 @@ class CravingRecipePage extends StatefulWidget {
 
   /// Optional preview image bytes (from the list card, memory-only)
   final Uint8List? previewImageBytes;
+
+  final bool openedFromHistory;
+  final String? recipeKey;
+
 
   @override
   State<CravingRecipePage> createState() => _CravingRecipePageState();
@@ -121,8 +127,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
     final bytes = widget.previewImageBytes ?? _bytesFromDataUrl(widget.recipe.imageDataUrl);
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    final recipeKey = CravingsRecipeService.computeRecipeKey(widget.recipe);
-    // Note: service splits sessionId/trackerId internally from widget.recipe.id.
+    final recipeKey = widget.recipeKey ?? CravingsRecipeService.computeRecipeKey(widget.recipe);
 
     return Scaffold(
       backgroundColor: bg,
@@ -204,12 +209,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                             spacing: 8.w,
                             runSpacing: 8.h,
                             children: [
-                              // if (recipe.readyInMinutes != null)
-                              //   PremiumChip(
-                              //     icon: Icons.timer_rounded,
-                              //     label: formatHm(recipe.readyInMinutes!),
-                              //     isPrimary: true,
-                              //   ),
+                              if (bytes == null ) ModernTimeBadge(minutes: widget.recipe.readyInMinutes),
                               if (widget.recipe.vegetarian == true) PremiumChip(icon: Icons.restaurant_rounded, label: "Vegetarian"),
                               if (widget.recipe.vegan == true) PremiumChip(icon: Icons.spa_rounded, label: "Vegan"),
                               if (widget.recipe.glutenFree == true) PremiumChip(icon: Icons.no_food_rounded, label: "Gluten-free"),
