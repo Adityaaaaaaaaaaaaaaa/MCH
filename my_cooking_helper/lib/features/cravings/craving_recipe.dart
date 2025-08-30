@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/services/shopping_service.dart';
 import '/services/cravings_recipe_service.dart';
 import '/models/cravings.dart';
 import '/utils/colors.dart';
@@ -16,7 +17,7 @@ import '/widgets/cravings/craving_recipe_widgets.dart';
 
 enum _ShopVariant { bag, plus }
 
-class CravingRecipePage extends StatefulWidget {
+class CravingRecipePage extends ConsumerStatefulWidget {
   const CravingRecipePage({
     super.key,
     required this.recipe,
@@ -36,10 +37,10 @@ class CravingRecipePage extends StatefulWidget {
 
 
   @override
-  State<CravingRecipePage> createState() => _CravingRecipePageState();
+  ConsumerState<CravingRecipePage> createState() => _CravingRecipePageState();
 }
 
-class _CravingRecipePageState extends State<CravingRecipePage> {
+class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
   final ValueNotifier<int> selectAllSignal = ValueNotifier<int>(0);
   final ValueNotifier<int> selectionDirtySignal = ValueNotifier<int>(0);
   final ValueNotifier<int> selectedCount = ValueNotifier<int>(0);
@@ -82,11 +83,22 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    clearAllSignal.addListener(_onClearAll);
+  }
+
+  void _onClearAll() {
+    // any tick means CTA asked for a full reset
+    ref.read(shoppingServiceProvider.notifier).clearAll();
+  }
+
+  @override
   void dispose() {
     selectAllSignal.dispose();
     selectionDirtySignal.dispose();
     selectedCount.dispose();
-    clearAllSignal.dispose();
+    clearAllSignal.removeListener(_onClearAll);
     super.dispose();
   }
 
@@ -130,6 +142,8 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final recipeKey = widget.recipeKey ?? CravingsRecipeService.computeRecipeKey(widget.recipe);
+
+    final svc = ref.read(shoppingServiceProvider.notifier);
 
     return Scaffold(
       backgroundColor: bg,
@@ -312,6 +326,22 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                               onToggleShopping: () {}, // hook later
                               forcePlusOnly: widget.openedFromHistory,
                               clearAllSignal: clearAllSignal,
+                              onSelectionChanged: (ev) {
+                                final tag = ev.isBag ? 'buy' : 'add';
+                                if (ev.active) {
+                                  svc.setItem(
+                                    name: ev.name,
+                                    tag: tag,
+                                    need: (ev.need == null || ev.need! <= 0) ? 1 : ev.need,
+                                    unit: ev.unit,
+                                  );
+                                } else {
+                                  svc.removeItem(ev.name);
+                                }
+                                // BLUE: provider update
+                                // ignore: avoid_print
+                                print('\x1B[34m[SHOP] ${ev.active ? "ADD" : "REMOVE"} $tag -> ${ev.name}\x1B[0m');
+                              },
                             ),
                           ),
 
@@ -330,6 +360,22 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                               onToggleShopping: () {},
                               forcePlusOnly: widget.openedFromHistory,
                               clearAllSignal: clearAllSignal,
+                              onSelectionChanged: (ev) {
+                                final tag = ev.isBag ? 'buy' : 'add';
+                                if (ev.active) {
+                                  svc.setItem(
+                                    name: ev.name,
+                                    tag: tag,
+                                    need: (ev.need == null || ev.need! <= 0) ? 1 : ev.need,
+                                    unit: ev.unit,
+                                  );
+                                } else {
+                                  svc.removeItem(ev.name);
+                                }
+                                // BLUE
+                                // ignore: avoid_print
+                                print('\x1B[34m[SHOP] ${ev.active ? "ADD" : "REMOVE"} $tag -> ${ev.name}\x1B[0m');
+                              },
                             ),
                           ),
 

@@ -1952,6 +1952,24 @@ class CravingActionBar extends StatelessWidget {
 enum _ShopVariant { bag, plus }
 enum _CtaMode { idle, createdSubset, createdAll }
 
+// Replace the old event with this
+class IngredientSelectionEvent {
+  IngredientSelectionEvent({
+    required this.name,
+    required this.isBag,   // ✅ bool, no cross-file enum coupling
+    required this.active,
+    this.need,
+    this.unit,
+  });
+
+  final String name;
+  final bool isBag;          // true => bag("buy"), false => plus("add")
+  final bool active;
+  final double? need;
+  final String? unit;
+}
+
+
 // ================== ModernIngredientTile ==================
 class ModernIngredientTile extends StatefulWidget {
   const ModernIngredientTile({
@@ -1966,6 +1984,7 @@ class ModernIngredientTile extends StatefulWidget {
     this.selectionCount,                  // tiles increment/decrement this
     this.forcePlusOnly = false,
     this.clearAllSignal,
+    this.onSelectionChanged,
   });
 
   final dynamic data; // Map<String,dynamic> | String | ShoppingItemModel
@@ -1978,6 +1997,7 @@ class ModernIngredientTile extends StatefulWidget {
   final ValueNotifier<int>? selectionCount;
   final bool forcePlusOnly;
   final ValueNotifier<int>? clearAllSignal;
+  final ValueChanged<IngredientSelectionEvent>? onSelectionChanged;
 
   @override
   State<ModernIngredientTile> createState() => _ModernIngredientTileState();
@@ -2004,15 +2024,18 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
 
     // Listen to CTA broadcast: set the visible control ACTIVE (never toggle)
     if (widget.selectAllSignal != null) {
+      // _selectAllListener = () {
+      //   final v = _computeVariant();
+      //   if (v == _ShopVariant.bag && !bagSelected) {
+      //     setState(() => bagSelected = true);
+      //     widget.selectionCount?.value = (widget.selectionCount?.value ?? 0) + 1;
+      //   } else if (v == _ShopVariant.plus && !plusSelected) {
+      //     setState(() => plusSelected = true);
+      //     widget.selectionCount?.value = (widget.selectionCount?.value ?? 0) + 1;
+      //   }
+      // };
       _selectAllListener = () {
-        final v = _computeVariant();
-        if (v == _ShopVariant.bag && !bagSelected) {
-          setState(() => bagSelected = true);
-          widget.selectionCount?.value = (widget.selectionCount?.value ?? 0) + 1;
-        } else if (v == _ShopVariant.plus && !plusSelected) {
-          setState(() => plusSelected = true);
-          widget.selectionCount?.value = (widget.selectionCount?.value ?? 0) + 1;
-        }
+        _setActive(true); // idempotent: does nothing if already ON
       };
       widget.selectAllSignal!.addListener(_selectAllListener!);
     }
@@ -2045,13 +2068,43 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
     // keep a global count of selected tiles
     if (widget.selectionCount != null) {
       final next = (widget.selectionCount!.value + (value ? 1 : -1)).clamp(0, 1 << 30);
-      widget.selectionCount!.value = (next as num).toInt(); // cast clamp(num) → int
+      widget.selectionCount!.value = (next as num).toInt();
     }
 
     // only notify “dirty” when something turns OFF (to revert CTA from green)
     if (!value && widget.selectionDirtySignal != null) {
       widget.selectionDirtySignal!.value = widget.selectionDirtySignal!.value + 1;
     }
+
+    // ===== ADD at the end of _setActive(bool value) =====
+    String name = "";
+    String unit = "";
+    double? need;
+    if (widget.data is String) {
+      name = widget.data as String;
+    } else if (widget.data is ShoppingItemModel) {
+      final s = widget.data as ShoppingItemModel;
+      name = s.name; need = s.need; unit = s.unit.trim().toLowerCase();
+    } else if (widget.data is Map) {
+      final m = widget.data as Map;
+      name = (m['name'] ?? '').toString();
+      need = (m['need'] as num?)?.toDouble() ?? (m['quantity'] as num?)?.toDouble();
+      unit = ((m['unit'] ?? '').toString()).trim().toLowerCase();
+    }
+
+    // BLUE: tile toggle
+    // ignore: avoid_print
+    print('\x1B[34m[TILE] ${value ? "ON " : "OFF"} ${( _computeVariant() == _ShopVariant.bag) ? "BAG" : "PLUS"}  | $name  | need=${need ?? 1} ${unit.isEmpty ? "count" : unit}\x1B[0m');
+
+    widget.onSelectionChanged?.call(
+      IngredientSelectionEvent(
+        name: name,
+        isBag: _computeVariant() == _ShopVariant.bag,  // bool
+        active: value,
+        need: need,
+        unit: unit.isEmpty ? null : unit,
+      ),
+    );
   }
 
   @override

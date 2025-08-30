@@ -9,7 +9,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'config/firebase_options.dart';
 import 'config/performance.dart';
-import 'features/cravings/craving_recipe.dart';
 import 'models/cravings.dart';
 import 'models/recipe_detail.dart';
 import 'theme/theme_provider.dart';  
@@ -33,6 +32,8 @@ import 'features/inventory/inventory.dart';
 import 'features/history/recipe_favourites.dart';
 import 'features/meal_planner/planner.dart';
 import 'features/cravings/cravings.dart';
+import 'features/cravings/craving_recipe.dart';
+import 'features/shopping/shopping.dart';
 
 
 Future<void> main() async {
@@ -174,6 +175,11 @@ final GoRouter _router = GoRouter(
         // Graceful fallback (helps during dev)
         throw ArgumentError('Invalid /cravingRecipe extra: ${state.extra}');
       },
+    ),
+    GoRoute(
+      path: '/shopping',
+      name: 'shopping',
+      builder: (context, state) => const ShoppingPage(),
     ),
   ],
 );
