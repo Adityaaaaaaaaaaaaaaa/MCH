@@ -16,6 +16,11 @@ import '/widgets/navigation/drawer.dart';
 import '/services/meal_planner_service.dart';
 import '/widgets/meal_planner_widgets.dart';
 
+// Rebuilds on sign-in, sign-out, and user switches
+final authUserProvider = StreamProvider<User?>(
+  (ref) => FirebaseAuth.instance.userChanges(),
+);
+
 // DI
 final mealPlannerServiceProvider =
     Provider<MealPlannerService>((ref) => MealPlannerService());
@@ -50,7 +55,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   }
 
   Future<void> _pingBackendOnce() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = ref.watch(authUserProvider).value?.uid;
     if (uid == null) return;
 
     final prefs = await SharedPreferences.getInstance();
@@ -66,7 +71,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   }
 
   Future<void> _generateNow() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = ref.watch(authUserProvider).value?.uid;
     if (uid == null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Please sign in.')));
@@ -111,7 +116,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     required int dayIndex,
     required String mealKey,
   }) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = ref.watch(authUserProvider).value?.uid;
     if (uid == null || !mounted) return;
 
     // Get the current week planId from the stream you already have

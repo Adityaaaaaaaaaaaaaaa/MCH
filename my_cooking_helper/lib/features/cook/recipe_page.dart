@@ -14,26 +14,28 @@ import '/services/recipe_search_service.dart';
 import '/widgets/recipe/recipe_page_widgets.dart';
 import '/widgets/shimmer/recipe_page_skeleton.dart';
 
+// Rebuilds on sign-in, sign-out, and user switches
+final authUserProvider = StreamProvider<User?>(
+  (ref) => FirebaseAuth.instance.userChanges(),
+);
+
 final recipeSearchServiceProvider = Provider<RecipeSearchService>((ref) {
   return RecipeSearchService();
 });
 
-final favouriteStatusProvider = StreamProvider.family<bool, String>((ref, recipeId) {
-  final userId = FirebaseAuth.instance.currentUser?.uid;
-  if (userId == null) return Stream<bool>.value(false);
+// AFTER (auto-updates on userChanges)
+final favouriteStatusProvider = StreamProvider.autoDispose.family<bool, String>((ref, recipeId) {
+  final user = ref.watch(authUserProvider).value;   // 👈 watch, not read
+  final uid = user?.uid;
+  if (uid == null) return Stream<bool>.value(false);
 
   final doc = FirebaseFirestore.instance
-      .collection('users')
-      .doc(userId)
-      .collection('recipeHistory')
-      .doc(recipeId);
+      .collection('users').doc(uid)
+      .collection('recipeHistory').doc(recipeId);
 
-  return doc.snapshots().map((snapshot) {
-    if (snapshot.exists && snapshot.data()?['isFavourite'] == true) {
-      return true;
-    }
-    return false;
-  });
+  return doc.snapshots().map(
+    (s) => s.exists && (s.data()?['isFavourite'] == true),
+  );
 });
 
 final recipeVideosProvider = FutureProvider.family<Map<String, dynamic>, RecipeDetail>((ref, recipe) async {
@@ -44,12 +46,7 @@ final recipeVideosProvider = FutureProvider.family<Map<String, dynamic>, RecipeD
   );
 });
 
-final userProvider = Provider<String?>((ref) {
-  return FirebaseAuth.instance.currentUser?.uid;
-});
-
 final cookedSuccessProvider = StateProvider.autoDispose.family<bool, String>((ref, recipeId) => false);
-//final favouriteProviderX = StateProvider.autoDispose.family<bool, String>((ref, recipeId) => false);
 
 String extractSummaryText(Map<String, dynamic>? summaryData) {
   if (summaryData == null) return '';
@@ -115,7 +112,7 @@ class RecipePage extends ConsumerWidget {
     }
 
     final recipeId = recipe.id ?? "default";
-    final userId = ref.watch(userProvider);
+    final userId = ref.read(authUserProvider).value?.uid;
 
     return Scaffold(
       backgroundColor: bgColor(context),
