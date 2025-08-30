@@ -2,6 +2,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
@@ -15,13 +16,18 @@ import '/widgets/navigation/drawer.dart';
 import '/widgets/navigation/nav.dart';
 import '/widgets/cravings/cravings_widget.dart';
 
-class CravingsScreen extends StatefulWidget {
+// Rebuilds on sign-in, sign-out, and user switches
+final authUserProvider = StreamProvider<User?>(
+  (ref) => FirebaseAuth.instance.userChanges(),
+);
+
+class CravingsScreen extends ConsumerStatefulWidget {
   const CravingsScreen({super.key});
   @override
-  State<CravingsScreen> createState() => _CravingsScreenState();
+  ConsumerState<CravingsScreen> createState() => _CravingsScreenState();
 }
 
-class _CravingsScreenState extends State<CravingsScreen> {
+class _CravingsScreenState extends ConsumerState<CravingsScreen> {
   static const String _bgLottie = 'assets/animations/Animation_wave.json';
   static const String _loadingLottie = 'assets/animations/Animation_AI_Food_Search.json';
 
@@ -61,7 +67,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
   }
 
   Future<void> _primeDefaultsFromFirestore() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = ref.watch(authUserProvider).value?.uid;
     if (uid == null) return;
 
     try {
@@ -126,7 +132,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
   }
 
   Future<void> _generate() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = ref.read(authUserProvider).value?.uid;
     if (uid == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -189,7 +195,7 @@ class _CravingsScreenState extends State<CravingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = ref.read(authUserProvider).value?.uid;
     final hasResults = (_results != null && _results!.isNotEmpty);
 
     return Scaffold(

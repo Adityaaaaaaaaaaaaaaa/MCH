@@ -13,16 +13,23 @@ import '/widgets/navigation/drawer.dart';
 import '/utils/colors.dart';
 import '/widgets/recipe/recipe_tracker_widgets.dart';
 
+// Rebuilds on sign-in, sign-out, and user switches
+final authUserProvider = StreamProvider<User?>(
+  (ref) => FirebaseAuth.instance.userChanges(),
+);
+
+
 // ===== Existing normal stream (unchanged) =====================================
 final cookedRecipesProvider = StreamProvider<List<RecipeHistoryEntry>>((ref) {
-  final userId = FirebaseAuth.instance.currentUser?.uid;
-  if (userId == null) return const Stream.empty();
-  return RecipeTrackerService.cookedRecipesStream(userId);
+  final user = ref.watch(authUserProvider).value;
+  final uid = user?.uid;
+  if (uid == null) return const Stream.empty();
+  return RecipeTrackerService.cookedRecipesStream(uid);
 });
 
 // ===== AI cooked stream (client-side filter; resilient to missing fields) =====
 final cookedAiRawProvider = StreamProvider<List<UnifiedHistoryItem>>((ref) {
-  final uid = FirebaseAuth.instance.currentUser?.uid;
+  final uid = ref.watch(authUserProvider).value?.uid;
   if (uid == null) return const Stream.empty();
 
   final coll = FirebaseFirestore.instance

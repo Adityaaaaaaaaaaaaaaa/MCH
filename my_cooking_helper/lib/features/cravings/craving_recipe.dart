@@ -17,6 +17,11 @@ import '/widgets/cravings/craving_recipe_widgets.dart';
 
 enum _ShopVariant { bag, plus }
 
+// Rebuilds on sign-in, sign-out, and user switches
+final authUserProvider = StreamProvider<User?>(
+  (ref) => FirebaseAuth.instance.userChanges(),
+);
+
 class CravingRecipePage extends ConsumerStatefulWidget {
   const CravingRecipePage({
     super.key,
@@ -140,7 +145,7 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
     // 1) passed preview bytes  2) hydrated model imageDataUrl  3) none
     final bytes = widget.previewImageBytes ?? _bytesFromDataUrl(widget.recipe.imageDataUrl);
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = ref.read(authUserProvider).value?.uid;
     final recipeKey = widget.recipeKey ?? CravingsRecipeService.computeRecipeKey(widget.recipe);
 
     final svc = ref.read(shoppingServiceProvider.notifier);

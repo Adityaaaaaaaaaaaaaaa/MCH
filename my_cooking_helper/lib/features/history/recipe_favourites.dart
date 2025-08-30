@@ -13,16 +13,22 @@ import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
 import '/utils/colors.dart';
 
+// Rebuilds on sign-in, sign-out, and user switches
+final authUserProvider = StreamProvider<User?>(
+  (ref) => FirebaseAuth.instance.userChanges(),
+);
+
 /// Existing normal favourites stream (Spoonacular-backed)
 final favouriteRecipesProvider = StreamProvider<List<RecipeHistoryEntry>>((ref) {
-  final userId = FirebaseAuth.instance.currentUser?.uid;
-  if (userId == null) return const Stream.empty();
-  return RecipeTrackerService.favouriteRecipesStream(userId);
+  final user = ref.watch(authUserProvider).value;
+  final uid = user?.uid;
+  if (uid == null) return const Stream.empty();
+  return RecipeTrackerService.favouriteRecipesStream(uid);
 });
 
 /// AI favourites stream: users/{uid}/userTrackers where isFavourite == true
 final aiFavouriteProvider = StreamProvider<List<UnifiedHistoryItem>>((ref) {
-  final uid = FirebaseAuth.instance.currentUser?.uid;
+  final uid = ref.watch(authUserProvider).value?.uid;
   if (uid == null) return const Stream.empty();
 
   final q = FirebaseFirestore.instance
