@@ -1,6 +1,5 @@
 // ignore_for_file: deprecated_member_use
 
-import 'dart:typed_data';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -743,554 +742,6 @@ class ModernFlagTag extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// ------------------------------------------------------------
-/// ENHANCED INGREDIENT TILE
-/// - supports: String | Map | ShoppingItemModel
-/// - only shows shopping toggle when tag == 'buy'
-/// - tag == 'optional' -> shows Optional badge
-/// - shows need/unit/have and delta
-/// - no "count" word (empty unit for count)
-/// ------------------------------------------------------------
-// -------------------- ModernIngredientTile (revamped layout) --------------------
-// ===== enums (keep these at the very top of the file) =====
-enum _ShopVariant { bag, plus }
-enum _CtaMode { idle, createdSubset, createdAll }
-
-// ================== ModernIngredientTile ==================
-class ModernIngredientTile extends StatefulWidget {
-  const ModernIngredientTile({
-    super.key,
-    required this.data,
-    this.initiallyInShopping = false,     // kept but NOT used to auto-activate
-    this.onToggleShopping,
-    this.shopping,                        // List<ShoppingItemModel>
-    this.optionalIngredients,             // List<dynamic>
-    this.selectAllSignal,                 // broadcast: CTA → tiles
-    this.selectionDirtySignal,            // tiles → CTA when a control is turned OFF
-    this.selectionCount,                  // tiles increment/decrement this
-    this.forcePlusOnly = false,
-  });
-
-  final dynamic data; // Map<String,dynamic> | String | ShoppingItemModel
-  final bool initiallyInShopping;
-  final VoidCallback? onToggleShopping;
-  final List<ShoppingItemModel>? shopping;
-  final List<dynamic>? optionalIngredients;
-  final ValueNotifier<int>? selectAllSignal;
-  final ValueNotifier<int>? selectionDirtySignal;
-  final ValueNotifier<int>? selectionCount;
-  final bool forcePlusOnly;
-
-  @override
-  State<ModernIngredientTile> createState() => _ModernIngredientTileState();
-}
-
-class _ModernIngredientTileState extends State<ModernIngredientTile>
-    with SingleTickerProviderStateMixin {
-  // independent internal states (both start INACTIVE)
-  bool bagSelected = false;
-  bool plusSelected = false;
-
-  late final AnimationController _bounceController;
-  late final Animation<double> _bounce;
-  VoidCallback? _selectAllListener;
-
-  @override
-  void initState() {
-    super.initState();
-    _bounceController = AnimationController(vsync: this, duration: const Duration(milliseconds: 480));
-    _bounce = Tween<double>(begin: 1.0, end: 1.10).animate(
-      CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut),
-    );
-
-    // Listen to CTA broadcast: set the visible control ACTIVE (never toggle)
-    if (widget.selectAllSignal != null) {
-      _selectAllListener = () {
-        final v = _computeVariant();
-        if (v == _ShopVariant.bag && !bagSelected) {
-          setState(() => bagSelected = true);
-          widget.selectionCount?.value = (widget.selectionCount?.value ?? 0) + 1;
-        } else if (v == _ShopVariant.plus && !plusSelected) {
-          setState(() => plusSelected = true);
-          widget.selectionCount?.value = (widget.selectionCount?.value ?? 0) + 1;
-        }
-      };
-      widget.selectAllSignal!.addListener(_selectAllListener!);
-    }
-  }
-
-  void _setActive(bool value) {
-    final v = _computeVariant();                 // bag or plus
-    final was = (v == _ShopVariant.bag) ? bagSelected : plusSelected;
-    if (was == value) return;                    // idempotent
-
-    setState(() {
-      if (v == _ShopVariant.bag) {
-        bagSelected = value;
-      } else {
-        plusSelected = value;
-      }
-    });
-
-    // keep a global count of selected tiles
-    if (widget.selectionCount != null) {
-      final next = (widget.selectionCount!.value + (value ? 1 : -1)).clamp(0, 1 << 30);
-      widget.selectionCount!.value = (next as num).toInt(); // cast clamp(num) → int
-    }
-
-    // only notify “dirty” when something turns OFF (to revert CTA from green)
-    if (!value && widget.selectionDirtySignal != null) {
-      widget.selectionDirtySignal!.value = widget.selectionDirtySignal!.value + 1;
-    }
-  }
-
-  @override
-  void dispose() {
-    if (_selectAllListener != null && widget.selectAllSignal != null) {
-      widget.selectAllSignal!.removeListener(_selectAllListener!);
-    }
-    _bounceController.dispose();
-    super.dispose();
-  }
-
-  void _pulse() => _bounceController..value = 0..forward();
-
-  // ------ parsing helpers ---------------------------------------------------
-  String _norm(String s) => s.trim().toLowerCase();
-
-  String _extractName(dynamic e) {
-    if (e == null) return '';
-    if (e is String) return e;
-    if (e is ShoppingItemModel) return e.name;
-    if (e is Map) {
-      final v = e['name'] ?? e['original'] ?? e['title'];
-      return v?.toString() ?? e.toString();
-    }
-    return e.toString();
-  }
-
-  ShoppingItemModel? _findShoppingItemByName(String name) {
-    final list = widget.shopping;
-    if (list == null || name.isEmpty) return null;
-    final n = _norm(name);
-    for (final s in list) {
-      if (_norm(s.name) == n) return s;
-    }
-    return null;
-  }
-
-  bool _isOptionalByName(String name) {
-    final opts = widget.optionalIngredients;
-    if (opts == null || name.isEmpty) return false;
-    final n = _norm(name);
-    for (final e in opts) {
-      if (_norm(_extractName(e)) == n) return true;
-    }
-    return false;
-  }
-
-  /// Decide which control this tile shows:
-  /// bag if in shopping('buy'), otherwise plus (irrespective of pantry).
-  _ShopVariant _computeVariant() {
-
-    // 👇 hard override when opened from history
-    if (widget.forcePlusOnly == true) return _ShopVariant.plus;
-
-    String name = "";
-    if (widget.data is String) {
-      name = widget.data as String;
-    } else if (widget.data is ShoppingItemModel) {
-      name = (widget.data as ShoppingItemModel).name;
-    } else if (widget.data is Map) {
-      name = ((widget.data as Map)['name'] ?? '').toString();
-    }
-
-    final s = _findShoppingItemByName(name);
-    final tag = (s?.tag.toLowerCase()) ?? '';
-    if (s != null && tag == 'buy') return _ShopVariant.bag;
-    return _ShopVariant.plus;
-  }
-
-  // ------ UI helpers --------------------------------------------------------
-  Widget _miniChip({required IconData icon, required String text, required Color color}) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8.r),
-        color: color.withOpacity(0.10),
-        border: Border.all(color: color.withOpacity(0.32), width: 1),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 12.5.sp, color: color),
-        SizedBox(width: 5.w),
-        Text(text, style: TextStyle(color: color, fontSize: 12.0.sp, fontWeight: FontWeight.w700, letterSpacing: .2)),
-      ]),
-    );
-  }
-
-  Widget _statusChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-    VoidCallback? onTap,
-    bool elevated = false,
-  }) {
-    final chip = AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10.r),
-        color: color.withOpacity(0.10),
-        border: Border.all(color: color.withOpacity(0.38), width: 1.0),
-        boxShadow: elevated ? [BoxShadow(color: color.withOpacity(0.18), blurRadius: 12, offset: const Offset(0, 4))] : [],
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 13.sp, color: color),
-        SizedBox(width: 4.w),
-        Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 11.5.sp, letterSpacing: .2)),
-      ]),
-    );
-    return onTap == null ? chip : GestureDetector(onTap: onTap, child: chip);
-  }
-
-  Widget _controlButton({
-    required bool active,
-    required _ShopVariant variant,
-    required Color primary,
-    required Color okCol,
-    required VoidCallback onTap,
-  }) {
-    final bgGrad = LinearGradient(
-      colors: active ? [okCol.withOpacity(0.22), okCol.withOpacity(0.10)]
-                     : [primary.withOpacity(0.16), primary.withOpacity(0.08)],
-    );
-    final borderCol = active ? okCol.withOpacity(0.48) : primary.withOpacity(0.28);
-    final icon = active
-        ? (variant == _ShopVariant.plus ? Icons.check_circle_rounded : Icons.shopping_bag_rounded)
-        : (variant == _ShopVariant.plus ? Icons.add_circle_rounded : Icons.shopping_bag_outlined);
-    final iconColor = active ? okCol : primary;
-
-    return AnimatedBuilder(
-      animation: _bounce,
-      builder: (_, __) => Transform.scale(
-        scale: _bounce.value,
-        child: GestureDetector(
-          onTap: () { _pulse(); onTap(); widget.onToggleShopping?.call(); },
-          child: Container(
-            width: 44.w, height: 44.w,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12.r),
-              gradient: bgGrad,
-              border: Border.all(color: borderCol, width: 1.2),
-              boxShadow: active ? [BoxShadow(color: okCol.withOpacity(0.25), blurRadius: 16, offset: const Offset(0, 6))] : [],
-            ),
-            child: Center(child: Icon(icon, size: 22.sp, color: iconColor)),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ------ build -------------------------------------------------------------
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
-
-    // parse minimal quantities for chips (no auto-activation)
-    String name = "", unit = "";
-    double? need, have;
-    if (widget.data is String) {
-      name = widget.data as String;
-    } else if (widget.data is ShoppingItemModel) {
-      final s = widget.data as ShoppingItemModel;
-      name = s.name; need = s.need; have = s.have; unit = s.unit.trim().toLowerCase();
-    } else if (widget.data is Map) {
-      final m = widget.data as Map;
-      name = (m['name'] ?? '').toString();
-      need = (m['need'] as num?)?.toDouble() ?? (m['quantity'] as num?)?.toDouble();
-      have = (m['have'] as num?)?.toDouble();
-      unit = ((m['unit'] ?? '').toString()).trim().toLowerCase();
-    }
-
-    final isOptional = _isOptionalByName(name);
-    final shoppingItem = _findShoppingItemByName(name);
-    final isMissing = (() {
-      final tag = (shoppingItem?.tag.toLowerCase()) ?? '';
-      return shoppingItem != null && tag == 'missing';
-    })();
-
-    String? qtyStr;
-    if (need != null && need > 0) {
-      final raw = (need % 1 == 0) ? need.toStringAsFixed(0) : need.toString();
-      qtyStr = (unit.isEmpty || unit == 'count') ? raw : "$raw $unit";
-    }
-    String? haveStr;
-    if (have != null && have > 0) {
-      final raw = (have % 1 == 0) ? have.toStringAsFixed(0) : have.toString();
-      haveStr = (unit.isEmpty || unit == 'count') ? raw : "$raw $unit";
-    }
-
-    final qtyColor = isDark ? Colors.cyan[300]! : Colors.cyan[700]!;
-    final okCol    = isDark ? Colors.green[300]! : Colors.green[600]!;
-    final warnCol  = isDark ? Colors.orange[300]! : Colors.orange[700]!;
-    final missCol  = isDark ? Colors.red[300]! : Colors.red[600]!;
-
-    final double iconSize = 44.w, gap = 12.w;
-    final _ShopVariant variant = _computeVariant();
-    final bool active = (variant == _ShopVariant.bag) ? bagSelected : plusSelected;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: 10.h),
-      child: ModernCard(
-        radius: 14,
-        padding: EdgeInsets.all(14.w),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: isDark ? const [Color(0xFF242424), Color(0xFF1E1E1E)]
-                         : const [Color(0xFFFFFFFF), Color(0xFFF9FAFB)],
-        ),
-        onTap: () {},
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // centered title
-            Row(children: [
-              SizedBox(width: iconSize + gap),
-              Expanded(
-                child: Text(
-                  name,
-                  maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 15.5.sp,
-                    fontWeight: FontWeight.w800, letterSpacing: -0.2, height: 1.2),
-                ),
-              ),
-              SizedBox(width: 44.w), // right button space (one control)
-            ]),
-            SizedBox(height: 10.h),
-
-            // icon | chips | control (bag or plus)
-            Row(children: [
-              Container(
-                width: iconSize, height: iconSize,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12.r),
-                  gradient: LinearGradient(colors: [primary.withOpacity(0.18), primary.withOpacity(0.08)]),
-                  border: Border.all(color: primary.withOpacity(0.25), width: 1.1),
-                ),
-                child: Icon(Icons.restaurant_menu_rounded, size: 20.sp, color: primary),
-              ),
-              SizedBox(width: gap),
-              Expanded(
-                child: Wrap(
-                  alignment: WrapAlignment.start, spacing: 8.w, runSpacing: 6.h,
-                  children: [
-                    if (qtyStr != null) _miniChip(icon: Icons.inventory_2_rounded, text: qtyStr, color: qtyColor),
-                    if (haveStr != null) _miniChip(icon: Icons.check_circle_rounded, text: "Have $haveStr", color: okCol),
-                  ],
-                ),
-              ),
-              _controlButton(
-                active: active,
-                variant: variant,
-                primary: primary,
-                okCol: okCol,
-                onTap: () => _setActive(!active),
-              ),
-            ]),
-
-            // badges line (only for the visible control + optional/missing)
-            SizedBox(height: 10.h),
-            Row(children: [
-              SizedBox(width: iconSize + gap),
-              Expanded(
-                child: Wrap(
-                  alignment: WrapAlignment.start, spacing: 8.w, runSpacing: 6.h,
-                  children: [
-                    if (variant == _ShopVariant.bag)
-                      _statusChip(
-                        icon: active ? Icons.check_circle_rounded : Icons.shopping_bag_outlined,
-                        label: active ? 'Buy — added' : 'Buy',
-                        color: active ? okCol : primary,
-                        onTap: () => _setActive(!active),
-                        elevated: active,
-                      ),
-                    if (variant == _ShopVariant.plus)
-                      _statusChip(
-                        icon: active ? Icons.check_circle_rounded : Icons.add_circle_rounded,
-                        label: active ? 'Add — added' : 'Add',
-                        color: active ? okCol : primary,
-                        onTap: () => _setActive(!active),
-                        elevated: active,
-                      ),
-                    if (isOptional)
-                      _statusChip(icon: Icons.info_outline_rounded, label: 'Optional', color: warnCol),
-                    if (isMissing)
-                      _statusChip(icon: Icons.report_gmailerrorred_rounded, label: 'Missing', color: missCol),
-                  ],
-                ),
-              ),
-              SizedBox(width: 44.w),
-            ]),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ================= ModernCreateShoppingListButton =================
-class ModernCreateShoppingListButton extends StatefulWidget {
-  const ModernCreateShoppingListButton({
-    super.key,
-    required this.selectAllSignal,       // broadcast to tiles to select-all
-    required this.selectionDirtySignal,  // tiles notify when something turns OFF
-    required this.selectedCount,         // live selected tiles count
-    required this.eligibleCount,         // total eligible tiles (controls shown)
-    this.onCreate,
-  });
-
-  final ValueNotifier<int> selectAllSignal;
-  final ValueNotifier<int> selectionDirtySignal;
-  final ValueNotifier<int> selectedCount;
-  final int eligibleCount;
-  final VoidCallback? onCreate;
-
-  @override
-  State<ModernCreateShoppingListButton> createState() => _ModernCreateShoppingListButtonState();
-}
-
-class _ModernCreateShoppingListButtonState extends State<ModernCreateShoppingListButton> {
-  // explicit CTA states so tapping never “toggles off”
-  _CtaMode _mode = _CtaMode.idle;
-  _CtaMode _submitted = _CtaMode.idle; // last mode we fired onCreate for
-
-  int _lastDirtyTick = 0;
-  int _lastSelected = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.selectionDirtySignal.addListener(_onDirty);
-    widget.selectedCount.addListener(_onSelectedChange);
-  }
-
-  void _setMode(_CtaMode m, {bool dueToDirty = false}) {
-    if (_mode == m) return;
-    setState(() => _mode = m);
-    if (dueToDirty) _submitted = _CtaMode.idle; // allow creating again after user changes selection
-  }
-
-  void _onDirty() {
-    final v = widget.selectionDirtySignal.value;
-    if (v != _lastDirtyTick) {
-      _lastDirtyTick = v;
-      // any tile turned OFF after we were “created” → go back to neutral
-      if (_mode != _CtaMode.idle) _setMode(_CtaMode.idle, dueToDirty: true);
-    }
-  }
-
-  void _onSelectedChange() {
-    final s = widget.selectedCount.value;
-    if (s == _lastSelected) return;
-    _lastSelected = s;
-
-    // Don’t auto-switch to created; we only show green after user taps.
-    // We only reset to idle when selection becomes 0 (user cleared all manually).
-    if (s == 0 && _mode != _CtaMode.idle) {
-      _setMode(_CtaMode.idle, dueToDirty: true);
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.selectionDirtySignal.removeListener(_onDirty);
-    widget.selectedCount.removeListener(_onSelectedChange);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
-    final okCol   = isDark ? Colors.green[300]! : Colors.green[600]!;
-
-    final selected    = widget.selectedCount.value;
-    final total       = widget.eligibleCount;
-    final some        = selected > 0 && selected < total;
-    final all         = total > 0 && selected >= total;
-
-    // label + visual state (green only when _mode is a created state)
-    String label;
-    IconData icon;
-    bool ready = (_mode == _CtaMode.createdSubset || _mode == _CtaMode.createdAll);
-
-    if (selected == 0) {
-      label = "Create shopping list";
-      icon  = Icons.playlist_add_check_rounded;
-      ready = false; // neutral until tapped
-    } else if (some) {
-      label = (_mode == _CtaMode.createdSubset) ? "List created with selected" : "Create list with selected";
-      icon  = (_mode == _CtaMode.createdSubset) ? Icons.check_rounded : Icons.playlist_add_check_rounded;
-    } else { // all
-      label = (_mode == _CtaMode.createdAll) ? "Shopping list ready" : "Create shopping list";
-      icon  = (_mode == _CtaMode.createdAll) ? Icons.check_rounded : Icons.playlist_add_check_rounded;
-    }
-
-    final bg       = ready ? LinearGradient(colors: [okCol.withOpacity(.22), okCol.withOpacity(.10)]) : null;
-    final border   = ready ? okCol.withOpacity(.55) : primary.withOpacity(.35);
-    final textCol  = ready ? okCol : (isDark ? Colors.white : Colors.black87);
-    final iconCol  = ready ? okCol : primary;
-
-    return GestureDetector(
-      onTap: () {
-        if (selected == 0 && total > 0) {
-          // Select every eligible tile ONCE (idempotent at tile level)
-          widget.selectAllSignal.value = widget.selectAllSignal.value + 1;
-          _setMode(_CtaMode.createdAll);
-          if (_submitted != _CtaMode.createdAll) {
-            _submitted = _CtaMode.createdAll;
-            widget.onCreate?.call();
-          }
-        } else if (some) {
-          _setMode(_CtaMode.createdSubset);
-          if (_submitted != _CtaMode.createdSubset) {
-            _submitted = _CtaMode.createdSubset;
-            widget.onCreate?.call();
-          }
-        } else if (all) {
-          _setMode(_CtaMode.createdAll);
-          if (_submitted != _CtaMode.createdAll) {
-            _submitted = _CtaMode.createdAll;
-            widget.onCreate?.call();
-          }
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14.r),
-          gradient: bg,
-          border: Border.all(color: border, width: 1.2),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: iconCol, size: 20.sp),
-            SizedBox(width: 8.w),
-            Text(
-              label,
-              style: TextStyle(fontSize: 14.5.sp, fontWeight: FontWeight.w800, color: textCol, letterSpacing: .1),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -2483,6 +1934,621 @@ class CravingActionBar extends StatelessWidget {
         cookedSuccess: cookedSuccess,
         onFavourite: onFavourite,
         onMarkCooked: onMarkCooked,
+      ),
+    );
+  }
+}
+
+/// ------------------------------------------------------------
+/// ENHANCED INGREDIENT TILE
+/// - supports: String | Map | ShoppingItemModel
+/// - only shows shopping toggle when tag == 'buy'
+/// - tag == 'optional' -> shows Optional badge
+/// - shows need/unit/have and delta
+/// - no "count" word (empty unit for count)
+/// ------------------------------------------------------------
+// -------------------- ModernIngredientTile (revamped layout) --------------------
+// ===== enums (keep these at the very top of the file) =====
+enum _ShopVariant { bag, plus }
+enum _CtaMode { idle, createdSubset, createdAll }
+
+// ================== ModernIngredientTile ==================
+class ModernIngredientTile extends StatefulWidget {
+  const ModernIngredientTile({
+    super.key,
+    required this.data,
+    this.initiallyInShopping = false,     // kept but NOT used to auto-activate
+    this.onToggleShopping,
+    this.shopping,                        // List<ShoppingItemModel>
+    this.optionalIngredients,             // List<dynamic>
+    this.selectAllSignal,                 // broadcast: CTA → tiles
+    this.selectionDirtySignal,            // tiles → CTA when a control is turned OFF
+    this.selectionCount,                  // tiles increment/decrement this
+    this.forcePlusOnly = false,
+    this.clearAllSignal,
+  });
+
+  final dynamic data; // Map<String,dynamic> | String | ShoppingItemModel
+  final bool initiallyInShopping;
+  final VoidCallback? onToggleShopping;
+  final List<ShoppingItemModel>? shopping;
+  final List<dynamic>? optionalIngredients;
+  final ValueNotifier<int>? selectAllSignal;
+  final ValueNotifier<int>? selectionDirtySignal;
+  final ValueNotifier<int>? selectionCount;
+  final bool forcePlusOnly;
+  final ValueNotifier<int>? clearAllSignal;
+
+  @override
+  State<ModernIngredientTile> createState() => _ModernIngredientTileState();
+}
+
+class _ModernIngredientTileState extends State<ModernIngredientTile>
+    with SingleTickerProviderStateMixin {
+  // independent internal states (both start INACTIVE)
+  bool bagSelected = false;
+  bool plusSelected = false;
+
+  late final AnimationController _bounceController;
+  late final Animation<double> _bounce;
+  VoidCallback? _selectAllListener;
+  VoidCallback? _clearAllListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _bounceController = AnimationController(vsync: this, duration: const Duration(milliseconds: 480));
+    _bounce = Tween<double>(begin: 1.0, end: 1.10).animate(
+      CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut),
+    );
+
+    // Listen to CTA broadcast: set the visible control ACTIVE (never toggle)
+    if (widget.selectAllSignal != null) {
+      _selectAllListener = () {
+        final v = _computeVariant();
+        if (v == _ShopVariant.bag && !bagSelected) {
+          setState(() => bagSelected = true);
+          widget.selectionCount?.value = (widget.selectionCount?.value ?? 0) + 1;
+        } else if (v == _ShopVariant.plus && !plusSelected) {
+          setState(() => plusSelected = true);
+          widget.selectionCount?.value = (widget.selectionCount?.value ?? 0) + 1;
+        }
+      };
+      widget.selectAllSignal!.addListener(_selectAllListener!);
+    }
+
+    // CLEAR-ALL (NEW)
+    if (widget.clearAllSignal != null) {
+      _clearAllListener = () {
+        // Use the same helper so counters/dirty-ticks remain correct
+        if (bagSelected || plusSelected) {
+          _setActive(false);
+        }
+      };
+      widget.clearAllSignal!.addListener(_clearAllListener!);
+    }
+  }
+
+  void _setActive(bool value) {
+    final v = _computeVariant();                 // bag or plus
+    final was = (v == _ShopVariant.bag) ? bagSelected : plusSelected;
+    if (was == value) return;                    // idempotent
+
+    setState(() {
+      if (v == _ShopVariant.bag) {
+        bagSelected = value;
+      } else {
+        plusSelected = value;
+      }
+    });
+
+    // keep a global count of selected tiles
+    if (widget.selectionCount != null) {
+      final next = (widget.selectionCount!.value + (value ? 1 : -1)).clamp(0, 1 << 30);
+      widget.selectionCount!.value = (next as num).toInt(); // cast clamp(num) → int
+    }
+
+    // only notify “dirty” when something turns OFF (to revert CTA from green)
+    if (!value && widget.selectionDirtySignal != null) {
+      widget.selectionDirtySignal!.value = widget.selectionDirtySignal!.value + 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_selectAllListener != null && widget.selectAllSignal != null) {
+      widget.selectAllSignal!.removeListener(_selectAllListener!);
+    }
+    if (_clearAllListener != null && widget.clearAllSignal != null) {
+      widget.clearAllSignal!.removeListener(_clearAllListener!);
+    }
+    _bounceController.dispose();
+    super.dispose();
+  }
+
+  void _pulse() => _bounceController..value = 0..forward();
+
+  // ------ parsing helpers ---------------------------------------------------
+  String _norm(String s) => s.trim().toLowerCase();
+
+  String _extractName(dynamic e) {
+    if (e == null) return '';
+    if (e is String) return e;
+    if (e is ShoppingItemModel) return e.name;
+    if (e is Map) {
+      final v = e['name'] ?? e['original'] ?? e['title'];
+      return v?.toString() ?? e.toString();
+    }
+    return e.toString();
+  }
+
+  ShoppingItemModel? _findShoppingItemByName(String name) {
+    final list = widget.shopping;
+    if (list == null || name.isEmpty) return null;
+    final n = _norm(name);
+    for (final s in list) {
+      if (_norm(s.name) == n) return s;
+    }
+    return null;
+  }
+
+  bool _isOptionalByName(String name) {
+    final opts = widget.optionalIngredients;
+    if (opts == null || name.isEmpty) return false;
+    final n = _norm(name);
+    for (final e in opts) {
+      if (_norm(_extractName(e)) == n) return true;
+    }
+    return false;
+  }
+
+  /// Decide which control this tile shows:
+  /// bag if in shopping('buy'), otherwise plus (irrespective of pantry).
+  _ShopVariant _computeVariant() {
+
+    // 👇 hard override when opened from history
+    if (widget.forcePlusOnly == true) return _ShopVariant.plus;
+
+    String name = "";
+    if (widget.data is String) {
+      name = widget.data as String;
+    } else if (widget.data is ShoppingItemModel) {
+      name = (widget.data as ShoppingItemModel).name;
+    } else if (widget.data is Map) {
+      name = ((widget.data as Map)['name'] ?? '').toString();
+    }
+
+    final s = _findShoppingItemByName(name);
+    final tag = (s?.tag.toLowerCase()) ?? '';
+    if (s != null && tag == 'buy') return _ShopVariant.bag;
+    return _ShopVariant.plus;
+  }
+
+  // ------ UI helpers --------------------------------------------------------
+  Widget _miniChip({required IconData icon, required String text, required Color color}) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8.r),
+        color: color.withOpacity(0.10),
+        border: Border.all(color: color.withOpacity(0.32), width: 1),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 12.5.sp, color: color),
+        SizedBox(width: 5.w),
+        Text(text, style: TextStyle(color: color, fontSize: 12.0.sp, fontWeight: FontWeight.w700, letterSpacing: .2)),
+      ]),
+    );
+  }
+
+  Widget _statusChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    VoidCallback? onTap,
+    bool elevated = false,
+  }) {
+    final chip = AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10.r),
+        color: color.withOpacity(0.10),
+        border: Border.all(color: color.withOpacity(0.38), width: 1.0),
+        boxShadow: elevated ? [BoxShadow(color: color.withOpacity(0.18), blurRadius: 12, offset: const Offset(0, 4))] : [],
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 13.sp, color: color),
+        SizedBox(width: 4.w),
+        Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 11.5.sp, letterSpacing: .2)),
+      ]),
+    );
+    return onTap == null ? chip : GestureDetector(onTap: onTap, child: chip);
+  }
+
+  Widget _controlButton({
+    required bool active,
+    required _ShopVariant variant,
+    required Color primary,
+    required Color okCol,
+    required VoidCallback onTap,
+  }) {
+    final bgGrad = LinearGradient(
+      colors: active ? [okCol.withOpacity(0.22), okCol.withOpacity(0.10)]
+                     : [primary.withOpacity(0.16), primary.withOpacity(0.08)],
+    );
+    final borderCol = active ? okCol.withOpacity(0.48) : primary.withOpacity(0.28);
+    final icon = active
+        ? (variant == _ShopVariant.plus ? Icons.check_circle_rounded : Icons.shopping_bag_rounded)
+        : (variant == _ShopVariant.plus ? Icons.add_circle_rounded : Icons.shopping_bag_outlined);
+    final iconColor = active ? okCol : primary;
+
+    return AnimatedBuilder(
+      animation: _bounce,
+      builder: (_, __) => Transform.scale(
+        scale: _bounce.value,
+        child: GestureDetector(
+          onTap: () { _pulse(); onTap(); widget.onToggleShopping?.call(); },
+          child: Container(
+            width: 44.w, height: 44.w,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12.r),
+              gradient: bgGrad,
+              border: Border.all(color: borderCol, width: 1.2),
+              boxShadow: active ? [BoxShadow(color: okCol.withOpacity(0.25), blurRadius: 16, offset: const Offset(0, 6))] : [],
+            ),
+            child: Center(child: Icon(icon, size: 22.sp, color: iconColor)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ------ build -------------------------------------------------------------
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+
+    // parse minimal quantities for chips (no auto-activation)
+    String name = "", unit = "";
+    double? need, have;
+    if (widget.data is String) {
+      name = widget.data as String;
+    } else if (widget.data is ShoppingItemModel) {
+      final s = widget.data as ShoppingItemModel;
+      name = s.name; need = s.need; have = s.have; unit = s.unit.trim().toLowerCase();
+    } else if (widget.data is Map) {
+      final m = widget.data as Map;
+      name = (m['name'] ?? '').toString();
+      need = (m['need'] as num?)?.toDouble() ?? (m['quantity'] as num?)?.toDouble();
+      have = (m['have'] as num?)?.toDouble();
+      unit = ((m['unit'] ?? '').toString()).trim().toLowerCase();
+    }
+
+    final isOptional = _isOptionalByName(name);
+    final shoppingItem = _findShoppingItemByName(name);
+    final isMissing = (() {
+      final tag = (shoppingItem?.tag.toLowerCase()) ?? '';
+      return shoppingItem != null && tag == 'missing';
+    })();
+
+    String? qtyStr;
+    if (need != null && need > 0) {
+      final raw = (need % 1 == 0) ? need.toStringAsFixed(0) : need.toString();
+      qtyStr = (unit.isEmpty || unit == 'count') ? raw : "$raw $unit";
+    }
+    String? haveStr;
+    if (have != null && have > 0) {
+      final raw = (have % 1 == 0) ? have.toStringAsFixed(0) : have.toString();
+      haveStr = (unit.isEmpty || unit == 'count') ? raw : "$raw $unit";
+    }
+
+    final qtyColor = isDark ? Colors.cyan[300]! : Colors.cyan[700]!;
+    final okCol    = isDark ? Colors.green[300]! : Colors.green[600]!;
+    final warnCol  = isDark ? Colors.orange[300]! : Colors.orange[700]!;
+    final missCol  = isDark ? Colors.red[300]! : Colors.red[600]!;
+
+    final double iconSize = 44.w, gap = 12.w;
+    final _ShopVariant variant = _computeVariant();
+    final bool active = (variant == _ShopVariant.bag) ? bagSelected : plusSelected;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10.h),
+      child: ModernCard(
+        radius: 14,
+        padding: EdgeInsets.all(14.w),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: isDark ? const [Color(0xFF242424), Color(0xFF1E1E1E)]
+                         : const [Color(0xFFFFFFFF), Color(0xFFF9FAFB)],
+        ),
+        onTap: () {},
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // centered title
+            Row(children: [
+              SizedBox(width: iconSize + gap),
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 15.5.sp,
+                    fontWeight: FontWeight.w800, letterSpacing: -0.2, height: 1.2),
+                ),
+              ),
+              SizedBox(width: 44.w), // right button space (one control)
+            ]),
+            SizedBox(height: 10.h),
+
+            // icon | chips | control (bag or plus)
+            Row(children: [
+              Container(
+                width: iconSize, height: iconSize,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12.r),
+                  gradient: LinearGradient(colors: [primary.withOpacity(0.18), primary.withOpacity(0.08)]),
+                  border: Border.all(color: primary.withOpacity(0.25), width: 1.1),
+                ),
+                child: Icon(Icons.restaurant_menu_rounded, size: 20.sp, color: primary),
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                child: Wrap(
+                  alignment: WrapAlignment.start, spacing: 8.w, runSpacing: 6.h,
+                  children: [
+                    if (qtyStr != null) _miniChip(icon: Icons.inventory_2_rounded, text: qtyStr, color: qtyColor),
+                    if (haveStr != null) _miniChip(icon: Icons.check_circle_rounded, text: "Have $haveStr", color: okCol),
+                  ],
+                ),
+              ),
+              _controlButton(
+                active: active,
+                variant: variant,
+                primary: primary,
+                okCol: okCol,
+                onTap: () => _setActive(!active),
+              ),
+            ]),
+
+            // badges line (only for the visible control + optional/missing)
+            SizedBox(height: 10.h),
+            Row(children: [
+              SizedBox(width: iconSize + gap),
+              Expanded(
+                child: Wrap(
+                  alignment: WrapAlignment.start, spacing: 8.w, runSpacing: 6.h,
+                  children: [
+                    if (variant == _ShopVariant.bag)
+                      _statusChip(
+                        icon: active ? Icons.check_circle_rounded : Icons.shopping_bag_outlined,
+                        label: active ? 'Buy — added' : 'Buy',
+                        color: active ? okCol : primary,
+                        onTap: () => _setActive(!active),
+                        elevated: active,
+                      ),
+                    if (variant == _ShopVariant.plus)
+                      _statusChip(
+                        icon: active ? Icons.check_circle_rounded : Icons.add_circle_rounded,
+                        label: active ? 'Add — added' : 'Add',
+                        color: active ? okCol : primary,
+                        onTap: () => _setActive(!active),
+                        elevated: active,
+                      ),
+                    if (isOptional)
+                      _statusChip(icon: Icons.info_outline_rounded, label: 'Optional', color: warnCol),
+                    if (isMissing)
+                      _statusChip(icon: Icons.report_gmailerrorred_rounded, label: 'Missing', color: missCol),
+                  ],
+                ),
+              ),
+              SizedBox(width: 44.w),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ================= ModernCreateShoppingListButton =================
+// ================= ModernCreateShoppingListButton =================
+class ModernCreateShoppingListButton extends StatefulWidget {
+  const ModernCreateShoppingListButton({
+    super.key,
+    required this.selectAllSignal,
+    required this.selectionDirtySignal,
+    required this.selectedCount,
+    required this.eligibleCount,
+    this.onCreate,
+    required this.clearAllSignal, // NEW
+  });
+
+  final ValueNotifier<int> selectAllSignal;
+  final ValueNotifier<int> selectionDirtySignal;
+  final ValueNotifier<int> selectedCount;
+  final int eligibleCount;
+  final VoidCallback? onCreate;
+  final ValueNotifier<int> clearAllSignal; // NEW
+
+  @override
+  State<ModernCreateShoppingListButton> createState() => _ModernCreateShoppingListButtonState();
+}
+
+enum _BtnState { inactive, armed, ready } // NEW
+
+class _ModernCreateShoppingListButtonState extends State<ModernCreateShoppingListButton> {
+  _BtnState _visual = _BtnState.inactive; // independent 3-state visual
+  _CtaMode _submitted = _CtaMode.idle;    // keep your once-per-mode submit rule
+
+  int _lastDirtyTick = 0;
+  int _lastSelected = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.selectionDirtySignal.addListener(_onDirty);
+    widget.selectedCount.addListener(_onSelectedChange);
+  }
+
+  @override
+  void dispose() {
+    widget.selectionDirtySignal.removeListener(_onDirty);
+    widget.selectedCount.removeListener(_onSelectedChange);
+    super.dispose();
+  }
+
+  // Any tile turning OFF after submission → go back to ARMED if still >0, else INACTIVE
+  void _onDirty() {
+    final v = widget.selectionDirtySignal.value;
+    if (v == _lastDirtyTick) return;
+    _lastDirtyTick = v;
+
+    final selected = widget.selectedCount.value;
+    setState(() {
+      if (selected > 0) {
+        _visual = _BtnState.armed; // white again
+        _submitted = _CtaMode.idle;
+      } else {
+        _visual = _BtnState.inactive;
+        _submitted = _CtaMode.idle;
+      }
+    });
+  }
+
+  // Selection changes independently arm/disarm the button
+  void _onSelectedChange() {
+    final s = widget.selectedCount.value;
+    if (s == _lastSelected) return;
+    _lastSelected = s;
+
+    setState(() {
+      if (s == 0) {
+        _visual = _BtnState.inactive;   // grey
+        _submitted = _CtaMode.idle;
+      } else if (_visual == _BtnState.inactive) {
+        _visual = _BtnState.armed;      // white as soon as ≥1 selected
+      }
+      // If already ready(green) and user changes selection, fall back to armed
+      else if (_visual == _BtnState.ready) {
+        _visual = _BtnState.armed;
+        _submitted = _CtaMode.idle;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final okCol   = isDark ? Colors.green[300]! : Colors.green[600]!;
+
+    final selected = widget.selectedCount.value;
+    final total    = widget.eligibleCount;
+    final bool some = selected > 0 && selected < total;
+    // ignore: unused_local_variable
+    final bool all  = total > 0 && selected >= total;
+
+    // ---- labels purely reflect coverage; they don’t drive state transitions
+    String label;
+    IconData icon;
+    switch (_visual) {
+      case _BtnState.inactive:
+        label = "Create shopping list";
+        icon = Icons.playlist_add_check_rounded;
+        break;
+      case _BtnState.armed:
+        label = some ? "Create list with selected" : "Create shopping list";
+        icon = Icons.playlist_add_check_rounded;
+        break;
+      case _BtnState.ready:
+        label = (_submitted == _CtaMode.createdSubset)
+            ? "List created with selected"
+            : "Shopping list ready";
+        icon = Icons.check_rounded;
+        break;
+    }
+
+    final Gradient? bg =
+      _visual == _BtnState.ready ? LinearGradient(colors: [okCol.withOpacity(.22), okCol.withOpacity(.10)])
+    : _visual == _BtnState.armed ? LinearGradient(colors: [Colors.white.withOpacity(.90), Colors.white.withOpacity(.80)])
+    : null;
+
+    final Color border =
+      _visual == _BtnState.ready ? okCol.withOpacity(.55)
+    : _visual == _BtnState.armed ? (isDark ? Colors.white.withOpacity(.55) : Colors.black.withOpacity(.12))
+    : primary.withOpacity(.35);
+
+    final Color textCol =
+      _visual == _BtnState.ready ? okCol
+    : _visual == _BtnState.armed ? (isDark ? Colors.black : Colors.black87)
+    : (isDark ? Colors.white : Colors.black87);
+
+    final Color iconCol = _visual == _BtnState.ready ? okCol : primary;
+
+    return GestureDetector(
+      // Long-press when INACTIVE → select all and become ARMED (white)
+      onLongPress: () {
+        if (_visual == _BtnState.inactive && total > 0) {
+          widget.selectAllSignal.value = widget.selectAllSignal.value + 1;
+          setState(() => _visual = _BtnState.armed);
+        }
+      },
+      onTap: () {
+        switch (_visual) {
+          case _BtnState.inactive:
+            // Tap does nothing (spec)
+            return;
+
+          case _BtnState.armed:
+            // Confirm → green + fire onCreate exactly once per coverage
+            setState(() {
+              _visual = _BtnState.ready;
+              if (some) {
+                if (_submitted != _CtaMode.createdSubset) {
+                  _submitted = _CtaMode.createdSubset;
+                  widget.onCreate?.call();
+                }
+              } else {
+                if (_submitted != _CtaMode.createdAll) {
+                  _submitted = _CtaMode.createdAll;
+                  widget.onCreate?.call();
+                }
+              }
+            });
+            return;
+
+          case _BtnState.ready:
+            // Reset EVERYTHING (spec): tiles OFF + button INACTIVE
+            widget.clearAllSignal.value = widget.clearAllSignal.value + 1;
+            setState(() {
+              _visual = _BtnState.inactive;
+              _submitted = _CtaMode.idle;
+            });
+            return;
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14.r),
+          gradient: bg,
+          border: Border.all(color: border, width: 1.2),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: iconCol, size: 20.sp),
+            SizedBox(width: 8.w),
+            Text(
+              label,
+              style: TextStyle(fontSize: 14.5.sp, fontWeight: FontWeight.w800, color: textCol, letterSpacing: .1),
+            ),
+          ],
+        ),
       ),
     );
   }

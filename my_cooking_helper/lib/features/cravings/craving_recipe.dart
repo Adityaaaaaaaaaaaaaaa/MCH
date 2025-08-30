@@ -43,6 +43,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
   final ValueNotifier<int> selectAllSignal = ValueNotifier<int>(0);
   final ValueNotifier<int> selectionDirtySignal = ValueNotifier<int>(0);
   final ValueNotifier<int> selectedCount = ValueNotifier<int>(0);
+  final ValueNotifier<int> clearAllSignal = ValueNotifier<int>(0);
 
   // Convert a data URL -> bytes (when you only have imageDataUrl on the model)
   Uint8List? _bytesFromDataUrl(String? dataUrl) {
@@ -85,6 +86,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
     selectAllSignal.dispose();
     selectionDirtySignal.dispose();
     selectedCount.dispose();
+    clearAllSignal.dispose();
     super.dispose();
   }
 
@@ -309,6 +311,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                               initiallyInShopping: false, // never auto-activate
                               onToggleShopping: () {}, // hook later
                               forcePlusOnly: widget.openedFromHistory,
+                              clearAllSignal: clearAllSignal,
                             ),
                           ),
 
@@ -326,6 +329,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                               initiallyInShopping: false,
                               onToggleShopping: () {},
                               forcePlusOnly: widget.openedFromHistory,
+                              clearAllSignal: clearAllSignal,
                             ),
                           ),
 
@@ -339,6 +343,7 @@ class _CravingRecipePageState extends State<CravingRecipePage> {
                               // Persist current selection snapshot (bagSelected/plusSelected) as you prefer.
                               // (No duplicates; tiles are idempotent and you can de-dupe server-side too.)
                             },
+                            clearAllSignal: clearAllSignal,
                           ),
                         ],
                       ),
