@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
@@ -23,7 +24,7 @@ import 'features/onboarding/onboarding_page.dart';
 import 'features/auth/sign_in_page.dart';
 import 'features/preferences/preferences_flow.dart';
 import 'features/splash/splash_screen.dart';
-import 'features/settings/settings.dart'; 
+import 'features/settings/settings.dart' as appsettings; 
 import 'features/cook/recipe_page.dart';
 import 'features/cook/cook.dart';
 import 'features/history/recipe_history.dart';
@@ -41,6 +42,9 @@ Future<void> main() async {
   perfObserver.attach();
   await perfBootstrap();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
   await GoogleSignIn.instance.initialize();
   await dotenv.load(fileName: ".env");
   final appDocDir = await getApplicationDocumentsDirectory();
@@ -78,7 +82,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/settings',
-      builder: (context, state) => const Settings(),
+      builder: (context, state) => const appsettings.Settings(),
     ),
     GoRoute(
       path: '/scan',
