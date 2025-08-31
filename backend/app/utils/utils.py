@@ -9,36 +9,45 @@ def detect_mime_type(file_bytes: bytes):
     return "application/octet-stream"
 
 
-def build_food_ingredient_prompt():
+def build_food_ingredient_prompt() -> str:
     return (
         "You are an advanced food ingredient recognition system. "
-        "Given an input image, identify only raw food ingredients visibly present from the image (such as fruits, vegetables, grains, dairy, or protein sources: meat, fish, eggs, legumes, or nuts). "
-        "Exclude all forms of cooked or prepared foods, beverages, packaging, brand names, or non-food items. "
-        "Categorize each detected ingredient into ONE of these categories (use exact spelling and capitalization): Fruits, Vegetables, Grains, Dairy, Protein, or Uncategorized. "
-        "Assign 'Uncategorized' only if the category cannot be confidently determined. "
-        "For each food ingredient detected, return the result in the following format and no other:\n"
-        "{itemName, count, category},{itemName, count, category},...\n"
-        "- itemName and category are Strings. Use the most precise and common English name for the ingredient. "
-        "- count is an integer representing the number of items detected; only include count if it is clear and unambiguous, otherwise use 1. Do not use decimals. "
-        "If no food ingredient can be detected, reply with { No ingredients detected } and nothing else. "
-        "Respond ONLY in the format specified above—do not include any other information, commentary, or formatting."
+        "Given a single photo, identify only RAW food ingredients visibly present (fruits, vegetables, grains, dairy, protein: meat, fish, eggs, legumes, nuts). "
+        "Exclude cooked/prepared foods, beverages, packaging, brand names, and non-food items. "
+        "For each detected ingredient, produce STRICT structured JSON with this exact Python type: "
+        "list[IngredientItem] where IngredientItem = {"
+        " itemName: str, quantity: float, unit: 'g'|'ml'|'count', "
+        " category: 'Fruits'|'Vegetables'|'Grains'|'Dairy'|'Protein'|'Uncategorized'"
+        "}. "
+        "Rules: "
+        "- Choose exactly ONE category for a recognised food ingredient from the list (use exact capitalization). "
+        "- Use 'Uncategorized' only if uncertain. "
+        "- Units: only 'g' for grams (solids), 'ml' for millilitres (liquids), or 'count' for whole items. No other units. "
+        "- If unit=='count', quantity MUST be an integer >=1 (e.g., 1, 2, 3). "
+        "- If a quantity cannot be inferred reliably, use quantity=1 with unit='count'. "
+        "- Use the most common English item name (singular). "
+        "Output requirements: Respond ONLY with JSON conforming to the schema (no extra text, no markdown)."
     )
 
 
-def build_receipt_ingredient_prompt():
+def build_receipt_ingredient_prompt() -> str:
     return (
-        "You are an advanced grocery receipt parser. "
-        "Given an image of a grocery receipt, extract only raw food ingredients and cooking staples from the image (such as fruits, vegetables, grains, dairy, or protein sources: meat, fish, eggs, legumes, or nuts). "
-        "Exclude snacks, prepared meals, beverages, non-food items, packaging, and brand names. "
-        "Receipts may vary in layout and language; focus only on extracting relevant food ingredients. "
-        "Categorize each item into ONE of the following categories (use exact spelling and capitalization): Fruits, Vegetables, Grains, Dairy, Protein, or Uncategorized. "
-        "Assign 'Uncategorized' only if the category cannot be confidently determined. "
-        "For each ingredient detected, return the result in the following format and no other:\n"
-        "{itemName, count, category},{itemName, count, category},...\n"
-        "- itemName and category are Strings. Use the most precise and common English name for the ingredient. "
-        "- count is an integer representing the quantity purchased; only include count if it is clear and unambiguous, otherwise use 1. Do not use decimals. "
-        "If no valid ingredient can be extracted, reply with { No ingredients detected } and nothing else. "
-        "Respond ONLY in the format specified above, do not include any other information, commentary, or formatting."
+        "You are an advanced grocery receipt parser. The input is a PHOTO of a printed receipt. "
+        "Receipts vary widely (layout, fonts, abbreviations, languages). They may be torn, stained, crumpled, blurry, or partially occluded. "
+        "Your task: extract ONLY raw food ingredients or cooking staples (e.g., fruits, vegetables, grains, dairy, meat, fish, eggs, legumes, nuts). "
+        "EXCLUDE: snacks, prepared/ready meals, beverages (unless a cooking staple like broth), brand names, prices, SKUs, discounts, totals, VAT/tax lines, barcodes, and all non-food items. "
+        "Normalize brand SKUs to generic ingredient names (e.g., 'Brand X Brown Sugar' → 'Brown Sugar'). "
+        "If line items specify multiple packs or a per-pack weight/volume (e.g., '2 x 500g Chicken'), compute the TOTAL quantity (here 1000 g). "
+        "Map units to this STRICT set only: 'g' for grams (solids), 'ml' for millilitres (liquids), 'count' for whole items. No other units are allowed. "
+        "Examples of mapping: kg→g (×1000), g→g, L→ml (×1000), ml→ml, pcs/each/pack/dozen→count. "
+        "If the quantity is unclear or absent, use quantity=1 and unit='count'. "
+        "Categorize each item into EXACTLY ONE of: 'Fruits','Vegetables','Grains','Dairy','Protein','Uncategorized'. "
+        "Use 'Uncategorized' only if the category is not confidently determined. "
+        "Return output as STRICT JSON ONLY with this exact Python type: list[IngredientItem] where "
+        "IngredientItem = {itemName: str, quantity: float, unit: 'g'|'ml'|'count', "
+        "category: 'Fruits'|'Vegetables'|'Grains'|'Dairy'|'Protein'|'Uncategorized'}. "
+        "Do not add any text or keys outside this schema. Do not wrap in markdown. "
+        "If nothing valid can be extracted, return an empty JSON list []."
     )
 
 
