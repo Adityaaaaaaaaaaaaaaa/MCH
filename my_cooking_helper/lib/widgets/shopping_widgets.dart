@@ -1769,3 +1769,198 @@ class ClearListButton extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Nice reminder sheet (date + time + pre-alert chips) with past-prevention.
+// Call: final result = await showReminderSheet(context);
+// ---------------------------------------------------------------------------
+
+class ReminderPick {
+  final DateTime when;
+  final Duration preAlert;
+  const ReminderPick(this.when, this.preAlert);
+}
+
+Future<ReminderPick?> showReminderSheet(BuildContext context) {
+  final now = DateTime.now();
+  DateTime pickedDate = DateTime(now.year, now.month, now.day);
+  TimeOfDay pickedTime = _roundUpTo5(TimeOfDay.fromDateTime(now.add(const Duration(minutes: 10))));
+  Duration preAlert = Duration.zero; // at time
+
+  return showModalBottomSheet<ReminderPick>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (c) {
+      final theme = Theme.of(c);
+      final isDark = theme.brightness == Brightness.dark;
+
+      return StatefulBuilder(
+        builder: (ctx, setState) {
+          // single, correct chip helper
+          Widget chip(String label, Duration d) {
+            final selected = preAlert == d;
+            return ChoiceChip(
+              label: Text(label),
+              selected: selected,
+              onSelected: (_) => setState(() => preAlert = d),
+              labelStyle: TextStyle(
+                color: selected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                fontWeight: FontWeight.w600,
+              ),
+              selectedColor: theme.colorScheme.primary,
+              backgroundColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF1F1F1),
+              side: BorderSide(color: selected ? theme.colorScheme.primary : Colors.transparent),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            );
+          }
+
+          Future<void> pickDate() async {
+            final now = DateTime.now();
+            final d = await showDatePicker(
+              context: ctx,
+              initialDate: pickedDate.isBefore(DateTime(now.year, now.month, now.day))
+                  ? DateTime(now.year, now.month, now.day)
+                  : pickedDate,
+              firstDate: DateTime(now.year, now.month, now.day),
+              lastDate: now.add(const Duration(days: 365 * 2)),
+            );
+            if (d != null) setState(() => pickedDate = d);
+          }
+
+          Future<void> pickTime() async {
+            final now = DateTime.now();
+            final initial = DateUtils.isSameDay(pickedDate, now)
+                ? _roundUpTo5(TimeOfDay.fromDateTime(now.add(const Duration(minutes: 10))))
+                : const TimeOfDay(hour: 9, minute: 0);
+
+            final t = await showTimePicker(
+              context: ctx,
+              initialTime: initial,
+              builder: (ctx2, child) => MediaQuery(
+                data: MediaQuery.of(ctx2).copyWith(alwaysUse24HourFormat: true),
+                child: child!,
+              ),
+            );
+            if (t != null) setState(() => pickedTime = t);
+          }
+
+          final combined = DateTime(
+            pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute,
+          );
+          final floor = now.add(const Duration(minutes: 1));
+          final isPast = combined.isBefore(floor);
+
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 16, right: 16,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                gradient: LinearGradient(
+                  colors: isDark ? [const Color(0xFF1E1E1E), const Color(0xFF2A2A2A)]
+                                 : [Colors.white, const Color(0xFFFAFAFA)],
+                ),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 20, offset: const Offset(0, 10)),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Set reminder', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                        IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.event),
+                            label: Text(
+                              '${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}',
+                            ),
+                            onPressed: pickDate,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.access_time),
+                            label: Text(TimeOfDay(hour: pickedTime.hour, minute: pickedTime.minute).format(ctx)),
+                            onPressed: pickTime,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('Alert me', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700)),
+                    ),
+                    const SizedBox(height: 8),
+
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        chip('At time', Duration.zero),
+                        chip('1 min before', const Duration(minutes: 1)),
+                        chip('5 min before', const Duration(minutes: 5)),
+                        chip('15 min before', const Duration(minutes: 15)),
+                        chip('1 hour before', const Duration(hours: 1)),
+                      ],
+                    ),
+
+                    if (isPast) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        'Selected time is in the past. We’ll adjust to ~1 minute from now.',
+                        style: theme.textTheme.bodySmall?.copyWith(color: Colors.orange),
+                      ),
+                    ],
+
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () {
+                          var when = DateTime(
+                            pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute,
+                          );
+                          final floor = DateTime.now().add(const Duration(minutes: 1));
+                          if (when.isBefore(floor)) when = floor;
+                          Navigator.pop(ctx, ReminderPick(when, preAlert));
+                        },
+                        child: const Text('Schedule'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+// helper: round minutes to next 5-min step
+TimeOfDay _roundUpTo5(TimeOfDay t) {
+  final m = ((t.minute + 4) ~/ 5) * 5;
+  final extraHour = m >= 60 ? 1 : 0;
+  final newMin = m % 60;
+  final newHour = (t.hour + extraHour) % 24;
+  return TimeOfDay(hour: newHour, minute: newMin);
+}
