@@ -120,6 +120,7 @@ class ReviewScreen extends ConsumerWidget {
                         ),
                       )
                     : ListView.builder(
+                        cacheExtent: MediaQuery.of(context).size.height,
                         padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
                         itemCount: scannedItems.length,
                         itemBuilder: (context, index) {

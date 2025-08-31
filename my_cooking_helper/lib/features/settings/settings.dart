@@ -430,6 +430,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
             ),
           ),
           ListView(
+            cacheExtent: MediaQuery.of(context).size.height,
             padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
             children: [
               SizedBox(height: 30.h),

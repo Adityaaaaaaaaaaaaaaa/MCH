@@ -10,7 +10,7 @@ import '/models/recipe_detail.dart';
 import '/theme/app_theme.dart';
 import '/utils/emoji_animation.dart';
 import '/models/recipe.dart';
-import '/widgets/cook_picker.dart';
+import '/widgets/recipe/cook_picker.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
 import '/utils/colors.dart';
@@ -943,6 +943,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                 // Recipes list
                 Expanded(
                   child: ListView.builder(
+                    cacheExtent: MediaQuery.of(context).size.height,
                     padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 20.h),
                     // itemCount logic:
                     // - If there are more recipes to show, show a "Show More" button as the last item.

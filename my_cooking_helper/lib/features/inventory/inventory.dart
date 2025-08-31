@@ -131,6 +131,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
             // GridView fills remaining space
             Expanded(
               child: GridView.builder(
+                cacheExtent: MediaQuery.of(context).size.height,
                 padding: EdgeInsets.only(right: 10.w, left: 10.w, top: 10.h, bottom: 90.h),
                 itemCount: sortedItems.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

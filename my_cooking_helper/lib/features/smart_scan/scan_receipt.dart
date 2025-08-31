@@ -11,7 +11,7 @@ import '/utils/colors.dart';
 import '/utils/loader.dart';
 import '/utils/snackbar.dart';
 import '/widgets/navigation/appbar.dart';
-import '/widgets/camera_commons.dart';
+import '/widgets/scan/camera_commons.dart';
 import '/models/item.dart';
 import 'item_controller.dart';
 import '/services/gemini_scanReceipt.dart'; 
@@ -256,8 +256,11 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
     lottieController.hide();
   }
 
-  List<Widget> _buildGroupedGeminiResults(List<Map<String, dynamic>> items, ThemeData theme) {
-    // Strict mapping to standardize headings
+  List<Widget> _buildGroupedGeminiResults(
+    List<Map<String, dynamic>> items,
+    ThemeData theme, {
+    bool showCount = true,
+  }) {
     const strictCategories = {
       "fruits": "Fruits",
       "vegetables": "Vegetables",
@@ -267,48 +270,94 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
       "uncategorized": "Uncategorized",
     };
 
-    // Group by strict category names
     final Map<String, List<Map<String, dynamic>>> grouped = {};
-    for (var item in items) {
-      final String rawCat = (item['category'] ?? 'uncategorized').toString().toLowerCase();
-      final String cat = strictCategories[rawCat] ?? "Uncategorized";
-      grouped.putIfAbsent(cat, () => []).add(item);
+    for (final it in items) {
+      final raw = (it['category'] ?? 'Uncategorized').toString().toLowerCase();
+      final cat = strictCategories[raw] ?? "Uncategorized";
+      (grouped[cat] ??= <Map<String, dynamic>>[]).add(it);
     }
 
-    // Sort categories so 'Uncategorized' is last
-    final sortedCats = grouped.keys.toList()
-      ..sort((a, b) {
-        if (a == 'Uncategorized') return 1;
-        if (b == 'Uncategorized') return -1;
-        return a.compareTo(b);
+    const order = ["Fruits", "Vegetables", "Grains", "Dairy", "Protein", "Uncategorized"];
+    final cats = <String>[
+      for (final c in order)
+        if (grouped[c]?.isNotEmpty == true) c,
+    ];
+
+    String _qtyLabel(Map<String, dynamic> it) {
+      final unit = (it['unit'] ?? 'count').toString().toLowerCase();
+      final dynamic q = it['quantity'];
+      final double qty = (q is num) ? q.toDouble() : double.tryParse('$q') ?? 1.0;
+
+      if (unit == 'count') return 'x${qty.toInt()}';
+      final String numStr = (qty % 1 == 0) ? qty.toInt().toString() : qty.toStringAsFixed(1);
+      return '$numStr $unit';
+    }
+
+    final widgets = <Widget>[];
+    for (final cat in cats) {
+      final list = [...grouped[cat]!];
+      list.sort((a, b) {
+        final an = (a['itemName'] ?? a['item'] ?? '').toString();
+        final bn = (b['itemName'] ?? b['item'] ?? '').toString();
+        return an.toLowerCase().compareTo(bn.toLowerCase());
       });
 
-    return [
-      for (final cat in sortedCats) ...[
+      // Header
+      widgets.add(
         Padding(
-          padding: EdgeInsets.only(top: 12.h, bottom: 4.h),
-          child: Text(
-            cat,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.primaryColor,
-              fontSize: 17.sp,
-            ),
+          padding: EdgeInsets.only(top: 12.h, bottom: 6.h),
+          child: Row(
+            children: [
+              Text(
+                cat,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: textColor(context),
+                  fontSize: 17.sp,
+                ),
+              ),
+              if (showCount) ...[
+                SizedBox(width: 8.w),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(999.r),
+                  ),
+                  child: Text(
+                    '${list.length}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSecondaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
-        ...grouped[cat]!.map((item) {
-          final String name = (item['itemName'] ?? item['item'] ?? '');
-          final count = item['count'];
-          return Padding(
-            padding: EdgeInsets.only(left: 16.0.w, bottom: 2.h),
-            child: Text(
-              "$name: $count",
-              style: theme.textTheme.bodyMedium,
-            ),
-          );
-        }),
-      ]
-    ];
+      );
+
+      // Items
+      widgets.addAll(list.map((item) {
+        final String name = (item['itemName'] ?? item['item'] ?? '').toString();
+        return Padding(
+          padding: EdgeInsets.only(left: 16.0.w, bottom: 4.h),
+          child: Text(
+            "- $name: ${_qtyLabel(item)}",
+            style: theme.textTheme.bodyMedium,
+          ),
+        );
+      }));
+
+      widgets.add(Divider(
+        height: 14.h,
+        thickness: 0.6,
+        color: theme.dividerColor.withOpacity(0.5),
+      ));
+    }
+    if (widgets.isNotEmpty && widgets.last is Divider) widgets.removeLast();
+    return widgets;
   }
 
   @override
@@ -420,24 +469,19 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
                               ? null
                               : () {
                                   int countAdded = 0;
-                                  for (var item in _geminiResult!) {
-                                    String name = item['itemName'] ?? item['item'] ?? '';
-                                    double quantity = 1.0;
-                                    if (item['count'] != null) {
-                                      if (item['count'] is int) {
-                                        quantity = (item['count'] as int).toDouble();
-                                      } else if (item['count'] is double) {
-                                        quantity = item['count'];
-                                      } else if (item['count'] is String) {
-                                        final parsed = double.tryParse(item['count']);
-                                        if (parsed != null) quantity = parsed;
-                                      }
-                                    }
+                                  for (final item in _geminiResult!) {
+                                    final String name = (item['itemName'] ?? item['item'] ?? '').toString();
+
+                                    final dynamic q = item['quantity'];
+                                    final double quantity = (q is num) ? q.toDouble() : double.tryParse('$q') ?? 1.0;
+
+                                    final String unit = (item['unit'] ?? 'count').toString();
+
                                     scanController.addItem(
                                       ScannedItem(
                                         itemName: name,
                                         quantity: quantity,
-                                        unit: null,
+                                        unit: unit,
                                         source: "gemini_receipt",
                                         category: item['category'] ?? 'Uncategorized',
                                         isReviewed: false,

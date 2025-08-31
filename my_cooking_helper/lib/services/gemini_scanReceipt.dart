@@ -6,97 +6,68 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '/config/backend_config.dart';
 
-// ignore: non_constant_identifier_names
-final String BACKEND_API_URL = geminiScanReceipt;
-
 final geminiReceiptProvider = Provider((ref) => GeminiReceiptService());
 
 class GeminiReceiptScanResult {
   final List<Map<String, dynamic>> items;
   final String? error;
   final int? errorCode;
-
   GeminiReceiptScanResult({required this.items, this.error, this.errorCode});
 }
 
 class GeminiReceiptService {
-  String capitalize(String input) {
-    if (input.isEmpty) return input;
-    return '${input[0].toUpperCase()}${input.substring(1).toLowerCase()}';
-  }
+  String _cap(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1).toLowerCase()}';
 
   Future<GeminiReceiptScanResult> analyzeReceiptImage(File imageFile) async {
     try {
-      var request = http.MultipartRequest('POST', Uri.parse(BACKEND_API_URL));
-      request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+      final req = http.MultipartRequest('POST', Uri.parse(geminiScanReceipt));
+      req.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
 
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
+      final resp = await req.send();
+      final body = await resp.stream.bytesToString();
 
-      print('\x1B[34m[DEBUG] Backend API status: ${response.statusCode}\x1B[0m');
-      print('\x1B[34m[DEBUG] Backend API response: $responseBody\x1B[0m');
+      print('\x1B[34m[DEBUG] Backend API status: ${resp.statusCode}\x1B[0m');
+      print('\x1B[34m[DEBUG] Backend API response: $body\x1B[0m');
 
-      final jsonResp = jsonDecode(responseBody);
+      final jsonResp = jsonDecode(body);
 
-      if (response.statusCode == 200) {
-        if (jsonResp is Map && jsonResp.containsKey('detected_items')) {
-          final List<dynamic> gemItems = jsonResp['detected_items'];
+      if (resp.statusCode == 200) {
+        final List<dynamic> arr = (jsonResp is Map && jsonResp['detected_items'] is List)
+            ? jsonResp['detected_items'] as List
+            : const [];
 
-          final items = gemItems.map<Map<String, dynamic>>((item) {
-            String name = item['itemName'] ?? item['item'] ?? '';
-            name = capitalize(name);
+        final items = arr.map<Map<String, dynamic>>((e) {
+          final name = _cap((e['itemName'] ?? e['item'] ?? '').toString());
 
-            double? count;
-            if (item['count'] != null) {
-              if (item['count'] is int) {
-                count = (item['count'] as int).toDouble();
-              } else if (item['count'] is double) {
-                count = item['count'];
-              } else if (item['count'] is String) {
-                count = double.tryParse(item['count']);
-              }
-            }
+          // quantity parsing
+          final dynamic q = e['quantity'];
+          final double qty = (q is num) ? q.toDouble() : double.tryParse('${q}') ?? 1.0;
 
-            String category = (item['category'] ?? 'uncategorized').toString();
-            return {'itemName': name, 'count': count, 'category': category};
-          }).toList();
+          final unit = (e['unit'] ?? 'count').toString().toLowerCase().trim();
 
-          return GeminiReceiptScanResult(items: items);
-        } else {
-          // Response is malformed
-          return GeminiReceiptScanResult(
-            items: [],
-            error: '"detected_items" missing in backend response.',
-            errorCode: 500,
-          );
-        }
+          return {
+            'itemName': name,
+            'quantity': qty,
+            'unit': unit, // 'g' | 'ml' | 'count'
+            'category': (e['category'] ?? 'Uncategorized').toString(),
+          };
+        }).toList();
+
+        return GeminiReceiptScanResult(items: items);
       } else {
-        // Non-200 (backend or Gemini error)
-        String? errMsg;
-        int? errCode = response.statusCode;
-        if (jsonResp is Map && jsonResp.containsKey('error')) {
-          if (jsonResp['error'] is String) {
-            errMsg = jsonResp['error'];
-          } else if (jsonResp['error'] is Map && jsonResp['error']['message'] != null) {
-            errMsg = jsonResp['error']['message'];
-          } else {
-            errMsg = jsonResp['error'].toString();
-          }
-        } else {
-          errMsg = 'Unknown backend error (${response.statusCode}).';
+        String errMsg = 'Unknown backend error (${resp.statusCode}).';
+        int errCode = resp.statusCode;
+        if (jsonResp is Map && jsonResp['error'] != null) {
+          errMsg = jsonResp['error'].toString();
+          errCode = (jsonResp['error_code'] ?? errCode) as int;
         }
-        return GeminiReceiptScanResult(
-          items: [],
-          error: errMsg,
-          errorCode: errCode,
-        );
+        return GeminiReceiptScanResult(items: [], error: errMsg, errorCode: errCode);
       }
     } catch (e) {
       print('\x1B[31m[DEBUG] Backend API exception: $e\x1B[0m');
       return GeminiReceiptScanResult(
         items: [],
         error: 'Failed to connect or parse backend response.',
-        errorCode: null,
       );
     }
   }
