@@ -1423,6 +1423,7 @@ class ShoppingReceipt extends StatefulWidget {
     required this.onAdd,
     required this.onChange,
     required this.onDelete,
+    this.trailing,
   });
 
   final List<ShoppingItemModel> items;
@@ -1434,6 +1435,7 @@ class ShoppingReceipt extends StatefulWidget {
   onAdd;
   final OnItemChanged onChange;
   final Future<void> Function(String name) onDelete;
+  final Widget? trailing;
 
   @override
   State<ShoppingReceipt> createState() => _ShoppingReceiptState();
@@ -1593,6 +1595,14 @@ class _ShoppingReceiptState extends State<ShoppingReceipt>
                     receiptId: _receiptId,
                   ),
                 ),
+
+                if (widget.trailing != null)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 16.h),
+                      child: widget.trailing!,
+                    ),
+                  ),
               ],
             ),
           ).asGlass(
@@ -1647,7 +1657,7 @@ class _EmptyReceipt extends StatelessWidget {
             ),
             SizedBox(height: 8.h),
             Text(
-              "Tap below to add your first ingredient",
+              "Tap the + to add your first ingredient",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14.sp,
@@ -1656,8 +1666,104 @@ class _EmptyReceipt extends StatelessWidget {
               ),
             ),
             SizedBox(height: 18.h),
-            AddItemInline(onTap: onAdd),
+            //AddItemInline(onTap: onAdd),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// --------------------------
+// ClearListButton (reusable)
+// --------------------------
+class ClearListButton extends StatelessWidget {
+  const ClearListButton({
+    super.key,
+    required this.itemCount,
+    required this.onClear,
+    this.enabled = true,
+  });
+
+  final int itemCount;
+  final Future<void> Function() onClear;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final canPress = enabled && itemCount > 0;
+
+    Future<void> _confirmAndClear() async {
+      if (!canPress) return;
+
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Clear entire list?'),
+          content: Text(
+            'This will permanently remove ${itemCount} item(s) from your shopping list across all devices.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.delete_forever_outlined),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              label: const Text('Clear'),
+            ),
+          ],
+        ),
+      ) ?? false;
+
+      if (!ok) return;
+
+      await onClear();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.delete_sweep, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Shopping list cleared'),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red[600],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: canPress ? _confirmAndClear : null,
+        icon: const Icon(Icons.delete_sweep_outlined),
+        label: Text(itemCount > 0 ? 'Clear list (${itemCount})' : 'Clear list'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red[600],
+          foregroundColor: Colors.white,
+          padding: EdgeInsets.symmetric(vertical: 14.h),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14.r),
+          ),
+          elevation: canPress ? 6 : 0,
+          disabledBackgroundColor:
+              isDark ? Colors.red[900]?.withOpacity(0.4) : Colors.red[200],
+          disabledForegroundColor:
+              isDark ? Colors.white70 : Colors.white,
         ),
       ),
     );

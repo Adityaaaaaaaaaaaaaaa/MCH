@@ -36,18 +36,15 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> with TickerProvider
       ),
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 20.h), // full screen use
+          padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 20.h),
           child: ShoppingReceipt(
             items: items,
             onAdd: ({
-              required String name, 
-              required double need, 
+              required String name,
+              required double need,
               required String unit
-            }) { svc.addOrUpdate (
-                name: name, 
-                need: need, 
-                unit: unit
-              );
+            }) {
+              svc.addOrUpdate(name: name, need: need, unit: unit);
             },
             onChange: (updated) => svc.addOrUpdate(
               name: updated.name,
@@ -57,6 +54,15 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> with TickerProvider
               tag: updated.tag,
             ),
             onDelete: (name) => svc.remove(name),
+
+            // NEW: this now appears UNDER the list & scrolls with it
+            trailing: ClearListButton(
+              itemCount: items.length,
+              onClear: () async {
+                if (items.isEmpty) return;
+                await svc.clearAll(); // Firestore stays in sync
+              },
+            ),
           ),
         ),
       ),
