@@ -250,8 +250,12 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
     lottieController.hide();
   }
 
-  List<Widget> _buildGroupedGeminiResults(List<Map<String, dynamic>> items, ThemeData theme) {
-    // Strict category mapping for headings
+  List<Widget> _buildGroupedGeminiResults(
+    List<Map<String, dynamic>> items,
+    ThemeData theme, {
+    bool showCount = true,      // show a small count badge next to the title
+  }) {
+    // 1) Normalise category labels
     const strictCategories = {
       "fruits": "Fruits",
       "vegetables": "Vegetables",
@@ -261,48 +265,102 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
       "uncategorized": "Uncategorized",
     };
 
-    // Group items by strict category name
+    // 2) Group items by category
     final Map<String, List<Map<String, dynamic>>> grouped = {};
-    for (var item in items) {
-      final String rawCat = (item['category'] ?? 'uncategorized').toString().toLowerCase();
-      final String cat = strictCategories[rawCat] ?? "Uncategorized";
-      grouped.putIfAbsent(cat, () => []).add(item);
+    for (final it in items) {
+      final raw = (it['category'] ?? 'Uncategorized').toString().toLowerCase();
+      final cat = strictCategories[raw] ?? "Uncategorized";
+      (grouped[cat] ??= <Map<String, dynamic>>[]).add(it);
     }
 
-    // Get sorted categories: all except 'Uncategorized', then 'Uncategorized' last
-    final sortedCats = grouped.keys.toList()
-      ..sort((a, b) {
-        if (a == 'Uncategorized') return 1;
-        if (b == 'Uncategorized') return -1;
-        return a.compareTo(b);
+    // 3) Fixed order; exclude empty groups
+    const order = ["Fruits", "Vegetables", "Grains", "Dairy", "Protein", "Uncategorized"];
+    final cats = <String>[
+      for (final c in order)
+        if (grouped[c]?.isNotEmpty == true) c,
+    ];
+
+    // 4) Helper: quantity → label
+    String _qtyLabel(Map<String, dynamic> it) {
+      final String unit = (it['unit'] ?? 'count').toString().toLowerCase();
+      final dynamic q = it['quantity'];
+      final double qty = (q is num) ? q.toDouble() : double.tryParse('$q') ?? 1.0;
+
+      if (unit == 'count') return 'x${qty.toInt()}';
+      final String numStr = (qty % 1 == 0) ? qty.toInt().toString() : qty.toStringAsFixed(1);
+      return '$numStr $unit';
+    }
+
+    // 5) Build UI
+    final widgets = <Widget>[];
+    for (final cat in cats) {
+      final list = [...grouped[cat]!];
+      list.sort((a, b) {
+        final an = (a['itemName'] ?? a['item'] ?? '').toString();
+        final bn = (b['itemName'] ?? b['item'] ?? '').toString();
+        return an.toLowerCase().compareTo(bn.toLowerCase());
       });
 
-    return [
-      for (final cat in sortedCats) ...[
+      // --- Category title row (group header)
+      widgets.add(
         Padding(
-          padding: EdgeInsets.only(top: 12.h, bottom: 4.h),
-          child: Text(
-            cat,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.primaryColor,
-              fontSize: 17.sp,
-            ),
+          padding: EdgeInsets.only(top: 12.h, bottom: 6.h),
+          child: Row(
+            children: [
+              Text(
+                cat,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: textColor(context),
+                  fontSize: 17.sp,
+                ),
+              ),
+              if (showCount) ...[
+                SizedBox(width: 8.w),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(999.r),
+                  ),
+                  child: Text(
+                    '${list.length}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSecondaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
-        ...grouped[cat]!.map((item) {
-          final String name = (item['itemName'] ?? item['item'] ?? '');
-          final count = item['count'];
-          return Padding(
-            padding: EdgeInsets.only(left: 16.0.w, bottom: 2.h),
-            child: Text(
-              "$name: $count",
-              style: theme.textTheme.bodyMedium,
-            ),
-          );
-        }),
-      ]
-    ];
+      );
+
+      // --- Items under the category
+      widgets.addAll(list.map((item) {
+        final String name = (item['itemName'] ?? item['item'] ?? '').toString();
+        return Padding(
+          padding: EdgeInsets.only(left: 16.0.w, bottom: 4.h),
+          child: Text(
+            "- $name: ${_qtyLabel(item)}",
+            style: theme.textTheme.bodyMedium,
+          ),
+        );
+      }));
+
+      // Optional subtle divider between groups
+      widgets.add(Divider(
+        height: 14.h,
+        thickness: 0.6,
+        color: theme.dividerColor.withOpacity(0.5),
+      ));
+    }
+
+    // Remove trailing divider for the last group
+    if (widgets.isNotEmpty && widgets.last is Divider) widgets.removeLast();
+
+    return widgets;
   }
 
   @override
@@ -414,10 +472,11 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
                                     scanController.addItem(
                                       ScannedItem(
                                         itemName: item['itemName'] ?? item['item'] ?? '',
-                                        quantity: (item['count'] as num?)?.toDouble() ?? 1.0,
-                                        unit: null,
+                                        quantity: (item['quantity'] is num) ? (item['quantity'] as num).toDouble()
+                                                  : double.tryParse('${item['quantity']}') ?? 1.0,
+                                        unit: (item['unit'] ?? 'count').toString(),     // NEW
                                         source: "gemini_vision",
-                                        category: item['category'] ?? 'Uncategorized', 
+                                        category: item['category'] ?? 'Uncategorized',
                                         isReviewed: false,
                                         isEdited: false,
                                       ),
