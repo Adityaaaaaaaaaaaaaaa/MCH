@@ -566,8 +566,8 @@ class _ShoppingListTileState extends State<ShoppingListTile>
   late final Animation<double> _hoverAnimation;
   late Animation<Color?> _borderAnimation;
 
-  bool _isHovered = false;
   bool _showControls = false;
+  bool _pressed = false;
 
   @override
   void initState() {
@@ -634,131 +634,118 @@ class _ShoppingListTileState extends State<ShoppingListTile>
         setState(() => _showControls = !_showControls);
         _startBorderAnimation();
       },
-      child: MouseRegion(
-        onEnter: (_) {
-          setState(() => _isHovered = true);
-          _hoverController.forward();
-        },
-        onExit: (_) {
-          setState(() => _isHovered = false);
-          _hoverController.reverse();
-        },
-        child: ScaleTransition(
-          scale: _hoverAnimation,
-          child: AnimatedBuilder(
-            animation: _borderAnimation,
-            builder: (context, child) {
-              return Container(
-                margin: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-                  border: Border.all(
-                    color: _borderAnimation.value ?? Colors.transparent,
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(8.r),
-                  boxShadow:
-                      _isHovered
-                          ? [
-                            BoxShadow(
-                              color:
-                                  isDark
-                                      ? Colors.black.withOpacity(0.3)
-                                      : Colors.grey.withOpacity(0.15),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                          : [],
+      onTapDown: (_) {
+        setState(() => _pressed = true);
+        _hoverController.forward();   // scale up a touch
+      },
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        _hoverController.reverse();   // return to normal scale
+      },
+      onTapCancel: () {
+        setState(() => _pressed = false);
+        _hoverController.reverse();
+      },
+      child: ScaleTransition(
+        scale: _hoverAnimation,
+        child: AnimatedBuilder(
+          animation: _borderAnimation,
+          builder: (context, child) {
+            return Container(
+              margin: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                border: Border.all(
+                  color: _borderAnimation.value ?? Colors.transparent,
+                  width: 1,
                 ),
-                child: Column(
-                  children: [
-                    // Main Receipt Line
-                    Row(
-                      children: [
-                        // Quantity (Receipt Style)
-                        SizedBox(
-                          width: 68.w, // a bit wider than before to fit "200 ml"
-                          child: Text(
-                            formatQty(qty, widget.item.unit),
-                            style: TextStyle(
-                              fontFamily: 'monospace',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14.sp,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
+                borderRadius: BorderRadius.circular(8.r),
+                boxShadow: _pressed   // <-- use press state for shadow
+                    ? [
+                        BoxShadow(
+                          color: isDark
+                              ? Colors.black.withOpacity(0.30)
+                              : Colors.grey.withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --- your existing main Row (with full name, no ellipsis) ---
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 68.w,
+                        child: Text(
+                          formatQty(qty, widget.item.unit),
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14.sp,
+                            color: isDark ? Colors.white : Colors.black87,
                           ),
                         ),
-
-                        SizedBox(width: 12.w),
-
-                        // Item Details
-                        Expanded(
-                          child: Text(
-                            widget.item.name, // keep user-provided casing; looks more natural than ALL CAPS
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            softWrap: true,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15.sp,
-                              height: 1.2,
-                              color: isDark ? Colors.white : Colors.black87,
-                              letterSpacing: 0.2,
-                            ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Text(
+                          widget.item.name,
+                          softWrap: true,
+                          maxLines: null,
+                          overflow: TextOverflow.visible,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15.sp,
+                            height: 1.2,
+                            color: isDark ? Colors.white : Colors.black87,
+                            letterSpacing: 0.2,
                           ),
                         ),
+                      ),
+                      SizedBox(
+                        width: 24.w,
+                        child: Icon(
+                          _showControls ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                          color: isDark ? Colors.white70 : Colors.black54,
+                          size: 20.sp,
+                        ),
+                      ),
+                    ],
+                  ),
 
-                        // Receipt dots
-                        Flexible(
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              // each “unit” ≈ dot width + horizontal margins
-                              final double unit = 3.w + 2 * 1.w;
-                              final int count = (constraints.maxWidth / unit)
-                                  .floor()
-                                  .clamp(0, 200); // safety cap
+                  SizedBox(height: 8.h),
 
-                              return Row(
-                                children: List.generate(
-                                  count,
-                                  (_) => Container(
-                                    width: 3.w,
-                                    height: 1.h,
-                                    margin: EdgeInsets.symmetric(
-                                      horizontal: 1.w,
-                                    ),
-                                    color:
-                                        isDark
-                                            ? Colors.grey[600]
-                                            : Colors.grey[400],
-                                  ),
-                                ),
-                              );
-                            },
+                  // Dotted divider under the row (keeps receipt vibe)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final int count = (constraints.maxWidth / (3.w + 2.w))
+                          .floor()
+                          .clamp(0, 400);
+                      return Row(
+                        children: List.generate(
+                          count,
+                          (_) => Container(
+                            width: 3.w,
+                            height: 1.h,
+                            margin: EdgeInsets.symmetric(horizontal: 1.w),
+                            color: isDark ? Colors.grey[600] : Colors.grey[400],
                           ),
                         ),
+                      );
+                    },
+                  ),
 
-                        // Action Button
-                        SizedBox(
-                          width: 24.w, // keep it predictable
-                          child: Icon(
-                            _showControls
-                                ? Icons.keyboard_arrow_up
-                                : Icons.keyboard_arrow_down,
-                            color: isDark ? Colors.white70 : Colors.black54,
-                            size: 20.sp,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // Expandable Controls
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      height: _showControls ? 60.h : 0,
+                  // --- your existing expandable controls block (unchanged) ---
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    height: _showControls ? 60.h : 0,
                       child:
                           _showControls
                               ? Container(
@@ -885,12 +872,11 @@ class _ShoppingListTileState extends State<ShoppingListTile>
                                 ),
                               )
                               : const SizedBox.shrink(),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -915,8 +901,6 @@ extension ShoppingModelCopy on ShoppingItemModel {
     );
   }
 }
-
-// lib/features/shopping/shopping_widgets.dart
 
 /* -------------------------------------------------------------------------- */
 /* Utility formatting                                                         */
