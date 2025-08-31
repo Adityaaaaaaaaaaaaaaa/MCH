@@ -1,147 +1,547 @@
 // lib/features/shopping/shopping_widgets.dart
+// ignore_for_file: deprecated_member_use
+
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:glass/glass.dart';
 import '/models/cravings.dart';
 
 typedef OnItemChanged = void Function(ShoppingItemModel updated);
-typedef OnItemRemove  = void Function();
+typedef OnItemRemove = void Function();
 
+/// --------------------------
+/// AddItemBar (Plus Button + Modal)
+/// --------------------------
 class AddItemBar extends StatefulWidget {
-  const AddItemBar({
-    super.key,
-    required this.onSubmit,
-  });
+  const AddItemBar({super.key, required this.onSubmit});
 
-  final void Function({required String name, required double need, required String unit}) onSubmit;
+  final void Function({
+    required String name,
+    required double need,
+    required String unit,
+  })
+  onSubmit;
 
   @override
   State<AddItemBar> createState() => _AddItemBarState();
 }
 
-class _AddItemBarState extends State<AddItemBar> {
-  final _nameCtrl = TextEditingController();
-  double _qty = 1;
-  String _unit = 'count';
+class _AddItemBarState extends State<AddItemBar> with TickerProviderStateMixin {
+  late final AnimationController _pulseController;
+  late final AnimationController _rotateController;
+  late final Animation<double> _pulseAnimation;
+  late final Animation<double> _rotateAnimation;
 
-  void _applyQty(double v) {
-    setState(() => _qty = v < 0 ? 0 : v);
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+
+    _rotateController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _rotateAnimation = Tween<double>(begin: 0.0, end: 0.125).animate(
+      CurvedAnimation(parent: _rotateController, curve: Curves.elasticOut),
+    );
   }
 
-  void _submit() {
-    final name = _nameCtrl.text.trim();
-    if (name.isEmpty) return;
-    widget.onSubmit(name: name, need: _qty <= 0 ? 1 : _qty, unit: _unit);
-    _nameCtrl.clear();
-    setState(() => _qty = 1);
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _rotateController.dispose();
+    super.dispose();
+  }
+
+  void _showAddModal() {
+    _rotateController.forward().then((_) => _rotateController.reverse());
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddItemModal(onSubmit: widget.onSubmit),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    // ignore: unused_local_variable
+    final isDark = theme.brightness == Brightness.dark;
 
-    Widget unitChip(String u) {
-      final selected = _unit == u;
-      return GestureDetector(
-        onTap: () => setState(() => _unit = u),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-          decoration: BoxDecoration(
-            color: selected
-                ? primary.withOpacity(isDark ? .22 : .12)
-                : (isDark ? const Color(0xFF232323) : Colors.white),
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: selected ? primary.withOpacity(.55) : primary.withOpacity(.18), width: 1.0),
-          ),
-          child: Text(
-            u,
-            style: TextStyle(
-              fontSize: 12.5.sp,
-              fontWeight: FontWeight.w800,
-              color: selected ? primary : (isDark ? Colors.white : Colors.black87),
-              letterSpacing: .2,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16.r),
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        border: Border.all(color: primary.withOpacity(.12), width: 1),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _nameCtrl,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _submit(),
-                  decoration: InputDecoration(
-                    hintText: 'Add ingredient',
-                    hintStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
-                    border: InputBorder.none,
-                  ),
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.sp, color: isDark ? Colors.white : Colors.black87),
+    return Center(
+      child: ScaleTransition(
+        scale: _pulseAnimation,
+        child: RotationTransition(
+          turns: _rotateAnimation,
+          child: GestureDetector(
+            onTap: _showAddModal,
+            child: Container(
+              width: 60.w,
+              height: 60.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [primary, primary.withOpacity(0.8)],
                 ),
-              ),
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () => _applyQty(_qty - 1),
-                    icon: const Icon(Icons.remove_circle_outline),
-                    tooltip: 'Decrease',
+                boxShadow: [
+                  BoxShadow(
+                    color: primary.withOpacity(0.4),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
                   ),
-                  SizedBox(
-                    width: 48.w,
-                    child: Text(
-                      (_qty % 1 == 0) ? _qty.toStringAsFixed(0) : _qty.toStringAsFixed(2),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => _applyQty(_qty + 1),
-                    icon: const Icon(Icons.add_circle_outline),
-                    tooltip: 'Increase',
+                  BoxShadow(
+                    color: primary.withOpacity(0.2),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
-              SizedBox(width: 6.w),
-              ElevatedButton.icon(
-                onPressed: _submit,
-                icon: const Icon(Icons.add),
-                label: const Text('Add'),
-                style: ElevatedButton.styleFrom(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                ),
-              ),
-            ],
+              child: Icon(Icons.add, color: Colors.white, size: 28.sp),
+            ).asGlass(
+              tintColor: primary,
+              clipBorderRadius: BorderRadius.circular(30.r),
+            ),
           ),
-          SizedBox(height: 6.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              unitChip('g'),
-              SizedBox(width: 6.w),
-              unitChip('ml'),
-              SizedBox(width: 6.w),
-              unitChip('count'),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
+/// --------------------------
+/// AddItemModal (Beautiful Modal)
+/// --------------------------
+class AddItemModal extends StatefulWidget {
+  const AddItemModal({super.key, required this.onSubmit});
+
+  final void Function({
+    required String name,
+    required double need,
+    required String unit,
+  })
+  onSubmit;
+
+  @override
+  State<AddItemModal> createState() => _AddItemModalState();
+}
+
+class _AddItemModalState extends State<AddItemModal>
+    with TickerProviderStateMixin {
+  final _nameCtrl = TextEditingController();
+  double _qty = 1;
+  String _unit = 'count';
+
+  late final AnimationController _slideController;
+  late final AnimationController _borderController;
+  late final Animation<Offset> _slideAnimation;
+  late final Animation<Color?> _borderAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+
+    _borderController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+    );
+
+    _borderAnimation = ColorTween(
+      begin: Colors.blue.withOpacity(0.2),
+      end: Colors.purple.withOpacity(0.4),
+    ).animate(
+      CurvedAnimation(parent: _borderController, curve: Curves.easeInOut),
+    );
+
+    _slideController.forward();
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _slideController.dispose();
+    _borderController.dispose();
+    super.dispose();
+  }
+
+  void _applyQty(double v) => setState(() => _qty = v < 0 ? 0 : v);
+
+  void _submit() {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) return;
+    widget.onSubmit(name: name, need: _qty <= 0 ? 1 : _qty, unit: _unit);
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final isDark = theme.brightness == Brightness.dark;
+
+    Widget unitChip(String u, IconData icon) {
+      final selected = _unit == u;
+      return GestureDetector(
+        onTap: () => setState(() => _unit = u),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(25.r),
+            gradient:
+                selected
+                    ? LinearGradient(
+                      colors: [primary, primary.withOpacity(0.7)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                    : LinearGradient(
+                      colors: [
+                        isDark
+                            ? const Color(0xFF2A2A2A)
+                            : const Color(0xFFF5F5F5),
+                        isDark
+                            ? const Color(0xFF1E1E1E)
+                            : const Color(0xFFEEEEEE),
+                      ],
+                    ),
+            border: Border.all(
+              color: selected ? primary.withOpacity(0.8) : Colors.transparent,
+              width: 2,
+            ),
+            boxShadow:
+                selected
+                    ? [
+                      BoxShadow(
+                        color: primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                    : [],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18.sp,
+                color:
+                    selected
+                        ? Colors.white
+                        : (isDark ? Colors.white70 : Colors.black54),
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                u,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.bold,
+                  color:
+                      selected
+                          ? Colors.white
+                          : (isDark ? Colors.white70 : Colors.black87),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SlideTransition(
+      position: _slideAnimation,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          left: 16.w,
+          right: 16.w,
+          top: 20.h,
+        ),
+        child: AnimatedBuilder(
+          animation: _borderAnimation,
+          builder: (context, child) {
+            return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(25.r),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors:
+                      isDark
+                          ? [const Color(0xFF1E1E1E), const Color(0xFF2A2A2A)]
+                          : [Colors.white, const Color(0xFFFAFAFA)],
+                ),
+                border: Border.all(
+                  color: _borderAnimation.value ?? Colors.transparent,
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        isDark
+                            ? Colors.black.withOpacity(0.5)
+                            : Colors.grey.withOpacity(0.3),
+                    blurRadius: 25,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(24.w),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Modal Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Add Ingredient",
+                          style: TextStyle(
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: EdgeInsets.all(8.w),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color:
+                                  isDark ? Colors.grey[800] : Colors.grey[200],
+                            ),
+                            child: Icon(
+                              Icons.close,
+                              size: 20.sp,
+                              color: isDark ? Colors.white70 : Colors.black54,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 24.h),
+
+                    // Item Name Input
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15.r),
+                        color:
+                            isDark
+                                ? const Color(0xFF2A2A2A)
+                                : const Color(0xFFF8F8F8),
+                        border: Border.all(
+                          color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                          width: 1,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _nameCtrl,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _submit(),
+                        decoration: InputDecoration(
+                          hintText: 'Enter ingredient name...',
+                          hintStyle: TextStyle(
+                            color: isDark ? Colors.grey[500] : Colors.grey[600],
+                            fontSize: 16.sp,
+                          ),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 16.h,
+                          ),
+                          border: InputBorder.none,
+                        ),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16.sp,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 24.h),
+
+                    // Quantity Section
+                    Row(
+                      children: [
+                        Text(
+                          "Quantity:",
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.grey[300] : Colors.grey[700],
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(15.r),
+                            color:
+                                isDark
+                                    ? const Color(0xFF2A2A2A)
+                                    : const Color(0xFFF8F8F8),
+                            border: Border.all(
+                              color: primary.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: () => _applyQty(_qty - 1),
+                                child: Container(
+                                  padding: EdgeInsets.all(12.w),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(15.r),
+                                      bottomLeft: Radius.circular(15.r),
+                                    ),
+                                    color: Colors.red.withOpacity(0.1),
+                                  ),
+                                  child: Icon(
+                                    Icons.remove,
+                                    size: 20.sp,
+                                    color: Colors.red[600],
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: 60.w,
+                                padding: EdgeInsets.symmetric(vertical: 12.h),
+                                child: Text(
+                                  (_qty % 1 == 0)
+                                      ? _qty.toStringAsFixed(0)
+                                      : _qty.toStringAsFixed(1),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16.sp,
+                                    color:
+                                        isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => _applyQty(_qty + 1),
+                                child: Container(
+                                  padding: EdgeInsets.all(12.w),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.only(
+                                      topRight: Radius.circular(15.r),
+                                      bottomRight: Radius.circular(15.r),
+                                    ),
+                                    color: Colors.green.withOpacity(0.1),
+                                  ),
+                                  child: Icon(
+                                    Icons.add,
+                                    size: 20.sp,
+                                    color: Colors.green[600],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 24.h),
+
+                    // Unit Selection
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Unit:",
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.grey[300] : Colors.grey[700],
+                          ),
+                        ),
+                        SizedBox(height: 12.h),
+                        Row(
+                          children: [
+                            unitChip('g', Icons.scale),
+                            SizedBox(width: 12.w),
+                            unitChip('ml', Icons.opacity),
+                            SizedBox(width: 12.w),
+                            unitChip('count', Icons.tag),
+                          ],
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 32.h),
+
+                    // Submit Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _submit,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primary,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 16.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15.r),
+                          ),
+                          elevation: 8,
+                          shadowColor: primary.withOpacity(0.4),
+                        ),
+                        child: Text(
+                          "ADD TO LIST",
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// --------------------------
+/// ShoppingListTile (Receipt Item Style)
+/// --------------------------
 class ShoppingListTile extends StatefulWidget {
   const ShoppingListTile({
     super.key,
@@ -158,12 +558,56 @@ class ShoppingListTile extends StatefulWidget {
   State<ShoppingListTile> createState() => _ShoppingListTileState();
 }
 
-class _ShoppingListTileState extends State<ShoppingListTile> {
+class _ShoppingListTileState extends State<ShoppingListTile>
+    with TickerProviderStateMixin {
   late double qty;
+  late final AnimationController _hoverController;
+  late final AnimationController _borderController;
+  late final Animation<double> _hoverAnimation;
+  late Animation<Color?> _borderAnimation;
+
+  bool _isHovered = false;
+  bool _showControls = false;
+
   @override
   void initState() {
     super.initState();
     qty = widget.item.need > 0 ? widget.item.need : 1;
+
+    _hoverController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+
+    _borderController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+
+    _hoverAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.02,
+    ).animate(CurvedAnimation(parent: _hoverController, curve: Curves.easeOut));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize color animation here where Theme.of(context) is safe to use
+    final primary = Theme.of(context).colorScheme.primary;
+    _borderAnimation = ColorTween(
+      begin: Colors.transparent,
+      end: primary.withOpacity(0.3),
+    ).animate(
+      CurvedAnimation(parent: _borderController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _hoverController.dispose();
+    _borderController.dispose();
+    super.dispose();
   }
 
   void _apply(double v) {
@@ -171,72 +615,289 @@ class _ShoppingListTileState extends State<ShoppingListTile> {
     widget.onChange(widget.item.copyWith(need: qty));
   }
 
+  void _startBorderAnimation() {
+    _borderController.repeat(reverse: true);
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) _borderController.stop();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    // ignore: unused_local_variable
+    final primary = theme.colorScheme.primary;
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      margin: EdgeInsets.only(bottom: 8.h),
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14.r),
-        color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
-        border: Border.all(color: primary.withOpacity(.15), width: 1),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              widget.item.name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14.5.sp,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
-            ),
-          ),
-          Text(
-            widget.item.unit.isEmpty ? 'count' : widget.item.unit,
-            style: TextStyle(fontSize: 12.sp, color: isDark ? Colors.grey[300] : Colors.grey[700]),
-          ),
-          SizedBox(width: 10.w),
-          Row(
-            children: [
-              IconButton(
-                onPressed: () => _apply(qty - 1),
-                icon: const Icon(Icons.remove_circle_outline),
-                tooltip: 'Decrease',
-              ),
-              SizedBox(
-                width: 48.w,
-                child: Text(
-                  (qty % 1 == 0) ? qty.toStringAsFixed(0) : qty.toStringAsFixed(2),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp),
+    return GestureDetector(
+      onTap: () {
+        setState(() => _showControls = !_showControls);
+        _startBorderAnimation();
+      },
+      child: MouseRegion(
+        onEnter: (_) {
+          setState(() => _isHovered = true);
+          _hoverController.forward();
+        },
+        onExit: (_) {
+          setState(() => _isHovered = false);
+          _hoverController.reverse();
+        },
+        child: ScaleTransition(
+          scale: _hoverAnimation,
+          child: AnimatedBuilder(
+            animation: _borderAnimation,
+            builder: (context, child) {
+              return Container(
+                margin: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                  border: Border.all(
+                    color: _borderAnimation.value ?? Colors.transparent,
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(8.r),
+                  boxShadow:
+                      _isHovered
+                          ? [
+                            BoxShadow(
+                              color:
+                                  isDark
+                                      ? Colors.black.withOpacity(0.3)
+                                      : Colors.grey.withOpacity(0.15),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                          : [],
                 ),
-              ),
-              IconButton(
-                onPressed: () => _apply(qty + 1),
-                icon: const Icon(Icons.add_circle_outline),
-                tooltip: 'Increase',
-              ),
-            ],
+                child: Column(
+                  children: [
+                    // Main Receipt Line
+                    Row(
+                      children: [
+                        // Quantity (Receipt Style)
+                        SizedBox(
+                          width: 68.w, // a bit wider than before to fit "200 ml"
+                          child: Text(
+                            formatQty(qty, widget.item.unit),
+                            style: TextStyle(
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14.sp,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(width: 12.w),
+
+                        // Item Details
+                        Expanded(
+                          child: Text(
+                            widget.item.name, // keep user-provided casing; looks more natural than ALL CAPS
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: true,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15.sp,
+                              height: 1.2,
+                              color: isDark ? Colors.white : Colors.black87,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+
+                        // Receipt dots
+                        Flexible(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              // each “unit” ≈ dot width + horizontal margins
+                              final double unit = 3.w + 2 * 1.w;
+                              final int count = (constraints.maxWidth / unit)
+                                  .floor()
+                                  .clamp(0, 200); // safety cap
+
+                              return Row(
+                                children: List.generate(
+                                  count,
+                                  (_) => Container(
+                                    width: 3.w,
+                                    height: 1.h,
+                                    margin: EdgeInsets.symmetric(
+                                      horizontal: 1.w,
+                                    ),
+                                    color:
+                                        isDark
+                                            ? Colors.grey[600]
+                                            : Colors.grey[400],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        // Action Button
+                        SizedBox(
+                          width: 24.w, // keep it predictable
+                          child: Icon(
+                            _showControls
+                                ? Icons.keyboard_arrow_up
+                                : Icons.keyboard_arrow_down,
+                            color: isDark ? Colors.white70 : Colors.black54,
+                            size: 20.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Expandable Controls
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      height: _showControls ? 60.h : 0,
+                      child:
+                          _showControls
+                              ? Container(
+                                margin: EdgeInsets.only(top: 12.h),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 16.w,
+                                  vertical: 8.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  color:
+                                      isDark
+                                          ? const Color(0xFF2A2A2A)
+                                          : const Color(0xFFF8F8F8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Quantity Controls
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () => _apply(qty - 1),
+                                            child: Container(
+                                              padding: EdgeInsets.all(8.w),
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Colors.red.withOpacity(
+                                                  0.1,
+                                                ),
+                                                border: Border.all(
+                                                  color: Colors.red.withOpacity(
+                                                    0.3,
+                                                  ),
+                                                ),
+                                              ),
+                                              child: Icon(
+                                                Icons.remove,
+                                                size: 16.sp,
+                                                color: Colors.red[600],
+                                              ),
+                                            ),
+                                          ),
+
+                                          SizedBox(width: 16.w),
+
+                                          Text(
+                                            (qty % 1 == 0)
+                                                ? qty.toStringAsFixed(0)
+                                                : qty.toStringAsFixed(1),
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16.sp,
+                                              color:
+                                                  isDark
+                                                      ? Colors.white
+                                                      : Colors.black87,
+                                            ),
+                                          ),
+
+                                          SizedBox(width: 16.w),
+
+                                          GestureDetector(
+                                            onTap: () => _apply(qty + 1),
+                                            child: Container(
+                                              padding: EdgeInsets.all(8.w),
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Colors.green.withOpacity(
+                                                  0.1,
+                                                ),
+                                                border: Border.all(
+                                                  color: Colors.green
+                                                      .withOpacity(0.3),
+                                                ),
+                                              ),
+                                              child: Icon(
+                                                Icons.add,
+                                                size: 16.sp,
+                                                color: Colors.green[600],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    // Delete Button
+                                    GestureDetector(
+                                      onTap: widget.onDelete,
+                                      child: Container(
+                                        padding: EdgeInsets.all(10.w),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            8.r,
+                                          ),
+                                          color: Colors.red.withOpacity(0.1),
+                                          border: Border.all(
+                                            color: Colors.red.withOpacity(0.3),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.delete_outline,
+                                              size: 16.sp,
+                                              color: Colors.red[600],
+                                            ),
+                                            SizedBox(width: 6.w),
+                                            Text(
+                                              "Remove",
+                                              style: TextStyle(
+                                                fontSize: 12.sp,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.red[600],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                              : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-          IconButton(
-            onPressed: widget.onDelete,
-            icon: Icon(Icons.delete_outline, color: Colors.red[600]),
-            tooltip: 'Remove',
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-// Convenience extension — keeps your model immutable style
+/// Keep your model immutable style
 extension ShoppingModelCopy on ShoppingItemModel {
   ShoppingItemModel copyWith({
     String? name,
@@ -251,6 +912,643 @@ extension ShoppingModelCopy on ShoppingItemModel {
       unit: unit ?? this.unit,
       have: have ?? this.have,
       tag: tag ?? this.tag,
+    );
+  }
+}
+
+// lib/features/shopping/shopping_widgets.dart
+
+/* -------------------------------------------------------------------------- */
+/* Utility formatting                                                         */
+/* -------------------------------------------------------------------------- */
+
+String formatQty(double qty, String unitRaw) {
+  final unit = (unitRaw).trim().toLowerCase();
+  String n = (qty % 1 == 0) ? qty.toStringAsFixed(0) : qty.toStringAsFixed(1);
+  if (unit == 'g' || unit == 'ml') return '$n $unit';
+  if (unit.isEmpty || unit == 'count') return '${n}x';
+  // fallback:  "n unit" for any other typed unit
+  return '$n $unit';
+}
+
+String generateReceiptId() {
+  final now = DateTime.now();
+  final rand = Random().nextInt(9000) + 1000; // 4-digit suffix
+  // keep short, receipt-like, yet fairly unique per session
+  return '${now.millisecondsSinceEpoch.toString().substring(6)}-$rand';
+}
+
+/* -------------------------------------------------------------------------- */
+/* Receipt Shell: Header / Footer                                             */
+/* -------------------------------------------------------------------------- */
+
+class ReceiptHeader extends StatelessWidget {
+  const ReceiptHeader({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Widget perforation(int count) => Row(
+      children: List.generate(
+        count,
+        (index) => Expanded(
+          child: Container(
+            margin: EdgeInsets.symmetric(horizontal: 1.w),
+            height: 3.h,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[700] : Colors.grey[300],
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 24.h, horizontal: 24.w),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(12.r),
+          topRight: Radius.circular(12.r),
+        ),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors:
+              isDark
+                  ? [const Color(0xFF1E1E1E), const Color(0xFF1A1A1A)]
+                  : [const Color(0xFFFFFFFF), const Color(0xFFFDFDFD)],
+        ),
+      ),
+      child: Column(
+        children: [
+          perforation(25),
+          SizedBox(height: 16.h),
+
+          // LOGO (asset)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/app_icon.png', // <-- add file, see step 3
+                height: 36.h,
+                fit: BoxFit.contain,
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+
+          Text(
+            "KITCHEN ESSENTIALS",
+            style: TextStyle(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            "Your Shopping List",
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+              letterSpacing: 0.8,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            "Date: ${DateTime.now().toString().split(' ')[0]}",
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontFamily: 'monospace',
+              color: isDark ? Colors.grey[500] : Colors.grey[500],
+            ),
+          ),
+          SizedBox(height: 16.h),
+
+          // Thin separator
+          Container(
+            height: 1.h,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 12.h),
+
+          // Column headers
+          Row(
+            children: [
+              SizedBox(
+                width: 60.w,
+                child: Text(
+                  "QTY",
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Text(
+                  "ITEM DESCRIPTION",
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+
+          Container(
+            height: 1.h,
+            color: isDark ? Colors.grey[700] : Colors.grey[300],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ReceiptFooter extends StatelessWidget {
+  const ReceiptFooter({
+    super.key,
+    required this.totalItems,
+    required this.receiptId,
+  });
+  final int totalItems;
+  final String receiptId;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Widget dashedLine(int count) => Row(
+      children: List.generate(
+        count,
+        (_) => Expanded(
+          child: Container(
+            margin: EdgeInsets.symmetric(horizontal: 1.w),
+            height: 2.h,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[600] : Colors.grey[400],
+              borderRadius: BorderRadius.circular(1.r),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 24.w),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(12.r),
+          bottomRight: Radius.circular(12.r),
+        ),
+        border: Border(
+          top: BorderSide(
+            color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+          ),
+        ),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors:
+              isDark
+                  ? [const Color(0xFF1A1A1A), const Color(0xFF1E1E1E)]
+                  : [const Color(0xFFFDFDFD), const Color(0xFFFFFFFF)],
+        ),
+      ),
+      child: Column(
+        children: [
+          dashedLine(30),
+          SizedBox(height: 12.h),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "TOTAL ITEMS:",
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  color: isDark ? Colors.grey[300] : Colors.grey[700],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20.r),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.3),
+                  ),
+                ),
+                child: Text(
+                  "$totalItems",
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(height: 16.h),
+          Text(
+            "*** THANK YOU ***",
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+            ),
+          ),
+
+          SizedBox(height: 14.h),
+          // Barcode look
+          SizedBox(
+            height: 40.h,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(30, (index) {
+                final heights = [25.h, 30.h, 20.h, 35.h, 25.h];
+                final widths = [2.w, 1.w, 3.w, 1.w, 2.w];
+                return Container(
+                  width: widths[index % widths.length],
+                  height: heights[index % heights.length],
+                  margin: EdgeInsets.symmetric(horizontal: 0.5.w),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey[600] : Colors.grey[500],
+                    borderRadius: BorderRadius.circular(0.5.r),
+                  ),
+                );
+              }),
+            ),
+          ),
+
+          SizedBox(height: 10.h),
+          Text(
+            "Receipt #$receiptId",
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontFamily: 'monospace',
+              color: isDark ? Colors.grey[600] : Colors.grey[500],
+            ),
+          ),
+
+          SizedBox(height: 12.h),
+          // Bottom perforation
+          Row(
+            children: List.generate(
+              25,
+              (_) => Expanded(
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: 1.w),
+                  height: 3.h,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey[700] : Colors.grey[300],
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Add Item chip to show under the list                                       */
+/* -------------------------------------------------------------------------- */
+
+class AddItemInline extends StatelessWidget {
+  const AddItemInline({super.key, required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Center(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24.r),
+            gradient: LinearGradient(
+              colors: [primary, primary.withOpacity(0.7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: primary.withOpacity(0.25),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.add, color: Colors.white),
+              SizedBox(width: 8.w),
+              Text(
+                "Add item",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14.sp,
+                ),
+              ),
+            ],
+          ),
+        ).asGlass(
+          tintColor:
+              isDark
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.white.withOpacity(0.2),
+          clipBorderRadius: BorderRadius.circular(24.r),
+        ),
+      ),
+    );
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* The Receipt container (Header → Scrollable list → Footer)                  */
+/* -------------------------------------------------------------------------- */
+
+class ShoppingReceipt extends StatefulWidget {
+  const ShoppingReceipt({
+    super.key,
+    required this.items,
+    required this.onAdd,
+    required this.onChange,
+    required this.onDelete,
+  });
+
+  final List<ShoppingItemModel> items;
+  final void Function({
+    required String name,
+    required double need,
+    required String unit,
+  })
+  onAdd;
+  final OnItemChanged onChange;
+  final Future<void> Function(String name) onDelete;
+
+  @override
+  State<ShoppingReceipt> createState() => _ShoppingReceiptState();
+}
+
+class _ShoppingReceiptState extends State<ShoppingReceipt>
+    with TickerProviderStateMixin {
+  late final AnimationController _receiptController;
+  late final Animation<double> _receiptAnimation;
+  late final String _receiptId;
+
+  @override
+  void initState() {
+    super.initState();
+    _receiptId = generateReceiptId();
+
+    _receiptController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _receiptAnimation = CurvedAnimation(
+      parent: _receiptController,
+      curve: Curves.easeOutCubic,
+    );
+    _receiptController.forward();
+  }
+
+  @override
+  void dispose() {
+    _receiptController.dispose();
+    super.dispose();
+  }
+
+  void _openAddModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AddItemModal(onSubmit: widget.onAdd),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, .2),
+        end: Offset.zero,
+      ).animate(_receiptAnimation),
+      child: FadeTransition(
+        opacity: _receiptAnimation,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12.r),
+            boxShadow: [
+              BoxShadow(
+                color:
+                    isDark
+                        ? Colors.black.withOpacity(0.6)
+                        : Colors.grey.withOpacity(0.3),
+                blurRadius: 25,
+                offset: const Offset(0, 12),
+                spreadRadius: 2,
+              ),
+              BoxShadow(
+                color:
+                    isDark
+                        ? Colors.grey[900]!.withOpacity(0.8)
+                        : Colors.grey[100]!.withOpacity(0.8),
+                blurRadius: 1,
+                offset: const Offset(1, 1),
+              ),
+            ],
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12.r),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors:
+                    isDark
+                        ? [
+                          const Color(0xFF1A1A1A),
+                          const Color(0xFF151515),
+                          const Color(0xFF1C1C1C),
+                        ]
+                        : [
+                          const Color(0xFFFDFDFD),
+                          const Color(0xFFFAFAFA),
+                          const Color(0xFFF8F8F8),
+                        ],
+              ),
+              border: Border.all(
+                color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+                width: 1,
+              ),
+            ),
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // Header
+                SliverToBoxAdapter(child: const ReceiptHeader()),
+
+                // Add button under last item
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(8.w, 8.h, 8.w, 16.h),
+                    child: AddItemInline(onTap: _openAddModal),
+                  ),
+                ),
+
+                // Items (or empty state)
+                if (widget.items.isEmpty)
+                  SliverToBoxAdapter(child: _EmptyReceipt(onAdd: _openAddModal))
+                else
+                  SliverList.separated(
+                    itemCount: widget.items.length,
+                    separatorBuilder: (_, __) => SizedBox(height: 2.h),
+                    itemBuilder: (context, i) {
+                      final e = widget.items[i];
+                      return ShoppingListTile(
+                        item: e,
+                        onChange: widget.onChange,
+                        onDelete: () async {
+                          await widget.onDelete(e.name);
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  const Icon(Icons.check_circle, color: Colors.white),
+                                  SizedBox(width: 8.w),
+                                  Text('Removed "${e.name}" from receipt'),
+                                ],
+                              ),
+                              backgroundColor: Colors.red[600],
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.r),
+                              ),
+                              margin: EdgeInsets.all(16.w),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+
+                // Footer
+                SliverToBoxAdapter(
+                  child: ReceiptFooter(
+                    totalItems: widget.items.length,
+                    receiptId: _receiptId,
+                  ),
+                ),
+              ],
+            ),
+          ).asGlass(
+            tintColor:
+                isDark
+                    ? Colors.black.withOpacity(0.1)
+                    : Colors.white.withOpacity(0.1),
+            clipBorderRadius: BorderRadius.circular(12.r),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Empty state (kept compact)                                                 */
+/* -------------------------------------------------------------------------- */
+class _EmptyReceipt extends StatelessWidget {
+  const _EmptyReceipt({required this.onAdd});
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(40.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(20.w),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDark ? Colors.grey[800] : Colors.grey[100],
+              ),
+              child: Icon(
+                Icons.receipt_long_outlined,
+                size: 48.sp,
+                color: isDark ? Colors.grey[600] : Colors.grey[400],
+              ),
+            ),
+            SizedBox(height: 20.h),
+            Text(
+              "No Items Added",
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              "Tap below to add your first ingredient",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: isDark ? Colors.grey[500] : Colors.grey[500],
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 18.h),
+            AddItemInline(onTap: onAdd),
+          ],
+        ),
+      ),
     );
   }
 }
