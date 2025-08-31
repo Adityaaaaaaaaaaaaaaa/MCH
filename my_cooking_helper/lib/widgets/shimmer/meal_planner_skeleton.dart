@@ -151,6 +151,7 @@ class DayRowCarouselSkeleton extends StatelessWidget {
             SizedBox(
               height: 132.h,
               child: ListView.separated(
+                cacheExtent: MediaQuery.of(context).size.height,
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 itemCount: 3,
@@ -232,6 +233,7 @@ class PlannerPageSkeleton extends StatelessWidget {
         SizedBox(height: 12.h),
         Expanded(
           child: ListView.separated(
+            cacheExtent: MediaQuery.of(context).size.height,
             physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             itemCount: rows,
             separatorBuilder: (_, __) => SizedBox(height: 10.h),
