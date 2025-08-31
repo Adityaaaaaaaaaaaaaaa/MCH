@@ -4,6 +4,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:glass/glass.dart';
 import '/models/cravings.dart';
@@ -144,6 +145,7 @@ class _AddItemModalState extends State<AddItemModal>
   final _nameCtrl = TextEditingController();
   double _qty = 1;
   String _unit = 'count';
+  final _qtyCtrl = TextEditingController(text: '1');
 
   late final AnimationController _slideController;
   late final AnimationController _borderController;
@@ -178,17 +180,24 @@ class _AddItemModalState extends State<AddItemModal>
     );
 
     _slideController.forward();
+    _qtyCtrl.text = '1';
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _qtyCtrl.dispose();
     _slideController.dispose();
     _borderController.dispose();
     super.dispose();
   }
 
-  void _applyQty(double v) => setState(() => _qty = v < 0 ? 0 : v);
+  void _applyQty(double v) {
+    setState(() {
+      _qty = clampByUnit(v < 0 ? 0 : v, _unit);
+      _qtyCtrl.text = normalizedQtyTextForField(_unit, _qty);
+    });
+  }
 
   void _submit() {
     final name = _nameCtrl.text.trim();
@@ -206,7 +215,13 @@ class _AddItemModalState extends State<AddItemModal>
     Widget unitChip(String u, IconData icon) {
       final selected = _unit == u;
       return GestureDetector(
-        onTap: () => setState(() => _unit = u),
+        onTap: () {
+          setState(() {
+            _unit = u;
+            _qty = clampByUnit(_qty, _unit);
+            _qtyCtrl.text = normalizedQtyTextForField(_unit, _qty);
+          });
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
@@ -434,20 +449,33 @@ class _AddItemModalState extends State<AddItemModal>
                                   ),
                                 ),
                               ),
-                              Container(
-                                width: 60.w,
-                                padding: EdgeInsets.symmetric(vertical: 12.h),
-                                child: Text(
-                                  (_qty % 1 == 0)
-                                      ? _qty.toStringAsFixed(0)
-                                      : _qty.toStringAsFixed(1),
+                              SizedBox(
+                                width: 72.w,
+                                child: TextField(
+                                  controller: _qtyCtrl,
                                   textAlign: TextAlign.center,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  inputFormatters: formattersForUnit(_unit),
+                                  decoration: const InputDecoration(
+                                    isCollapsed: true,
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16.sp,
-                                    color:
-                                        isDark ? Colors.white : Colors.black87,
+                                    color: isDark ? Colors.white : Colors.black87,
                                   ),
+                                  onChanged: (t) {
+                                    final v = double.tryParse(t) ?? 0;
+                                    setState(() => _qty = v); // let user type freely; we clamp on commit/submit
+                                  },
+                                  onEditingComplete: () {
+                                    _qty = clampByUnit(_qty, _unit);
+                                    _qtyCtrl.text = normalizedQtyTextForField(_unit, _qty);
+                                    FocusScope.of(context).unfocus();
+                                  },
+                                  onSubmitted: (_) => _submit(),
                                 ),
                               ),
                               GestureDetector(
@@ -565,6 +593,8 @@ class _ShoppingListTileState extends State<ShoppingListTile>
   late final AnimationController _borderController;
   late final Animation<double> _hoverAnimation;
   late Animation<Color?> _borderAnimation;
+  late final TextEditingController _qtyCtrl;
+  double _clampTile(double v) => clampByUnit(v, widget.item.unit);
 
   bool _showControls = false;
   bool _pressed = false;
@@ -573,6 +603,10 @@ class _ShoppingListTileState extends State<ShoppingListTile>
   void initState() {
     super.initState();
     qty = widget.item.need > 0 ? widget.item.need : 1;
+
+    _qtyCtrl = TextEditingController(
+      text: normalizedQtyTextForField(widget.item.unit, qty),
+    );
 
     _hoverController = AnimationController(
       vsync: this,
@@ -605,13 +639,18 @@ class _ShoppingListTileState extends State<ShoppingListTile>
 
   @override
   void dispose() {
+    _qtyCtrl.dispose();
     _hoverController.dispose();
     _borderController.dispose();
     super.dispose();
   }
 
   void _apply(double v) {
-    setState(() => qty = v < 0 ? 0 : v);
+    final nv = _clampTile(v < 0 ? 0 : v);
+    setState(() {
+      qty = nv;
+      _qtyCtrl.text = normalizedQtyTextForField(widget.item.unit, qty);
+    });
     widget.onChange(widget.item.copyWith(need: qty));
   }
 
@@ -698,7 +737,7 @@ class _ShoppingListTileState extends State<ShoppingListTile>
                           widget.item.name,
                           softWrap: true,
                           maxLines: null,
-                          overflow: TextOverflow.visible,
+                          overflow: TextOverflow.clip,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 15.sp,
@@ -790,23 +829,44 @@ class _ShoppingListTileState extends State<ShoppingListTile>
                                             ),
                                           ),
 
-                                          SizedBox(width: 16.w),
+                                          SizedBox(width: 10.w),
 
-                                          Text(
-                                            (qty % 1 == 0)
-                                                ? qty.toStringAsFixed(0)
-                                                : qty.toStringAsFixed(1),
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16.sp,
-                                              color:
-                                                  isDark
-                                                      ? Colors.white
-                                                      : Colors.black87,
+                                          // replace the center Text(...) with:
+                                          SizedBox(
+                                            width: 50.w,
+                                            child: TextField(
+                                              controller: _qtyCtrl,
+                                              textAlign: TextAlign.center,
+                                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                              inputFormatters: formattersForUnit(widget.item.unit),
+                                              decoration: const InputDecoration(
+                                                isCollapsed: true,
+                                                border: InputBorder.none,
+                                                contentPadding: EdgeInsets.zero,
+                                              ),
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16.sp,
+                                                color: isDark ? Colors.white : Colors.black87,
+                                              ),
+                                              onChanged: (t) {
+                                                final v = double.tryParse(t);
+                                                setState(() => qty = (v == null || v < 0) ? 0 : v); // live preview
+                                              },
+                                              onEditingComplete: () {
+                                                final parsed = double.tryParse(_qtyCtrl.text) ?? qty;
+                                                final clamped = _clampTile(parsed);
+                                                _apply(clamped); // commits & re-normalizes the text
+                                                FocusScope.of(context).unfocus();
+                                              },
+                                              onSubmitted: (_) {
+                                                final parsed = double.tryParse(_qtyCtrl.text) ?? qty;
+                                                _apply(_clampTile(parsed));
+                                              },
                                             ),
                                           ),
 
-                                          SizedBox(width: 16.w),
+                                          SizedBox(width: 10.w),
 
                                           GestureDetector(
                                             onTap: () => _apply(qty + 1),
@@ -906,14 +966,81 @@ extension ShoppingModelCopy on ShoppingItemModel {
 /* Utility formatting                                                         */
 /* -------------------------------------------------------------------------- */
 
+String _trimZeros(String s) => s.contains('.') ? s.replaceFirst(RegExp(r'\.?0+$'), '') : s;
+
+/// Smart visual formatting only. Stored values/units remain unchanged.
 String formatQty(double qty, String unitRaw) {
-  final unit = (unitRaw).trim().toLowerCase();
-  String n = (qty % 1 == 0) ? qty.toStringAsFixed(0) : qty.toStringAsFixed(1);
-  if (unit == 'g' || unit == 'ml') return '$n $unit';
-  if (unit.isEmpty || unit == 'count') return '${n}x';
-  // fallback:  "n unit" for any other typed unit
-  return '$n $unit';
+  final unit = unitRaw.trim().toLowerCase();
+
+  // helper: choose decimals for small floats
+  String asTight(double v) => _trimZeros(
+        (v % 1 == 0) ? v.toStringAsFixed(0) : v.toStringAsFixed(2),
+      );
+
+  if (unit == 'g') {
+    if (qty >= 1000) return '${_trimZeros((qty / 1000).toStringAsFixed(2))} kg';
+    return '${asTight(qty)} g';
+  }
+  if (unit == 'ml') {
+    if (qty >= 1000) return '${_trimZeros((qty / 1000).toStringAsFixed(2))} L';
+    return '${asTight(qty)} ml';
+  }
+  if (unit.isEmpty || unit == 'count') {
+    return '${asTight(qty)}x';
+  }
+  // fallback for any other unit
+  return '${asTight(qty)} $unit';
 }
+
+/* -------------------------------------------------------------------------- */
+/* Qty rules                                                                  */
+/* -------------------------------------------------------------------------- */
+
+// max: 999 count, 99 kg (→ 99,000 g), 99 L (→ 99,000 ml)
+double clampByUnit(double v, String unitRaw) {
+  final u = unitRaw.trim().toLowerCase();
+  if (u.isEmpty || u == 'count') return v.clamp(0, 999).toDouble();
+  if (u == 'g') return v.clamp(0, 99000).toDouble();   // 99 kg
+  if (u == 'ml') return v.clamp(0, 99000).toDouble();  // 99 L
+  return v.clamp(0, 9999).toDouble();                  // fallback
+}
+
+// how many decimals the *input field* should keep
+int _decimalsForField(String unitRaw) {
+  final u = unitRaw.trim().toLowerCase();
+  if (u.isEmpty || u == 'count') return 1; // allow halves etc. for count
+  if (u == 'g') return 2;                  // allow 0.5 g, 0.2 g etc.
+  if (u == 'ml') return 2;                 // unchanged
+  return 2;
+}
+
+// normalize controller text (9 → "9", 9.50 → "9.5")
+String normalizedQtyTextForField(String unitRaw, double v) {
+  final dec = _decimalsForField(unitRaw);
+  return _trimZeros(v.toStringAsFixed(dec));
+}
+
+// dynamic input formatters (length guard + decimals allowed)
+List<TextInputFormatter> formattersForUnit(String unitRaw) {
+  final u = unitRaw.trim().toLowerCase();
+  if (u.isEmpty || u == 'count') {
+    return [
+      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,1}')),
+      LengthLimitingTextInputFormatter(5), // e.g., "999.9"
+    ];
+  }
+  if (u == 'g' || u == 'ml') {
+    return [
+      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+      LengthLimitingTextInputFormatter(7), // e.g., "99000.0"
+    ];
+  }
+  return [
+    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+    LengthLimitingTextInputFormatter(6),
+  ];
+}
+
 
 String generateReceiptId() {
   final now = DateTime.now();
