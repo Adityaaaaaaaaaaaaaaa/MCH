@@ -10,7 +10,7 @@ import '/utils/snackbar.dart';
 import '/utils/connectivity_provider.dart';
 import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
-import '/widgets/scan_action_button.dart';
+import '/widgets/scan/scan_action_button.dart';
 import '/widgets/navigation/drawer.dart';
 import '/widgets/navigation/nav.dart';
 

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
@@ -8,8 +9,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'config/firebase_options.dart';
+import 'config/performance.dart';
+import 'models/cravings.dart';
 import 'models/recipe_detail.dart';
-// import 'models/recipe.dart';
 import 'theme/theme_provider.dart';  
 import 'theme/app_theme.dart';
 import 'features/smart_scan/scan_food.dart';
@@ -22,26 +24,40 @@ import 'features/onboarding/onboarding_page.dart';
 import 'features/auth/sign_in_page.dart';
 import 'features/preferences/preferences_flow.dart';
 import 'features/splash/splash_screen.dart';
-import 'features/settings/settings.dart'; 
+import 'features/settings/settings.dart' as appsettings; 
 import 'features/cook/recipe_page.dart';
 import 'features/cook/cook.dart';
-import 'features/cook/recipe_history.dart';
+import 'features/history/recipe_history.dart';
 import 'features/cook/recipe_search.dart';
 import 'features/inventory/inventory.dart';
-import 'features/cook/recipe_favourites.dart';
+import 'features/history/recipe_favourites.dart';
+import 'features/meal_planner/planner.dart';
+import 'features/cravings/cravings.dart';
+import 'features/cravings/craving_recipe.dart';
+import 'features/shopping/shopping.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  perfObserver.attach();
+  await perfBootstrap();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
   await GoogleSignIn.instance.initialize();
   await dotenv.load(fileName: ".env");
   final appDocDir = await getApplicationDocumentsDirectory();
   Hive.init(appDocDir.path);
   debugPrint = (String? message, {int? wrapWidth}) {};
   runApp(const ProviderScope(child: MyApp()));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+    precacheHomeImages();  // fire-and-forget
+  });
 }
 
 final GoRouter _router = GoRouter(
+  navigatorKey: rootNavigatorKey,
   initialLocation: '/splash',
   routes: [
     GoRoute(
@@ -66,7 +82,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/settings',
-      builder: (context, state) => const Settings(),
+      builder: (context, state) => const appsettings.Settings(),
     ),
     GoRoute(
       path: '/scan',
@@ -125,7 +141,50 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/favourites',
       builder: (context, state) => const RecipeFavouritesPage(),
-    )
+    ),
+    GoRoute(
+      path: '/planner',
+      builder: (context, state) => const PlannerScreen(),
+    ),
+    GoRoute(
+      path: '/cravings',
+      builder: (context, state) => const CravingsScreen(),
+    ),
+    GoRoute(
+      path: '/cravingRecipe',
+      builder: (ctx, state) {
+        final extra = state.extra;
+
+        // Back-compat: older callers pass the model directly
+        if (extra is CravingRecipeModel) {
+          return CravingRecipePage(recipe: extra);
+        }
+
+        // New path: callers pass a Map
+        if (extra is Map) {
+          // Ensure typed map to avoid _Map<String,Object> casting issues
+          final m = Map<String, dynamic>.from(extra);
+
+          final model = m['recipe'] as CravingRecipeModel;
+          final fromHistory = (m['fromHistory'] == true);
+          final recipeKey = m['recipeKey'] as String?;
+
+          return CravingRecipePage(
+            recipe: model,
+            openedFromHistory: fromHistory,
+            recipeKey: recipeKey,
+          );
+        }
+
+        // Graceful fallback (helps during dev)
+        throw ArgumentError('Invalid /cravingRecipe extra: ${state.extra}');
+      },
+    ),
+    GoRoute(
+      path: '/shopping',
+      name: 'shopping',
+      builder: (context, state) => const ShoppingPage(),
+    ),
   ],
 );
 
@@ -142,6 +201,7 @@ class MyApp extends ConsumerWidget {
       splitScreenMode: true,
       builder: (context, child) {
         return MaterialApp.router(
+          scrollBehavior: const TightScrollBehavior(),
           debugShowCheckedModeBanner: false,
           title: 'My Cooking Helper',
           theme: AppThemes.lightTheme,

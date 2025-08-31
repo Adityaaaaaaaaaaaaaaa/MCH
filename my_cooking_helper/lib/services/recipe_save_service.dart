@@ -11,48 +11,81 @@ class RecipeSaveService {
   }) async {
     final firestore = FirebaseFirestore.instance;
 
-    // 1. Save to global pool if not exists
-    final recipeDoc = firestore.collection('recipes').doc(recipe.id);
+    // --- Normalize IDs (string, non-empty) ---
+    final rid = (recipe.id ?? '').toString().trim();
+    final uid = userId.trim();
+    if (rid.isEmpty || uid.isEmpty) {
+      print('\x1B[34m[DEBUG] markRecipeAsCooked: missing userId/recipeId (uid="$uid", rid="$rid") → abort\x1B[0m');
+      return;
+    }
+
+    // 1) Save to global pool if not exists
+    final recipeDoc = firestore.collection('recipes').doc(rid);
     final exists = (await recipeDoc.get()).exists;
     if (!exists) {
       await recipeDoc.set(recipe.toJson());
+      // ignore: avoid_print
+      print('\x1B[34m[DEBUG] markRecipeAsCooked: upserted global recipe recipes/$rid\x1B[0m');
+    } else {
+      // ignore: avoid_print
+      print('\x1B[34m[DEBUG] markRecipeAsCooked: global recipe already exists recipes/$rid\x1B[0m');
     }
 
-    // 2. Add a new cook event
+    // 2) Add/Update user history doc
     final historyRef = firestore
         .collection('users')
-        .doc(userId)
+        .doc(uid)
         .collection('recipeHistory')
-        .doc(recipe.id);
+        .doc(rid);
 
     await firestore.runTransaction((transaction) async {
       final snapshot = await transaction.get(historyRef);
 
-      // Always add a new cookEvent
+      // Always add a new cook event
       final cookEventsRef = historyRef.collection('cookEvents').doc();
       transaction.set(cookEventsRef, {
         'cookedAt': FieldValue.serverTimestamp(),
       });
 
-      // Update the main doc (for quick queries)
       if (snapshot.exists) {
-        transaction.update(historyRef, {
-          'isFavourite': isFavourite,
-          'lastCookedAt': FieldValue.serverTimestamp(),
-          'timesCooked': FieldValue.increment(1),
-          'imageUrl': recipe.image,
-        });
+        // Heal missing summary fields while updating counters/timestamps
+        final data = snapshot.data() ?? {};
+        final needsTitle = (data['recipeTitle'] as String?)?.trim().isEmpty ?? true;
+        final needsId = (data['recipeId'] as String?)?.trim().isEmpty ?? true;
+        final needsImage = (data['imageUrl'] as String?)?.trim().isEmpty ?? true;
+
+        transaction.set(
+          historyRef,
+          {
+            'isFavourite': isFavourite,
+            'lastCookedAt': FieldValue.serverTimestamp(),
+            'timesCooked': FieldValue.increment(1),
+            'imageUrl': recipe.image, // will overwrite if provided (same as before)
+            if (needsId) 'recipeId': rid,
+            if (needsTitle) 'recipeTitle': (recipe.title ?? 'Untitled'),
+            if (needsImage && (recipe.image ?? '').toString().isNotEmpty) 'imageUrl': recipe.image,
+          },
+          SetOptions(merge: true),
+        );
+
+        // ignore: avoid_print
+        print('\x1B[34m[DEBUG] markRecipeAsCooked: updated users/$uid/recipeHistory/$rid (healed missing fields if any)\x1B[0m');
       } else {
+        // First time → write full summary (unchanged from your logic)
         transaction.set(historyRef, {
-          'recipeId': recipe.id,
-          'recipeTitle': recipe.title,
+          'recipeId': rid,
+          'recipeTitle': (recipe.title ?? 'Untitled'),
           'isFavourite': isFavourite,
           'lastCookedAt': FieldValue.serverTimestamp(),
           'timesCooked': 1,
           'imageUrl': recipe.image,
         });
+
+        print('\x1B[34m[DEBUG] markRecipeAsCooked: created users/$uid/recipeHistory/$rid\x1B[0m');
       }
     });
+
+    await _healHistoryDoc(userId: uid, recipeId: rid);
   }
 
   static Future<void> updateFavouriteStatus({
@@ -62,17 +95,113 @@ class RecipeSaveService {
   }) async {
     final firestore = FirebaseFirestore.instance;
 
-    // If marking as favourite, set timestamp; if unmarking, clear it (or keep, as per your use-case)
+    final rid = recipeId.toString().trim();
+    final uid = userId.trim();
+    if (rid.isEmpty || uid.isEmpty) {
+      // ignore: avoid_print
+      print('\x1B[34m[DEBUG] updateFavouriteStatus: missing userId/recipeId (uid="$uid", rid="$rid") → abort\x1B[0m');
+      return;
+    }
+
+    // If marking as favourite, set timestamp; if unmarking, clear it (kept same behavior)
     final favUpdate = {
       'isFavourite': isFavourite,
       'markFavOn': isFavourite ? FieldValue.serverTimestamp() : null,
     };
 
     await firestore
-      .collection('users')
-      .doc(userId)
-      .collection('recipeHistory')
-      .doc(recipeId)
-      .set(favUpdate, SetOptions(merge: true));
+        .collection('users')
+        .doc(uid)
+        .collection('recipeHistory')
+        .doc(rid)
+        .set(favUpdate, SetOptions(merge: true));
+
+    print('\x1B[34m[DEBUG] updateFavouriteStatus: users/$uid/recipeHistory/$rid -> isFavourite=$isFavourite\x1B[0m');
+
+    await _healHistoryDoc(userId: uid, recipeId: rid);
+  }
+
+  /// Heals a SINGLE history doc by copying missing title/image from recipes/{recipeId}
+  static Future<void> _healHistoryDoc({
+    required String userId,
+    required String recipeId,
+  }) async {
+    final db = FirebaseFirestore.instance;
+    final uid = userId.trim();
+    final rid = recipeId.toString().trim();
+    if (uid.isEmpty || rid.isEmpty) {
+      print('\x1B[34m[DEBUG] _healHistoryDoc: empty uid/rid, skip\x1B[0m');
+      return;
+    }
+
+    final historyRef = db.collection('users').doc(uid).collection('recipeHistory').doc(rid);
+    final snap = await historyRef.get();
+    if (!snap.exists) {
+      print('\x1B[34m[DEBUG] _healHistoryDoc: history doc missing users/$uid/recipeHistory/$rid\x1B[0m');
+      return;
+    }
+
+    final data = snap.data() ?? {};
+    final hasTitle = (data['recipeTitle'] as String?)?.trim().isNotEmpty == true;
+    final hasImage = (data['imageUrl'] as String?)?.trim().isNotEmpty == true;
+
+    if (hasTitle && hasImage) {
+      print('\x1B[34m[DEBUG] _healHistoryDoc: nothing to heal for $rid\x1B[0m');
+      return;
+    }
+
+    final rSnap = await db.collection('recipes').doc(rid).get();
+    if (!rSnap.exists) {
+      print('\x1B[34m[DEBUG] _healHistoryDoc: recipes/$rid not found\x1B[0m');
+      return;
+    }
+
+    final r = rSnap.data()!;
+    final title = ((r['title']) as String?)?.trim() ?? 'Untitled';
+    final img = (r['image'] ?? r['imageUrl'] ?? '') as String? ?? '';
+
+    await historyRef.set({
+      if (!hasTitle) 'recipeTitle': title,
+      if (!hasImage && img.isNotEmpty) 'imageUrl': img,
+      if ((data['recipeId'] as String?)?.trim().isEmpty ?? true) 'recipeId': rid,
+    }, SetOptions(merge: true));
+
+    print('\x1B[34m[DEBUG] _healHistoryDoc: healed users/$uid/recipeHistory/$rid\x1B[0m');
+  }
+
+  /// Full backfill for a user (run once from a debug button)
+  static Future<void> backfillHistorySummaries(String userId) async {
+    final db = FirebaseFirestore.instance;
+    final uid = userId.trim();
+    if (uid.isEmpty) {
+      print('\x1B[34m[DEBUG] backfill: empty uid, abort\x1B[0m');
+      return;
+    }
+
+    final qs = await db.collection('users').doc(uid).collection('recipeHistory').get();
+    print('\x1B[34m[DEBUG] backfill: scanning ${qs.docs.length} docs for uid=$uid\x1B[0m');
+
+    for (final d in qs.docs) {
+      final m = d.data();
+      final hasTitle = (m['recipeTitle'] as String?)?.trim().isNotEmpty == true;
+      final rid = (m['recipeId'] ?? d.id).toString();
+
+      if (!hasTitle) {
+        final rSnap = await db.collection('recipes').doc(rid).get();
+        if (!rSnap.exists) {
+          print('\x1B[34m[DEBUG] backfill: recipes/$rid missing; skip\x1B[0m');
+          continue;
+        }
+        final r = rSnap.data()!;
+        final title = ((r['title']) as String?)?.trim() ?? 'Untitled';
+        final img = (r['image'] ?? r['imageUrl'] ?? '') as String? ?? '';
+        await d.reference.set({
+          'recipeId': rid,
+          'recipeTitle': title,
+          if (img.isNotEmpty) 'imageUrl': img,
+        }, SetOptions(merge: true));
+        print('\x1B[34m[DEBUG] backfill: users/$uid/recipeHistory/$rid -> title fixed\x1B[0m');
+      }
+    }
   }
 }
