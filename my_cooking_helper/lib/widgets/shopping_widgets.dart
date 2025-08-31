@@ -1128,9 +1128,20 @@ class ReceiptHeader extends StatelessWidget {
               letterSpacing: 0.8,
             ),
           ),
+          SizedBox(height: 6.h,),
+          Text(
+            "Schedule your Reminder notification ✨",
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+              letterSpacing: 0.8,
+            ),
+          ),
           SizedBox(height: 4.h),
           Text(
-            "Date: ${DateTime.now().toString().split(' ')[0]}",
+            "Date: ${DateTime.now().day.toString().padLeft(2, '0')}/"
+            "${DateTime.now().month.toString().padLeft(2, '0')}/"
+            "${DateTime.now().year}",
             style: TextStyle(
               fontSize: 11.sp,
               fontFamily: 'monospace',
