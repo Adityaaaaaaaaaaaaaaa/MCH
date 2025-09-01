@@ -15,9 +15,15 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
   StreamSubscription? firestoreSub;
   StreamSubscription? connectivitySub;
   bool isListeningFirestore = false;
+  StreamSubscription<User?>? authSub;
 
   InventoryController() : super([]) {
     _init();
+  }
+
+  Future<void> resetLocal() async {
+    await inventoryBox.clear();
+    state = [];
   }
 
   //remove apres tresting //////////////////////////////////////////////////////////////
@@ -51,6 +57,19 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
     inventoryBox = await Hive.openBox('inventoryBox');
     _loadLocal();
     _listenConnectivity();
+
+    // Re-bind Firestore when the user changes; clear local state immediately
+    authSub = FirebaseAuth.instance.authStateChanges().listen((user) async {
+      firestoreSub?.cancel();
+      isListeningFirestore = false;
+      await inventoryBox.clear(); // clear previous user's cache
+      state = [];                 // clear UI instantly (no ghost items)
+
+      if (user != null && await _isOnline()) {
+        _listenFirestore();       // attach fresh stream for new user
+      }
+    });
+
     if (await _isOnline()) {
       _listenFirestore();
     }
@@ -67,49 +86,49 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
 
   void _listenFirestore() {
     if (isListeningFirestore) {
-      //print('\x1B[34m[DEBUG] Already listening to Firestore, skipping re-listen\x1B[0m');
       blueDebugPrint('Already listening to Firestore, skipping re-listen');
       return;
     }
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      //print('\x1B[34m[DEBUG] No user for Firestore listen\x1B[0m');
       blueDebugPrint('No user for Firestore listen');
       return;
     }
-    //print('\x1B[34m[DEBUG] Listening to Firestore: users/${user.uid}/inventory\x1B[0m');
+
     blueDebugPrint('Listening to Firestore: users/${user.uid}/inventory');
     isListeningFirestore = true;
     firestoreSub?.cancel();
-    firestoreSub = FirebaseFirestore.instance
+
+    // Order by dateAdded (missing values sort first, so it’s safe)
+    final q = FirebaseFirestore.instance
         .collection('users').doc(user.uid).collection('inventory')
-        .snapshots()
-        .listen((snapshot) {
-          final newState = snapshot.docs.map((doc) {
-            final data = doc.data();
-            data['id'] = doc.id;
-            data['offline'] = false;
-            if (data.containsKey('dateAdded') && data['dateAdded'] is Timestamp) {
-              data['dateAdded'] = (data['dateAdded'] as Timestamp).millisecondsSinceEpoch;
-            }
-            return data;
-          }).toList();
-          state = newState;
-          //print('\x1B[34m[DEBUG] Firestore state updated: $state\x1B[0m');
-          blueDebugPrint({'Firestore state updated: $state'});
-          // Save to Hive
-          for (var item in state) {
-            inventoryBox.put(item['id'], item);
-          }
-        }, onDone: () {
-          isListeningFirestore = false;
-          //print('\x1B[34m[DEBUG] Firestore listen closed\x1B[0m');
-          blueDebugPrint('Firestore listen closed');
-        }, onError: (e) {
-          isListeningFirestore = false;
-          //print('\x1B[34m[DEBUG] Firestore listen error: $e\x1B[0m');
-          blueDebugPrint('Firestore listen error: $e');
-        });
+        .orderBy('dateAdded', descending: true);
+
+    firestoreSub = q.snapshots().listen((snapshot) {
+      final newState = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        data['offline'] = false;
+        if (data.containsKey('dateAdded') && data['dateAdded'] is Timestamp) {
+          data['dateAdded'] = (data['dateAdded'] as Timestamp).millisecondsSinceEpoch;
+        }
+        return data;
+      }).toList();
+
+      state = newState;
+      blueDebugPrint({'Firestore state updated': state});
+
+      // mirror into Hive
+      for (var item in state) {
+        inventoryBox.put(item['id'], item);
+      }
+    }, onDone: () {
+      isListeningFirestore = false;
+      blueDebugPrint('Firestore listen closed');
+    }, onError: (e) {
+      isListeningFirestore = false;
+      blueDebugPrint('Firestore listen error: $e');
+    });
   }
 
   void _listenConnectivity() {
@@ -140,53 +159,101 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
   Future<void> addOrUpdateItem(Map<String, dynamic> item, {String? previousId}) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      //print('\x1B[34m[DEBUG] Cannot add/update item: not logged in\x1B[0m');
       blueDebugPrint('Cannot add/update item: not logged in');
       return;
     }
 
-    final ref = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('inventory');
+    final col = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('inventory');
 
-    // Use the itemName as document ID, safely formatted
-    String newId = (item['itemName'] ?? '').replaceAll(RegExp(r'[\/\\.#\$\\[\\]]'), '_');
+    // sanitize doc ID from itemName
+    String newId = (item['itemName'] ?? '').toString().replaceAll(RegExp(r'[\/\\.#\$\[\]]'), '_').trim();
     if (newId.isEmpty) {
-      // fallback: use id or timestamp
-      newId = item['id'] ?? DateTime.now();
+      newId = (item['id'] ?? DateTime.now().millisecondsSinceEpoch.toString()).toString();
     }
 
+    // Ensure numeric quantity
+    final incomingQty = ((item['quantity'] ?? 1) as num).toDouble();
+
     if (await _isOnline()) {
-      // If renaming, delete old doc
-      if (previousId != null && previousId != newId) {
+      // Handle rename (previousId -> newId)
+      if (previousId != null && previousId.isNotEmpty && previousId != newId) {
         try {
-          await ref.doc(previousId).delete();
+          await col.doc(previousId).delete();
           await inventoryBox.delete(previousId);
-          //print('\x1B[34m[DEBUG] Hive - Deleted old item: $previousId\x1B[0m');
-          blueDebugPrint('Hive - Deleted old item: $previousId');
+          blueDebugPrint('Deleted old doc due to rename: $previousId');
         } catch (e) {
-          //print('\x1B[34m[DEBUG] Hive - Error deleting old item: $e\x1B[0m');
-          blueDebugPrint('Hive - Error deleting old item: $e');
+          blueDebugPrint('Error deleting old doc: $e');
         }
       }
 
-      // Save the new/updated item
-      await ref.doc(newId).set(item, SetOptions(merge: true));
-      item['id'] = newId;
-      item['offline'] = false;
-      await inventoryBox.put(newId, item);
-      //print('\x1B[34m[DEBUG] Saved/Updated item online: $newId\x1B[0m');
-      blueDebugPrint('Saved/Updated item online: $newId');
+      // Transaction to increment quantity if doc exists
+      await FirebaseFirestore.instance.runTransaction((tx) async {
+        final docRef = col.doc(newId);
+        final snap = await tx.get(docRef);
+
+        if (snap.exists) {
+          final data = snap.data() as Map<String, dynamic>;
+          final existingQty = ((data['quantity'] ?? 0) as num).toDouble();
+          final update = <String, dynamic>{
+            'quantity': existingQty + incomingQty,
+            'dateAdded': FieldValue.serverTimestamp(),
+          };
+
+          // Optionally update unit/category if provided (and non-empty)
+          final unit = (item['unit'] ?? '').toString();
+          if (unit.isNotEmpty) update['unit'] = unit;
+          final cat = (item['category'] ?? '').toString();
+          if (cat.isNotEmpty) update['category'] = cat;
+
+          tx.update(docRef, update);
+
+          // Mirror to Hive
+          final mergedLocal = Map<String, dynamic>.from(data)
+            ..['quantity'] = existingQty + incomingQty
+            ..['unit'] = unit.isNotEmpty ? unit : data['unit']
+            ..['category'] = cat.isNotEmpty ? cat : data['category']
+            ..['id'] = newId
+            ..['offline'] = false;
+          await inventoryBox.put(newId, mergedLocal);
+
+        } else {
+          // New doc
+          final toSet = Map<String, dynamic>.from(item)
+            ..['dateAdded'] = FieldValue.serverTimestamp();
+          tx.set(docRef, toSet);
+
+          final local = Map<String, dynamic>.from(item)
+            ..['id'] = newId
+            ..['offline'] = false
+            ..['dateAdded'] = DateTime.now().millisecondsSinceEpoch;
+          await inventoryBox.put(newId, local);
+        }
+      });
+
     } else {
-      // Add to Hive and mark as offline
-      final id = item['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
-      item['id'] = id;
-      item['offline'] = true;
-      item['source'] = 'Manual_edit';
-      item['dateAdded'] = DateTime.now().toIso8601String();
-      await inventoryBox.put(id, item);
-      await inventoryBox.put(id, item);
-      //print('\x1B[34m[DEBUG] Saved item offline: $id\x1B[0m');
-      blueDebugPrint('Saved item offline: $id');
+      // OFFLINE: merge into Hive
+      final safeId = newId;
+      final existing = inventoryBox.get(safeId);
+      if (existing != null) {
+        final m = Map<String, dynamic>.from(existing);
+        final current = ((m['quantity'] ?? 0) as num).toDouble();
+        m['quantity'] = current + incomingQty;
+        m['unit'] = (item['unit'] ?? m['unit']);
+        m['category'] = (item['category'] ?? m['category']);
+        m['offline'] = true;
+        m['source'] = 'Manual_edit';
+        m['dateAdded'] = DateTime.now().toIso8601String();
+        await inventoryBox.put(safeId, m);
+      } else {
+        final m = Map<String, dynamic>.from(item)
+          ..['id'] = safeId
+          ..['offline'] = true
+          ..['source'] = 'Manual_edit'
+          ..['dateAdded'] = DateTime.now().toIso8601String();
+        await inventoryBox.put(safeId, m);
+      }
     }
+
     _loadLocal();
   }
 
@@ -247,6 +314,7 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
   void dispose() {
     firestoreSub?.cancel();
     connectivitySub?.cancel();
+    authSub?.cancel();
     //print('\x1B[34m[DEBUG] InventoryController disposed\x1B[0m');
     blueDebugPrint('InventoryController disposed');
     super.dispose();
@@ -255,7 +323,11 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
   Future<void> refreshFromFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    final ref = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('inventory');
+
+    final ref = FirebaseFirestore.instance
+        .collection('users').doc(user.uid).collection('inventory')
+        .orderBy('dateAdded', descending: true);
+
     final snapshot = await ref.get();
     final newState = snapshot.docs.map((doc) {
       final data = doc.data();
@@ -266,10 +338,10 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
       }
       return data;
     }).toList();
+
     state = newState;
-    // Save to Hive as well
     for (var item in state) {
-      inventoryBox.put(item['id'], item);
+      await inventoryBox.put(item['id'], item);
     }
   }
 }
