@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:glass/glass.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
-import '../../utils/snackbar.dart';
+import '/theme/app_theme.dart';
+import '/utils/snackbar.dart';
 import '/utils/connectivity_provider.dart';
 import '/models/item.dart';
 import '/widgets/edit_add_item_dialog.dart';
@@ -94,6 +95,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
         height: 70.h,
         borderRadius: 26.r,
         topPadding: 40.h,
+        themeToggleWidget: ThemeToggleButton(),
       ),
       body: LiquidPullToRefresh(
         showChildOpacityTransition: false,
@@ -164,7 +166,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                         final itemObj = ScannedItem.fromJson(item);
                         final edited = await showDialog<ScannedItem>(
                           context: context,
-                          builder: (_) => EditOrAddItemDialog(item: itemObj, title: "Ingredient"),
+                          builder: (_) => EditOrAddItemDialog(item: itemObj, title: "Edit Ingredient"),
                         );
                         if (edited != null) {
                           final map = edited.toJson();
@@ -223,7 +225,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
               onPressed: () async {
                 final added = await showDialog<ScannedItem>(
                   context: context,
-                  builder: (_) => EditOrAddItemDialog(title: "Ingredient"),
+                  builder: (_) => EditOrAddItemDialog(title: "Add Ingredient"),
                 );
                 if (added != null) {
                   // Convert to Map and save using your controller
