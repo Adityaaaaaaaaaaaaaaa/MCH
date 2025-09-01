@@ -39,7 +39,7 @@ def build_receipt_ingredient_prompt() -> str:
         "Normalize brand SKUs to generic ingredient names (e.g., 'Brand X Brown Sugar' → 'Brown Sugar'). "
         "If line items specify multiple packs or a per-pack weight/volume (e.g., '2 x 500g Chicken'), compute the TOTAL quantity (here 1000 g). "
         "Map units to this STRICT set only: 'g' for grams (solids), 'ml' for millilitres (liquids), 'count' for whole items. No other units are allowed. "
-        "Examples of mapping: kg→g (×1000), g→g, L→ml (×1000), ml→ml, pcs/each/pack/dozen→count. "
+        "Examples of mapping: kg→g (x1000), g→g, L→ml (x1000), ml→ml, pcs/each/pack/dozen→count. "
         "If the quantity is unclear or absent, use quantity=1 and unit='count'. "
         "Categorize each item into EXACTLY ONE of: 'Fruits','Vegetables','Grains','Dairy','Protein','Uncategorized'. "
         "Use 'Uncategorized' only if the category is not confidently determined. "

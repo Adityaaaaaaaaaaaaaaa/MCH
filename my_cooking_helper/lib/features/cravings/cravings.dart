@@ -18,7 +18,7 @@ import '/widgets/cravings/cravings_widget.dart';
 
 // Rebuilds on sign-in, sign-out, and user switches
 final authUserProvider = StreamProvider<User?>(
-  (ref) => FirebaseAuth.instance.userChanges(),
+  (ref) => FirebaseAuth.instance.authStateChanges(),
 );
 
 class CravingsScreen extends ConsumerStatefulWidget {
@@ -30,6 +30,8 @@ class CravingsScreen extends ConsumerStatefulWidget {
 class _CravingsScreenState extends ConsumerState<CravingsScreen> {
   static const String _bgLottie = 'assets/animations/Animation_wave.json';
   static const String _loadingLottie = 'assets/animations/Animation_AI_Food_Search.json';
+
+  late final ProviderSubscription<AsyncValue<User?>> _authSub;
 
   // Height of your CustomNavBar so content can scroll behind it elegantly.
   static const double _bottomNavSpacer = 100;
@@ -57,22 +59,30 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
   @override
   void initState() {
     super.initState();
-    _primeDefaultsFromFirestore();
+
+    // ✅ Allowed in initState
+    _authSub = ref.listenManual<AsyncValue<User?>>(authUserProvider, (prev, next) {
+      final prevUid = prev?.asData?.value?.uid;
+      final nextUid = next.asData?.value?.uid;
+      if (nextUid != null && nextUid != prevUid) {
+        print('\x1B[34m[DEBUG][Cravings] Auth resolved for uid=$nextUid\x1B[0m');
+        _primeDefaultsFromFirestore(nextUid);
+      }
+    }, fireImmediately: true); // immediately fires once with current value (if any)
   }
 
   @override
   void dispose() {
+    _authSub.close();
     _queryCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _primeDefaultsFromFirestore() async {
-    final uid = ref.watch(authUserProvider).value?.uid;
-    if (uid == null) return;
-
+  Future<void> _primeDefaultsFromFirestore(String uid) async {
     try {
       print('\x1B[34m[DEBUG][Cravings] Loading Firestore defaults...\x1B[0m');
       final map = await _svc.fetchDefaults(uid);
+      if (!mounted) return;
       setState(() => _defaults = map);
       print('\x1B[34m[DEBUG][Cravings] Defaults ready: spice=${map['spiceLevel']}, time=$_defaultTime\x1B[0m');
     } catch (e) {
@@ -132,7 +142,8 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
   }
 
   Future<void> _generate() async {
-    final uid = ref.read(authUserProvider).value?.uid;
+    //final uid = ref.read(authUserProvider).value?.uid;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -195,7 +206,16 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final uid = ref.read(authUserProvider).value?.uid;
+    //final uid = FirebaseAuth.instance.currentUser?.uid;
+    final auth = ref.watch(authUserProvider);
+
+    if (auth.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final uid = auth.asData?.value?.uid ?? FirebaseAuth.instance.currentUser?.uid;
     final hasResults = (_results != null && _results!.isNotEmpty);
 
     return Scaffold(
