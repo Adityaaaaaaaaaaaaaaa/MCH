@@ -37,6 +37,21 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
     _bindForUser(_auth.currentUser);
   }
 
+  // robust number parse (also handles "1,5" keyboards)
+  static double _numParse(dynamic v, {double fallback = 0}) {
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v.replaceAll(',', '.')) ?? fallback;
+    return fallback;
+  }
+
+  // clamp by unit so weird values can't sneak in
+  static double _clampByUnit(double v, String unitRaw) {
+    final u = (unitRaw).trim().toLowerCase();
+    if (u.isEmpty || u == 'count') return v.clamp(0, 999).toDouble();
+    if (u == 'g' || u == 'ml')     return v.clamp(0, 99000).toDouble(); // 99 kg/L in base units
+    return v.clamp(0, 9999).toDouble();
+  }
+
   void _bindForUser(User? user) {
     _snapSub?.cancel();
     _snapSub = null;
@@ -51,26 +66,24 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
     _col = _db.collection('users').doc(user.uid).collection('shopping');
 
     _snapSub = _col!
-        .orderBy('name')
-        .snapshots()
-        .listen((snap) {
-          final items = snap.docs.map((d) {
-            final m = d.data();
-            return ShoppingItemModel(
-              name: (m['name'] ?? d.id) as String,
-              need: (m['need'] as num?)?.toDouble() ?? 1.0,
-              unit: (m['unit'] as String?)?.trim() ?? 'count',
-              have: (m['have'] as num?)?.toDouble() ?? 0.0,
-              tag: (m['tag'] as String?) ?? '',
-            );
-          }).toList();
-          state = items;
-          // ignore: avoid_print
-          print('\x1B[34m[SHOP SVC] snapshot → ${items.length} item(s)\x1B[0m');
-        }, onError: (e, _) {
-          // ignore: avoid_print
-          print('\x1B[31m[SHOP SVC] snapshot error: $e\x1B[0m');
-        });
+      .orderBy('name')
+      .snapshots()
+      .listen((snap) {
+        final items = snap.docs.map((d) {
+          final m = d.data();
+          return ShoppingItemModel(
+            name: (m['name'] ?? d.id) as String,
+            need: _numParse(m['need'], fallback: 1.0),
+            unit: ((m['unit'] as String?) ?? 'count').trim(),
+            have: _numParse(m['have'], fallback: 0.0),
+            tag:  (m['tag'] as String?) ?? '',
+          );
+        }).toList();
+        state = items;
+        print('\x1B[34m[SHOP SVC] snapshot → ${items.length} item(s)\x1B[0m');
+      }, onError: (e, _) {
+        print('\x1B[31m[SHOP SVC] snapshot error: $e\x1B[0m');
+      });
   }
 
   // =================== PUBLIC API used by your pages ===================
@@ -84,8 +97,12 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
     double have = 0,
     String tag = '',
   }) async {
-    final fixedNeed = (need == null || need <= 0) ? 1.0 : need;
-    final normalizedUnit = (unit == null || unit.isEmpty) ? 'count' : unit;
+    final normalizedUnit = (unit ?? 'count').trim().toLowerCase();
+    final rawNeed = _numParse(need ?? 1, fallback: 1);
+    final rawHave = _numParse(have, fallback: 0);
+
+    final fixedNeed = _clampByUnit(rawNeed <= 0 ? 1.0 : rawNeed, normalizedUnit);
+    final fixedHave = _clampByUnit(rawHave < 0 ? 0.0 : rawHave, normalizedUnit);
 
     // Local optimistic update
     final idx = state.indexWhere(
@@ -95,7 +112,7 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
       name: name,
       need: fixedNeed,
       unit: normalizedUnit,
-      have: have,
+      have: fixedHave,
       tag: tag,
     );
     if (idx == -1) {
@@ -105,7 +122,6 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
       copy[idx] = next;
       state = copy;
     }
-    // ignore: avoid_print
     print('\x1B[34m[SVC] SET  ${next.name} | ${next.need} ${next.unit} | tag=${next.tag}\x1B[0m');
 
     // Remote write (queued offline as needed)
@@ -115,7 +131,7 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
         'name': name,
         'need': fixedNeed,
         'unit': normalizedUnit,
-        'have': have,
+        'have': fixedHave,
         'tag': tag,
         'updatedAt': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
@@ -187,6 +203,61 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
     _snapSub?.cancel();
     _userSub?.cancel();
     super.dispose();
+  }
+
+  /// Decrease 'need' in the shopping list when inventory increases.
+  /// - Matches by normalized name (same slug you already use)
+  /// - Only deducts when units match ('g' | 'ml' | 'count')
+  /// - Deletes the item when the remaining need is <= 0
+  static Future<void> deductForInventoryIncrease({
+    required String name,
+    required double delta,   // how much inventory increased
+    required String unit,    // 'g' | 'ml' | 'count'
+  }) async {
+    if (delta <= 0) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final db  = FirebaseFirestore.instance;
+    final col = db.collection('users').doc(user.uid).collection('shopping');
+    final id  = _docIdFromName(name);
+
+    await db.runTransaction((tx) async {
+      final ref  = col.doc(id);
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+
+      final data = snap.data() as Map<String, dynamic>;
+      final shopUnit = ((data['unit'] as String?) ?? 'count').trim().toLowerCase();
+      final invUnit  = unit.trim().toLowerCase();
+
+      if (shopUnit != invUnit) {
+        // ignore: avoid_print
+        print('\x1B[34m[SHOP SVC] skip deduct (unit mismatch) "$shopUnit" vs "$invUnit" for "$name"\x1B[0m');
+        return;
+      }
+
+      final currentNeed = _numParse(data['need'], fallback: 0.0);
+      final remaining   = currentNeed - delta;
+
+      // tiny epsilon to avoid -1e-15 float leftovers
+      const eps = 1e-9;
+      if (remaining <= eps) {
+        tx.delete(ref);
+        print('\x1B[34m[SHOP SVC] quota met → removed "$name" from shopping list\x1B[0m');
+        return;
+      }
+
+      // keep it clamped/clean
+      final newNeed = _clampByUnit(remaining, shopUnit);
+      tx.set(ref, {
+        'need': newNeed,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      print('\x1B[34m[SHOP SVC] deduct $delta $shopUnit from "$name" → need=$newNeed\x1B[0m');
+    });
   }
 }
 
