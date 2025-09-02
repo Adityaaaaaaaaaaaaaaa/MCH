@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive/hive.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '/services/shopping_service.dart';
 import '/services/ingredient_image_service.dart';
 
 final inventoryControllerProvider = StateNotifierProvider<InventoryController, List<Map<String, dynamic>>>((ref) {
@@ -207,6 +208,10 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
 
     final isEdit = previousId != null && previousId.isNotEmpty;
 
+    double _deltaForShopping = 0.0;
+    String _nameForShopping = (item['itemName'] ?? newId).toString();
+    String _unitForShopping = ((item['unit'] ?? 'count').toString());
+
     blueDebugPrint({'addOrUpdateItem': {'newId': newId, 'previousId': previousId, 'qty+': incomingQty}});
 
     if (await _isOnline()) {
@@ -235,7 +240,12 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
           final cat  = (item['category'] ?? '').toString();
 
           // 2) If editing, set absolute; otherwise increment
-          final double nextQty = isEdit ? incomingQty : (existingQty + incomingQty);
+          final nextQty = isEdit ? incomingQty : (existingQty + incomingQty);
+
+          // capture delta & fields for shopping deduction (only increases)
+          _deltaForShopping = (nextQty - existingQty).clamp(0, double.infinity).toDouble();
+          _nameForShopping  = (data['itemName'] ?? newId).toString();
+          _unitForShopping  = unit.isNotEmpty ? unit : ((data['unit'] ?? 'count').toString());
 
           final update = <String, dynamic>{
             'quantity': nextQty,
@@ -259,6 +269,11 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
 
         } else {
           // New doc: set what the user provided (as-is)
+          // brand new doc → delta is the whole incoming amount
+          _deltaForShopping = math.max(0.0, incomingQty);
+          _nameForShopping  = (item['itemName'] ?? newId).toString();
+          _unitForShopping  = ((item['unit'] ?? 'count').toString());
+
           final toSet = Map<String, dynamic>.from(item)
             ..['dateAdded'] = FieldValue.serverTimestamp();
           tx.set(docRef, toSet);
@@ -271,6 +286,15 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
           blueDebugPrint({'tx:set new doc': newId});
         }
       });
+
+      // AFTER the transaction completes:
+      if (_deltaForShopping > 0) {
+        unawaited(ShoppingService.deductForInventoryIncrease(
+          name: _nameForShopping,
+          delta: _deltaForShopping,
+          unit:  _unitForShopping,
+        ));
+      }
 
       // opportunistic image for this item
       unawaited(backfillImagesForMissing(max: 1));

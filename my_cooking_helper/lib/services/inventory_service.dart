@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'shopping_service.dart';
 
 String toTitleCase(String input) {
   if (input.isEmpty) return input;
@@ -81,5 +83,22 @@ class InventoryService {
       }
     }
     await batch.commit();
+
+    // Deduct per item from the shopping list (best-effort; no throw)
+    for (final entry in itemsByName.entries) {
+      final item = entry.value;
+      final name = (item['itemName'] ?? '').toString();
+      final unit = ((item['unit'] ?? 'count') as String).trim().toLowerCase();
+      final double addQty = (item['quantity'] is num)
+          ? (item['quantity'] as num).toDouble()
+          : double.tryParse(item['quantity']?.toString() ?? '') ?? 0.0;
+
+      if (name.isEmpty || addQty <= 0) continue;
+      unawaited(ShoppingService.deductForInventoryIncrease(
+        name: name,
+        delta: addQty,
+        unit: unit,
+      ));
+    }
   }
 }

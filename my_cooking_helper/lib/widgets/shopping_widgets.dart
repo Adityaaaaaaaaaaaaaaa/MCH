@@ -1762,7 +1762,7 @@ class ClearListButton extends StatelessWidget {
       child: ElevatedButton.icon(
         onPressed: canPress ? _confirmAndClear : null,
         icon: const Icon(Icons.delete_sweep_outlined),
-        label: Text(itemCount > 0 ? 'Clear list (${itemCount})' : 'Clear list'),
+        label: Text(itemCount > 0 ? 'Clear list ($itemCount)' : 'Clear list'),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.red[600],
           foregroundColor: Colors.white,
