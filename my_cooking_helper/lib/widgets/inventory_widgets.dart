@@ -3,7 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:my_cooking_helper/utils/colors.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '/utils/colors.dart';
 
 // ---------- helpers ----------
 IconData _categoryIcon(String c) {
@@ -139,15 +140,20 @@ class InventoryTile extends StatelessWidget {
                         width: double.infinity,
                         color: Colors.black.withOpacity(0.10),
                         child: imageUrl.isNotEmpty
-                            ? FadeInImage.assetNetwork(
-                                placeholder: '', // keep empty = no extra assets
-                                image: imageUrl,
-                                fit: BoxFit.cover,
-                                imageErrorBuilder: (_, __, ___) => Center(
-                                  child: Icon(Icons.image_not_supported, color: soft, size: 22.sp),
+                            ? CachedNetworkImage(
+                                imageUrl: imageUrl,
+                                fit: BoxFit.contain,
+                                memCacheWidth: (220.w).toInt(),   // keep GPU/mem light
+                                memCacheHeight: (220.h).toInt(),
+                                placeholder: (_, __) => Center(
+                                  child: Icon(Icons.image, size: 22.sp, color: soft),
                                 ),
+                                errorWidget: (_, __, ___) => Center(
+                                  child: Icon(_categoryIcon(category), color: soft, size: 22.sp),
+                                ),
+                                fadeInDuration: const Duration(milliseconds: 180),
                               )
-                            : Center(child: Icon(Icons.image, size: 22.sp, color: soft)),
+                            : Center(child: Icon(_categoryIcon(category), size: 22.sp, color: soft)),
                       ),
                     ),
                   ),
