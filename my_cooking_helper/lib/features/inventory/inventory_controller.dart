@@ -30,6 +30,27 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
     state = [];
   }
 
+  //for hive
+  Map<String, dynamic> _normalizeForHive(Map<String, dynamic> m) {
+    final out = <String, dynamic>{};
+    m.forEach((k, v) {
+      if (v is Timestamp) {
+        out[k] = v.millisecondsSinceEpoch;
+      } else if (v is Map) {
+        out[k] = _normalizeForHive(Map<String, dynamic>.from(v));
+      } else if (v is List) {
+        out[k] = v.map((e) {
+          if (e is Timestamp) return e.millisecondsSinceEpoch;
+          if (e is Map) return _normalizeForHive(Map<String, dynamic>.from(e));
+          return e;
+        }).toList();
+      } else {
+        out[k] = v;
+      }
+    });
+    return out;
+  }
+
   //remove apres tresting //////////////////////////////////////////////////////////////
   void blueDebugPrint(Object msg) {
     dynamic makeEncodable(dynamic value) {
@@ -103,7 +124,7 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
         .collection('users').doc(user.uid).collection('inventory')
         .orderBy('dateAdded', descending: true);
 
-    firestoreSub = q.snapshots().listen((snapshot) {
+    firestoreSub = q.snapshots().listen((snapshot) async {
       blueDebugPrint({'Firestore snapshot docs': snapshot.docs.length});
 
       final newState = snapshot.docs.map((doc) {
@@ -130,7 +151,7 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
 
       // mirror to Hive
       for (var item in state) {
-        inventoryBox.put(item['id'], item);
+        await inventoryBox.put(item['id'], _normalizeForHive(item));
       }
     }, onDone: () {
       isListeningFirestore = false;
@@ -179,13 +200,21 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
       newId = (item['id'] ?? DateTime.now().millisecondsSinceEpoch.toString()).toString();
     }
 
-    // Ensure numeric quantity
-    final incomingQty = ((item['quantity'] ?? 1) as num).toDouble();
+    // 1) Safer parsing for incoming quantity
+    final incomingQty = (item['quantity'] is num)
+        ? (item['quantity'] as num).toDouble()
+        : double.tryParse(item['quantity']?.toString() ?? '') ?? 0.0;
+
+    final isEdit = previousId != null && previousId.isNotEmpty;
+
     blueDebugPrint({'addOrUpdateItem': {'newId': newId, 'previousId': previousId, 'qty+': incomingQty}});
 
     if (await _isOnline()) {
       // Rename handling
-      if (previousId != null && previousId.isNotEmpty && previousId != newId) {
+      // ONLINE path
+
+      // Handle rename (delete old doc if name changed)
+      if (isEdit && previousId != newId) {
         try {
           await col.doc(previousId).delete();
           await inventoryBox.delete(previousId);
@@ -195,7 +224,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
         }
       }
 
-      // Transaction to increment quantity if doc exists
       await FirebaseFirestore.instance.runTransaction((tx) async {
         final docRef = col.doc(newId);
         final snap = await tx.get(docRef);
@@ -206,8 +234,11 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
           final unit = (item['unit'] ?? '').toString();
           final cat  = (item['category'] ?? '').toString();
 
+          // 2) If editing, set absolute; otherwise increment
+          final double nextQty = isEdit ? incomingQty : (existingQty + incomingQty);
+
           final update = <String, dynamic>{
-            'quantity': existingQty + incomingQty,
+            'quantity': nextQty,
             'dateAdded': FieldValue.serverTimestamp(),
           };
           if (unit.isNotEmpty) update['unit'] = unit;
@@ -215,18 +246,19 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
 
           tx.update(docRef, update);
 
-          // Mirror to Hive
+          // Mirror to Hive (normalized)
           final mergedLocal = Map<String, dynamic>.from(data)
-            ..['quantity'] = existingQty + incomingQty
+            ..['quantity'] = nextQty
             ..['unit'] = unit.isNotEmpty ? unit : data['unit']
             ..['category'] = cat.isNotEmpty ? cat : data['category']
             ..['id'] = newId
             ..['offline'] = false;
 
-          await inventoryBox.put(newId, mergedLocal);
-          blueDebugPrint({'tx:update merged qty': existingQty + incomingQty, 'id': newId});
+          await inventoryBox.put(newId, _normalizeForHive(mergedLocal));
+          blueDebugPrint({'tx:update qty': nextQty, 'id': newId});
+
         } else {
-          // New doc
+          // New doc: set what the user provided (as-is)
           final toSet = Map<String, dynamic>.from(item)
             ..['dateAdded'] = FieldValue.serverTimestamp();
           tx.set(docRef, toSet);
@@ -235,7 +267,7 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
             ..['id'] = newId
             ..['offline'] = false
             ..['dateAdded'] = DateTime.now().millisecondsSinceEpoch;
-          await inventoryBox.put(newId, local);
+          await inventoryBox.put(newId, _normalizeForHive(local));
           blueDebugPrint({'tx:set new doc': newId});
         }
       });
@@ -246,25 +278,36 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
     } else {
       // OFFLINE: merge into Hive
       final safeId = newId;
+
+      // Support offline rename: if name changed, drop old key locally
+      if (isEdit && previousId != safeId) {
+        await inventoryBox.delete(previousId);
+      }
+
       final existing = inventoryBox.get(safeId);
       if (existing != null) {
         final m = Map<String, dynamic>.from(existing);
         final current = ((m['quantity'] ?? 0) as num).toDouble();
-        m['quantity'] = current + incomingQty;
+
+        // 3) If editing, set absolute; otherwise increment
+        m['quantity'] = isEdit ? incomingQty : (current + incomingQty);
         m['unit'] = (item['unit'] ?? m['unit']);
         m['category'] = (item['category'] ?? m['category']);
         m['offline'] = true;
         m['source'] = 'Manual_edit';
         m['dateAdded'] = DateTime.now().toIso8601String();
-        await inventoryBox.put(safeId, m);
-        blueDebugPrint({'offline merge': {'id': safeId, 'newQty': m['quantity']}});
+
+        await inventoryBox.put(safeId, _normalizeForHive(m));
+        blueDebugPrint({'offline ${isEdit ? 'set' : 'merge'}': {'id': safeId, 'qty': m['quantity']}});
       } else {
         final m = Map<String, dynamic>.from(item)
           ..['id'] = safeId
+          ..['quantity'] = incomingQty // set as-is for brand new offline doc
           ..['offline'] = true
           ..['source'] = 'Manual_edit'
           ..['dateAdded'] = DateTime.now().toIso8601String();
-        await inventoryBox.put(safeId, m);
+
+        await inventoryBox.put(safeId, _normalizeForHive(m));
         blueDebugPrint({'offline new': safeId});
       }
     }
@@ -358,7 +401,7 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
 
     state = newState;
     for (var item in state) {
-      await inventoryBox.put(item['id'], item);
+      await inventoryBox.put(item['id'], _normalizeForHive(item));
     }
 
     unawaited(backfillAllImages(

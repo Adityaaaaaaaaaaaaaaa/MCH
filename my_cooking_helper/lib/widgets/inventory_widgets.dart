@@ -163,38 +163,32 @@ class InventoryTile extends StatelessWidget {
                     padding: EdgeInsets.fromLTRB(8.w, 7.h, 8.w, 8.h),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // Name + amount on one line
-                        Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Expanded(
-                              child: Text(
-                                itemName,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 13.2.sp,
-                                  color: fg,
-                                  letterSpacing: .1,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            Text(
+                              itemName,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 13.sp,
+                                color: fg,
+                                letterSpacing: .1,
+                                height: 1.1, // a bit tighter
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: true,
                             ),
-                            SizedBox(width: 6.w),
-                            // Let amount shrink to fit instead of overflowing
-                            Flexible(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  amount,
-                                  style: TextStyle(
-                                    fontSize: 12.3.sp,
-                                    color: accent,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
+                            SizedBox(height: 4.h),
+                            Text(
+                              amount,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: accent,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ],
@@ -204,7 +198,7 @@ class InventoryTile extends StatelessWidget {
                         // Category chip – scale down if it’s too wide
                         FittedBox(
                           fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
+                          alignment: Alignment.center,
                           child: _categoryChip(context, category),
                         ),
                       ],
