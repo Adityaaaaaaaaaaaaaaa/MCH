@@ -204,16 +204,17 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 28.h),
-      child: AnimatedPadding(
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-        // This makes room for the keyboard to avoid overflow
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: MediaQuery.removeViewInsets(
+        removeBottom: true, // ← keep dialog size; ignore keyboard insets here
+        context: context,
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: EdgeInsets.only(
+            // ← give the content room to scroll above the keyboard
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24.h,
+          ),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              // Cap dialog height so content can scroll under keyboard
               maxHeight: MediaQuery.of(context).size.height * 0.85,
             ),
             child: Container(
