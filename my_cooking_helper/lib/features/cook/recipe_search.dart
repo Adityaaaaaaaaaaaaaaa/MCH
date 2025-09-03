@@ -820,7 +820,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
       appBar: CustomAppBar(
         title: "Find Recipes",
         showMenu: false,
-        themeToggleWidget: ThemeToggleButton(), ////////////////////////// remove aftrer test 
+        themeToggleWidget: ThemeToggleButton(),
         height: 70.h,
         borderRadius: 26.r,
         topPadding: 40.h,
@@ -963,7 +963,6 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                                 recipe: recipeResults[index],
                                 isSelected: false,
                                 formatTime: formatTime,
-                                //onTap: () => showRecipeDetails(recipeResults[index]),
                                 onLongPress: () => toggleRecipeSelection(recipeResults[index].id),
                                 onSelect: () => toggleRecipeSelection(recipeResults[index].id),
                                 onViewRecipe: () => showRecipeDetails(recipeResults[index]),
@@ -987,7 +986,6 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                             recipe: recipeResults[index],
                             isSelected: isSelected,
                             formatTime: formatTime,
-                            //onTap: () => showRecipeDetails(recipeResults[index]),
                             onLongPress: () => toggleRecipeSelection(recipeResults[index].id),
                             onSelect: () => toggleRecipeSelection(recipeResults[index].id),
                             onViewRecipe: () => showRecipeDetails(recipeResults[index]),
