@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '/models/recipe_detail.dart';
+import '/services/inventory_service.dart';
 
 class RecipeSaveService {
   static Future<void> markRecipeAsCooked({
@@ -86,6 +88,39 @@ class RecipeSaveService {
     });
 
     await _healHistoryDoc(userId: uid, recipeId: rid);
+
+    // --- Non-blocking inventory deduction (Spoonacular) -------------------------
+    try {
+      final items = <CookedIngredientPayload>[];
+      if ((recipe.extendedIngredients).isNotEmpty) {
+        for (final ing in recipe.extendedIngredients) {
+          final name = ((ing.nameClean ?? ing.name ?? '').toString()).trim();
+          final amt  = (ing.amount ?? ing.measures?.metric?.amount ?? 0).toDouble();
+          final unit = ((ing.unit ?? ing.measures?.metric?.unitShort ?? '').toString()).trim();
+          if (name.isNotEmpty && amt > 0) {
+            items.add(CookedIngredientPayload(name, amt, unit));
+          }
+        }
+      }
+
+      if (items.isNotEmpty) {
+        // ignore: unawaited_futures
+        unawaited(InventoryService().deductViaBackend(
+          uid: uid,
+          ingredients: items,
+          apply: true,
+        ));
+        // ignore: avoid_print
+        print('\x1B[34m[DEBUG] markRecipeAsCooked: triggered inventory deduction for ${items.length} items\x1B[0m');
+      } else {
+        // ignore: avoid_print
+        print('\x1B[34m[DEBUG] markRecipeAsCooked: no ingredients to deduct\x1B[0m');
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('\x1B[34m[DEBUG] markRecipeAsCooked: deduction call failed -> $e\x1B[0m');
+    }
+    // ---------------------------------------------------------------------------
   }
 
   static Future<void> updateFavouriteStatus({

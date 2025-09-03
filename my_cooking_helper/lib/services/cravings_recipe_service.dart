@@ -1,13 +1,14 @@
 // lib/services/cravings_recipe_service.dart
 // Firestore writes for AI "Cravings" recipes (favourite + cooked) with stable keys.
 // [DEBUG] logs in blue. No images stored in Firestore documents.
-
+import 'dart:async';                              // ADD
 import 'dart:convert';
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '/models/cravings.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '/models/cravings.dart';
+import '/services/inventory_service.dart';
 
 // ignore: constant_identifier_names
 const String _BLUE = "\x1B[34m";
@@ -130,6 +131,37 @@ class CravingsRecipeService {
       await fb.commit();
       // ignore: avoid_print
       print('$_BLUE[DEBUG] Cravings.markAsCooked (fallback userTrackers only + event): uid=$uid key=$recipeKey +1 cooked$_RESET');
+
+      // --- Non-blocking inventory deduction (AI fallback path) --------------------
+      try {
+        final items = <CookedIngredientPayload>[];
+        for (final ing in recipe.requiredIngredients) {
+          final name = ((ing.name ?? '').toString()).trim();
+          final amt  = ((ing.amount ?? 0) as num).toDouble();
+          final unit = ((ing.unit ?? '').toString()).trim();
+          if (name.isNotEmpty && amt > 0) {
+            items.add(CookedIngredientPayload(name, amt, unit));
+          }
+        }
+        if (items.isNotEmpty) {
+          // ignore: unawaited_futures
+          unawaited(InventoryService().deductViaBackend(
+            uid: uid,
+            ingredients: items,
+            apply: true,
+          ));
+          // ignore: avoid_print
+          print('$_BLUE[DEBUG] Cravings.markAsCooked: triggered inventory deduction for ${items.length} items (fallback)$_RESET');
+        } else {
+          // ignore: avoid_print
+          print('$_BLUE[DEBUG] Cravings.markAsCooked: no ingredients to deduct (fallback)$_RESET');
+        }
+      } catch (e) {
+        // ignore: avoid_print
+        print('$_BLUE[DEBUG] Cravings.markAsCooked: deduction call failed (fallback) -> $e$_RESET');
+      }
+      // ---------------------------------------------------------------------------
+
       return;
     }
 
@@ -173,6 +205,37 @@ class CravingsRecipeService {
 
     // ignore: avoid_print
     print('$_BLUE[DEBUG] Cravings.markAsCooked: uid=$uid key=$recipeKey +1 cooked (session+user events)$_RESET');
+
+    // --- Non-blocking inventory deduction (AI normal path) ----------------------
+    try {
+      final items = <CookedIngredientPayload>[];
+      final all = [...recipe.requiredIngredients, ...recipe.optionalIngredients];
+      for (final ing in all) {
+        final name = ((ing.name ?? '').toString()).trim();
+        final amt  = ((ing.amount ?? 0) as num).toDouble();
+        final unit = ((ing.unit ?? '').toString()).trim();
+        if (name.isNotEmpty && amt > 0) {
+          items.add(CookedIngredientPayload(name, amt, unit));
+        }
+      }
+      if (items.isNotEmpty) {
+        // ignore: unawaited_futures
+        unawaited(InventoryService().deductViaBackend(
+          uid: uid,
+          ingredients: items,
+          apply: true,
+        ));
+        // ignore: avoid_print
+        print('$_BLUE[DEBUG] Cravings.markAsCooked: triggered inventory deduction for ${items.length} items (normal)$_RESET');
+      } else {
+        // ignore: avoid_print
+        print('$_BLUE[DEBUG] Cravings.markAsCooked: no ingredients to deduct (normal)$_RESET');
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('$_BLUE[DEBUG] Cravings.markAsCooked: deduction call failed (normal) -> $e$_RESET');
+    }
+    // ---------------------------------------------------------------------------
   }
 
   // ===== Helpers =============================================================
