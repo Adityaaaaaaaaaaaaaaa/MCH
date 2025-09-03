@@ -160,7 +160,7 @@ class RecipePage extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            RecipeTitle(title: title),
+                            Center(child: RecipeTitle(title: title)),
                             SizedBox(height: 6.h),
 
                             if (summary.isNotEmpty)
@@ -228,12 +228,12 @@ class RecipePage extends ConsumerWidget {
                                 isDark: isDark,
                               ),
                             ],
-                            SizedBox(height: 22.h),
+                            SizedBox(height: 25.h),
 
                             // EQUIPMENT
                             if (recipe.analyzedInstructions.isNotEmpty) ...[
                               SectionHeader(title: 'Equipment', icon: Icons.kitchen_rounded, isDark: isDark),
-                              SizedBox(height: 10.h),
+                              SizedBox(height: 15.h),
                               EquipmentChips(
                                 equipment: recipe.analyzedInstructions
                                     .expand((instr) => instr.steps)

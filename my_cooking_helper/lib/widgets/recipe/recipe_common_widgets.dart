@@ -724,8 +724,8 @@ class _InstructionTileAnimatedState extends State<_InstructionTileAnimated>
                             : null,
                         label: Text(name),
                         backgroundColor: widget.isDark
-                            ? Colors.deepPurple[900]?.withOpacity(0.18)
-                            : Colors.deepPurple.withOpacity(0.11),
+                            ? Colors.blueGrey.withOpacity(0.20)
+                            : Colors.deepPurple.withOpacity(0.25),
                       );
                     }).toList(),
                   ),
@@ -756,8 +756,8 @@ class _InstructionTileAnimatedState extends State<_InstructionTileAnimated>
                             : null,
                         label: Text(name),
                         backgroundColor: widget.isDark
-                            ? Colors.blueGrey[900]?.withOpacity(0.18)
-                            : Colors.blueGrey.withOpacity(0.13),
+                            ? Colors.grey.withOpacity(0.20)
+                            : Colors.blueGrey.withOpacity(0.25),
                       );
                     }).toList(),
                   ),
@@ -805,23 +805,25 @@ class EquipmentChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 10.w,
-      runSpacing: 10.h,
-      children: equipment.map((e) => Chip(
-        label: Text(
-          e, 
-          style: TextStyle(
-            fontSize: 14.sp, 
-            fontWeight: FontWeight.w600
-          )
-        ),
-        backgroundColor: isDark 
-          ? Colors.deepPurple[900]?.withOpacity(0.15) 
-          : Colors.deepPurple.withOpacity(0.08),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
-      )).toList(),
+    return Center(
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 10.w,
+        runSpacing: 10.h,
+        children: equipment.map((e) => Chip(
+          label: Text(
+            e, 
+            style: TextStyle(
+              fontSize: 14.sp, 
+              fontWeight: FontWeight.w600
+            )
+          ),
+          backgroundColor: isDark 
+            ? Colors.deepPurple[900]?.withOpacity(0.15) 
+            : Colors.deepPurple.withOpacity(0.08),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+        )).toList(),
+      ),
     );
   }
 }

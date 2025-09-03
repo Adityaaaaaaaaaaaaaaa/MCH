@@ -265,6 +265,7 @@ class RecipeSummaryText extends StatelessWidget {
             SizedBox(height: 7.h),
             Text(
               shortSummary,
+              //textAlign: TextAlign.justify,
               style: TextStyle(
                 fontSize: 16.sp,
                 height: 1.5,
@@ -277,6 +278,7 @@ class RecipeSummaryText extends StatelessWidget {
               (time != null && time.isNotEmpty)) ...[
             SizedBox(height: 10.h),
             Wrap(
+              alignment: WrapAlignment.center,
               spacing: 8,
               runSpacing: 6,
               children: [
@@ -293,6 +295,7 @@ class RecipeSummaryText extends StatelessWidget {
             const SizedBox(height: 9),
             Center(
               child: Wrap(
+                alignment: WrapAlignment.center,
                 spacing: 6,
                 runSpacing: 6,
                 children: highlights
