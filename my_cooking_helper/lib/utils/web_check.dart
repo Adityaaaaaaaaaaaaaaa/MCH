@@ -82,7 +82,7 @@ class WebChecker {
     // Build warnings — always warn if original was HTTP
     final warnings = <String>[];
     if (wasHttp && httpsAvailable) {
-      warnings.add('Originally HTTP (auto using to HTTPS)');
+      warnings.add('Originally HTTP (Trying HTTPS)');
     } else if (wasHttp && !httpsAvailable) {
       warnings.add('Not secure (HTTP)');
     }
