@@ -506,7 +506,7 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
                       );
                       return;
                     }
-                    
+
                     await CravingsRecipeService.markAsCooked(
                       uid: uid,
                       recipe: widget.recipe,
