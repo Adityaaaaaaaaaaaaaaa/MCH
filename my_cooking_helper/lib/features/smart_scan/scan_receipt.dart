@@ -15,6 +15,7 @@ import '/widgets/scan/camera_commons.dart';
 import '/models/item.dart';
 import 'item_controller.dart';
 import '/services/gemini_scanReceipt.dart'; 
+import '/theme/app_theme.dart';
 
 class ScanReceipt extends ConsumerStatefulWidget {
   const ScanReceipt({super.key});
@@ -364,6 +365,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scanController = ref.read(smartScanControllerProvider.notifier);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final PreferredSizeWidget appBarWidget = CustomAppBar(
       title: "Scan Receipt",
@@ -371,6 +373,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
       height: 70.h,
       borderRadius: 26.r,
       topPadding: 40.h,
+      themeToggleWidget: ThemeToggleButton(),
     );
 
     return Scaffold(
@@ -497,15 +500,15 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
                                       duration: 1500,
                                       behavior: SnackBarBehavior.floating,
                                       icon: Icons.add,
-                                      iconColor: Colors.yellowAccent,
+                                      iconColor: isDark ? Colors.lightGreenAccent : Colors.white,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
                                       textStyle: TextStyle(
                                         fontWeight: FontWeight.w900,
                                         color: textColor(context),
                                       ),
                                       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-                                      backgroundColor: Colors.grey,
-                                      width: 200.w,
+                                      backgroundColor: isDark ? Colors.blueGrey : Colors.grey.shade400,
+                                      width: 210.w
                                     );
                                   }
                                 },
