@@ -153,8 +153,6 @@ class RecipeDetailModal extends StatelessWidget {
                       isDark: isDark,
                       onTap: (url) => showRecipeWebView(context, url),
                     ),
-                    if (recipe.website.startsWith('http://'))
-                      HttpWarningCard(isDark: isDark),
                   ],
                 ],
               ),

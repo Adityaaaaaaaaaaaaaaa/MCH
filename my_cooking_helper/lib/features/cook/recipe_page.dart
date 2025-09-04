@@ -263,8 +263,6 @@ class RecipePage extends ConsumerWidget {
                                 isDark: isDark,
                                 onTap: (url) => showRecipeWebView(context, url),
                               ),
-                              if (website.startsWith('http://'))
-                                HttpWarningCard(isDark: isDark),
                             ],
                             SizedBox(height: 25.h),
 
