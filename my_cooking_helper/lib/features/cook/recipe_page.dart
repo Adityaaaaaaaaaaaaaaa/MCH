@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/utils/snackbar.dart';
 import '/services/recipe_save_service.dart';
 import '/widgets/recipe/recipe_common_widgets.dart';
 import '/theme/app_theme.dart';
@@ -299,36 +300,48 @@ class RecipePage extends ConsumerWidget {
                         cookedSuccess: cookedSuccess,
                         onFavourite: () async {
                           if (userId == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("Please log in to use Favourites."),
-                                backgroundColor: Colors.red[600],
-                              ),
+                            SnackbarUtils.alert(
+                              context, 
+                              "Please log in to use Favourites.",
+                              typeInfo: TypeInfo.warning,
+                              position: MessagePosition.top,
+                              duration: 4,
                             );
                             return;
                           }
+
                           // Toggle favourite, and Firestore will trigger the stream update!
                           await RecipeSaveService.updateFavouriteStatus(
                             recipeId: recipeId,
                             userId: userId,
                             isFavourite: !isFavourite,
                           );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                !isFavourite ? "Added to Favourites!" : "Removed from Favourites.",
-                              ),
-                              backgroundColor: !isFavourite ? Colors.pink[400] : Colors.grey[600],
+
+                          SnackbarUtils.show(
+                            context, 
+                            !isFavourite ? "Added to Favourites!" : "Removed from Favourites.",
+                            duration: 1000, 
+                            behavior: SnackBarBehavior.floating,
+                            icon: !isFavourite ? Icons.favorite : Icons.heart_broken,
+                            iconColor: !isFavourite ? Colors.pinkAccent : Colors.blueGrey,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+                            textStyle: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: textColor(context),
                             ),
+                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+                            backgroundColor: !isFavourite ? Colors.pink[100] : Colors.grey.shade500,
+                            width: 200.w,
                           );
                         },
                         onMarkCooked: () async {
                           if (userId == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("Please log in to mark as cooked."),
-                                backgroundColor: Colors.red[600],
-                              ),
+                            SnackbarUtils.alert(
+                              context, 
+                              "Please log in to mark as cooked.",
+                              typeInfo: TypeInfo.warning,
+                              position: MessagePosition.top,
+                              duration: 4,
                             );
                             return;
                           }
@@ -374,11 +387,22 @@ class RecipePage extends ConsumerWidget {
                           );
 
                           ref.read(cookedSuccessProvider(recipeId).notifier).state = true;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("Marked as cooked!"),
-                              backgroundColor: Colors.green[600],
+
+                          SnackbarUtils.show(
+                            context, 
+                            "Marked as cooked!",
+                            duration: 1000, 
+                            behavior: SnackBarBehavior.floating,
+                            icon: Icons.check_circle,
+                            iconColor: isDark ? Colors.green : Colors.limeAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+                            textStyle: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: textColor(context),
                             ),
+                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+                            backgroundColor: Colors.green[600],
+                            width: 200.w,
                           );
                         },
                       ),
