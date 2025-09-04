@@ -32,7 +32,7 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
     // Enable Firestore offline cache (safe to call repeatedly)
     try {
       _db.settings = const Settings(persistenceEnabled: true);
-    } catch (_) {/* already set */}
+    } catch (_) {}
     _userSub = _auth.userChanges().listen(_bindForUser);
     _bindForUser(_auth.currentUser);
   }
@@ -90,6 +90,7 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
 
   /// Add or update an item (optimistic + write-through).
   /// `unit` is constrained by UI (g/ml/count); we still default to 'count'.
+  /// we ACCUMULATE the quantity instead of overwriting it.
   Future<void> addOrUpdate({
     required String name,
     double? need,
@@ -101,20 +102,58 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
     final rawNeed = _numParse(need ?? 1, fallback: 1);
     final rawHave = _numParse(have, fallback: 0);
 
-    final fixedNeed = _clampByUnit(rawNeed <= 0 ? 1.0 : rawNeed, normalizedUnit);
-    final fixedHave = _clampByUnit(rawHave < 0 ? 0.0 : rawHave, normalizedUnit);
+    // base clamps
+    final incomingNeed = _clampByUnit(rawNeed <= 0 ? 1.0 : rawNeed, normalizedUnit);
+    final incomingHave = _clampByUnit(rawHave < 0 ? 0.0 : rawHave, normalizedUnit);
 
-    // Local optimistic update
     final idx = state.indexWhere(
       (e) => e.name.trim().toLowerCase() == name.trim().toLowerCase(),
     );
+
+    double finalNeed = incomingNeed;
+    double finalHave = incomingHave;
+    String finalUnit = normalizedUnit;
+    String finalTag  = tag;
+
+    if (idx != -1) {
+      // Existing item found
+      final existing = state[idx];
+
+      // If unit matches, ACCUMULATE the 'need'
+      if ((existing.unit.trim().toLowerCase()) == normalizedUnit) {
+        finalNeed = _clampByUnit(existing.need + incomingNeed, normalizedUnit);
+        // keep the larger 'have' (or just keep existing)
+        finalHave = _clampByUnit(existing.have, normalizedUnit);
+        // keep existing unit and tag unless caller explicitly provides tag
+        finalUnit = existing.unit;
+        if (finalTag.isEmpty) finalTag = existing.tag;
+
+        // BLUE debug
+        // ignore: avoid_print
+        print('\x1B[34m[SVC] MERGE  $name | +$incomingNeed $normalizedUnit → $finalNeed $finalUnit | tag=${finalTag.isEmpty ? existing.tag : finalTag}\x1B[0m');
+      } else {
+        // Different unit → treat as an override (same as previous behavior)
+        // keep incoming values; optionally keep existing tag if none provided
+        if (finalTag.isEmpty) finalTag = existing.tag;
+        // BLUE debug
+        // ignore: avoid_print
+        print('\x1B[34m[SVC] OVERRIDE  $name | unit change ${existing.unit} → $normalizedUnit | set=$finalNeed $finalUnit | tag=$finalTag\x1B[0m');
+      }
+    } else {
+      // New item
+      // ignore: avoid_print
+      print('\x1B[34m[SVC] ADD  $name | $finalNeed $finalUnit | tag=$finalTag\x1B[0m');
+    }
+
+    // Local optimistic update
     final next = ShoppingItemModel(
       name: name,
-      need: fixedNeed,
-      unit: normalizedUnit,
-      have: fixedHave,
-      tag: tag,
+      need: finalNeed,
+      unit: finalUnit,
+      have: finalHave,
+      tag: finalTag,
     );
+
     if (idx == -1) {
       state = [...state, next];
     } else {
@@ -122,17 +161,17 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
       copy[idx] = next;
       state = copy;
     }
-    print('\x1B[34m[SVC] SET  ${next.name} | ${next.need} ${next.unit} | tag=${next.tag}\x1B[0m');
 
     // Remote write (queued offline as needed)
     if (_col != null) {
       final id = _docIdFromName(name);
+      print('\x1B[34m[SHOP SVC] → FS write "${_docIdFromName(name)}"\x1B[0m');
       await _col!.doc(id).set({
         'name': name,
-        'need': fixedNeed,
-        'unit': normalizedUnit,
-        'have': fixedHave,
-        'tag': tag,
+        'need': finalNeed,
+        'unit': finalUnit,
+        'have': finalHave,
+        'tag': finalTag,
         'updatedAt': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
