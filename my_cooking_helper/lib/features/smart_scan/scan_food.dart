@@ -15,6 +15,7 @@ import '/widgets/navigation/appbar.dart';
 import '/models/item.dart';
 import '/services/gemini_scanFood.dart';
 import 'item_controller.dart';
+import '/theme/app_theme.dart';
 
 class ScanFood extends ConsumerStatefulWidget {
   const ScanFood({super.key});
@@ -368,12 +369,16 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
     final theme = Theme.of(context);
     final scanController = ref.read(smartScanControllerProvider.notifier);
 
+    final isDark = theme.brightness == Brightness.dark;
+
+
     final PreferredSizeWidget appBarWidget = CustomAppBar(
       title: "Scan Food",
       showMenu: false,
       height: 70.h,
       borderRadius: 26.r,
       topPadding:40.h,
+      themeToggleWidget: ThemeToggleButton(),
     );
 
     return Scaffold(
@@ -490,15 +495,15 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
                                       duration: 1500, 
                                       behavior: SnackBarBehavior.floating,
                                       icon: Icons.add,
-                                      iconColor: Colors.amber,
+                                      iconColor: isDark ? Colors.lightGreenAccent : Colors.white,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
                                       textStyle: TextStyle(
                                         fontWeight: FontWeight.w900,
                                         color: textColor(context)
                                       ),
                                       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-                                      backgroundColor: Colors.grey,
-                                      width: 200.w,
+                                      backgroundColor: isDark ? Colors.blueGrey : Colors.grey.shade400,
+                                      width: 210.w
                                     );
                                   }
                                 },

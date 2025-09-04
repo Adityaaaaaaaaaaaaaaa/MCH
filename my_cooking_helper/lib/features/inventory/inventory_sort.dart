@@ -22,6 +22,8 @@ class InventorySortBar extends StatelessWidget {
       "category": Icons.category_rounded,
     };
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
       decoration: BoxDecoration(
@@ -31,18 +33,16 @@ class InventorySortBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          //Icon(_icons[sortBy] ?? Icons.auto_awesome_rounded, color: soft, size: 16.sp),
           SizedBox(width: 8.w),
-          Text("Sort", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.sp, color: fg)),
+          Text("Sort", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.sp, color: isDark ? Colors.white : Colors.black)),
           SizedBox(width: 6.w),
-          // Hide underline; keep Dropdown logic identical
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: sortBy,
               onChanged: (value) {
                 if (value != null) onSort(value);
               },
-              dropdownColor: Colors.black.withOpacity(.90),
+              dropdownColor: isDark ? Colors.blueGrey.shade500 : Colors.blueGrey.shade200,
               icon: Icon(Icons.arrow_drop_down_rounded, color: soft, size: 22.sp),
               borderRadius: BorderRadius.circular(12.r),
               items: const [
@@ -57,14 +57,14 @@ class InventorySortBar extends StatelessWidget {
                   value: v,
                   child: Row(
                     children: [
-                      Icon(_icons[v]!, size: 16.sp, color: soft),
+                      Icon(_icons[v]!, size: 16.sp, color: isDark ? Colors.white.withOpacity(0.7) : Colors.black.withOpacity(0.7)),
                       SizedBox(width: 8.w),
                       Text(
                         t,
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 12.sp,
-                          color: textColor(context),
+                          color: !isDark ? Colors.black : Colors.white,
                         ),
                       ),
                     ],

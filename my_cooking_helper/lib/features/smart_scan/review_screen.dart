@@ -23,6 +23,8 @@ class ReviewScreen extends ConsumerWidget {
     final scanController = ref.read(smartScanControllerProvider.notifier);
     final InventoryService _inventoryService = InventoryService();
     final lottieController = LottieAnimationController();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -145,29 +147,29 @@ class ReviewScreen extends ConsumerWidget {
                         SnackbarUtils.show(
                           context,
                           "Items Added!",
-                          duration: 500,
+                          duration: 1000,
                           behavior: SnackBarBehavior.floating,
                           icon: Icons.check,
-                          iconColor: Colors.lightGreenAccent,
+                          iconColor: isDark ? Colors.lightGreenAccent : Colors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
                           textStyle: const TextStyle(fontWeight: FontWeight.w900),
                           padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-                          backgroundColor: Colors.grey,
-                          width: 250.w,
+                          backgroundColor: isDark ? Colors.blueGrey : Colors.grey.shade400,
+                          width: 200.w,
                         );
                         context.go('/home'); // keeping your original nav behavior
                       } catch (e) {
                         SnackbarUtils.show(
                           context,
                           "Error adding items !",
-                          duration: 500,
+                          duration: 1000,
                           behavior: SnackBarBehavior.floating,
                           icon: Icons.warning_amber_rounded,
                           iconColor: Colors.redAccent,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
                           textStyle: const TextStyle(fontWeight: FontWeight.w900),
                           padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-                          backgroundColor: Colors.grey,
+                          backgroundColor: isDark ? Colors.blueGrey : Colors.grey.shade400,
                           width: 250.w,
                         );
                       }
