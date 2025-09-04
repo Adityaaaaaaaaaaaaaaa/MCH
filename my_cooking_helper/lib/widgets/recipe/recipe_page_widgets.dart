@@ -1231,7 +1231,7 @@ class DualActionButton extends StatelessWidget {
             width: 1.5.w,
             height: 35.h,
             margin: EdgeInsets.symmetric(horizontal: 3.w),
-            color: Colors.white,
+            color: textColor(context),
           ),
 
           // MARK AS COOKED BUTTON
@@ -1261,14 +1261,14 @@ class DualActionButton extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.check_circle_rounded,
-                      color: cookedSuccess ? Colors.green : Colors.grey[700],
+                      color: cookedSuccess ? Colors.green : textColor(context),
                       size: 32.sp,
                     ),
                     SizedBox(width: 8.w),
                     Text(
                       "Mark as Cooked",
                       style: TextStyle(
-                        color: cookedSuccess ? Colors.green[800] : Colors.black87,
+                        color: cookedSuccess ? Colors.green[900] : textColor(context),
                         fontWeight: FontWeight.w700,
                         fontSize: 15.sp,
                         letterSpacing: 0.1,
