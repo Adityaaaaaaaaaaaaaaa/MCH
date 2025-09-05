@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart'; 
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/utils/colors.dart';
 import '/utils/preference_utils.dart';
 
 class PreferenceSection extends StatelessWidget {
@@ -151,14 +152,20 @@ class AnimatedPreferenceTile<T extends PreferenceOption> extends StatelessWidget
               children: [
                 SmartPreferenceEmojiRow(option: v, size: 18),
                 SizedBox(width: 6),
-                Text(v.label),
+                Text(
+                  v.label,
+                ),
               ],
             )
           )).toList();
       if (vals.length > maxShow) {
         chips.add(Chip(
-            label: Text("+${vals.length - maxShow} more",
-                style: TextStyle(color: theme.colorScheme.primary))));
+            label: Text(
+              "+${vals.length - maxShow} more",
+              style: TextStyle(color: theme.colorScheme.primary)
+            )
+          )
+        );
       }
       return Center(
         child: Wrap(
@@ -173,7 +180,7 @@ class AnimatedPreferenceTile<T extends PreferenceOption> extends StatelessWidget
       padding: EdgeInsets.symmetric(vertical: 6.h),
       child: Container(
         decoration: BoxDecoration(
-            border: Border.all(
+          border: Border.all(
             color: Colors.grey,
             width: 2,
           ),
@@ -195,29 +202,30 @@ class AnimatedPreferenceTile<T extends PreferenceOption> extends StatelessWidget
             ),
           ),
           subtitle: multiSelect
-            ? multiDisplay()
-            : value != null
-                ? Center(
-                    child: Row(
-                      children: [
-                        SmartPreferenceEmojiRow(option: value, size: 20),
-                        SizedBox(width: 8),
+              ? multiDisplay()
+              : value != null
+                  ? Center(
+                      child: Row(
+                        children: [
+                          SmartPreferenceEmojiRow(option: value, size: 20),
+                          SizedBox(width: 8),
                           Flexible(
-                          child: Center(
-                            child: Text(
-                              value.label,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontSize: 14.sp, // apperance on screen before modal
-                                fontWeight: FontWeight.w500,
+                            child: Center(
+                              child: Text(
+                                value.label,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontSize: 14.sp, // apperance on screen before modal
+                                  fontWeight: FontWeight.w500,
+                                  color: textColor(context)
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                : const Center(child: Text("None")),
+                        ],
+                      ),
+                    )
+                  : const Center(child: Text("None")),
           trailing: Icon(Icons.edit, color: theme.colorScheme.primary),
           onTap: () async {
             final result = await showModalBottomSheet(
@@ -238,12 +246,6 @@ class AnimatedPreferenceTile<T extends PreferenceOption> extends StatelessWidget
               await onChanged(result);
             }
           },
-        ).asGlass(
-          blurX: 15,
-          blurY: 15,
-          tintColor: Colors.blueAccent,
-          clipBorderRadius: BorderRadius.circular(20.r),
-          frosted: true,
         ),
       ),
     );
@@ -327,7 +329,7 @@ class _PreferenceEditModalState<T extends PreferenceOption>
                         Text(
                           option.label,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 14.sp), // multi selects
+                          style: TextStyle(fontSize: 14.sp, color: Colors.black), // multi selects
                         ),
                       ],
                     ),
@@ -363,13 +365,13 @@ class _PreferenceEditModalState<T extends PreferenceOption>
                       });
                     },
                     showCheckmark: true,
-                    checkmarkColor: Colors.green,
-                    selectedColor: Colors.green.shade100,
-                    backgroundColor: Colors.grey.shade200,
+                    checkmarkColor: textColor(context),
+                    selectedColor: Colors.green.shade400,
+                    backgroundColor: Colors.grey.shade300,
                     labelStyle: TextStyle(
                       color: selected
-                          ? theme.colorScheme.primary
-                          : theme.textTheme.bodyMedium?.color,
+                          ? textColor(context).withOpacity(0.7)
+                          : textColor(context),
                     ),
                   );
                 }).toList(),
