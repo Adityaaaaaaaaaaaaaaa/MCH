@@ -42,6 +42,8 @@ Future<void> perfBootstrap() async {
 
   // 5) Network: bump HTTP keep-alive/connection limits a bit
   HttpOverrides.global = _HttpTuningOverrides();
+
+  JankMonitor.attach();
 }
 
 /// Lifecycle observer to clear/shrink caches when backgrounded
@@ -119,3 +121,26 @@ Future<void> precacheHomeImages() async {
     await precacheImage(provider, ctx);
   }
 }
+
+
+class JankMonitor {
+  static final ValueNotifier<bool> isStressed = ValueNotifier(false);
+  static final List<int> _rasterMs = <int>[];
+
+  static void attach() {
+    try {
+      // Tracks recent frame rasterization times; marks "stressed" if avg > ~20ms
+      SchedulerBinding.instance.addTimingsCallback((timings) {
+        for (final t in timings) {
+          _rasterMs.add(t.rasterDuration.inMilliseconds);
+          if (_rasterMs.length > 30) _rasterMs.removeAt(0);
+        }
+        if (_rasterMs.isEmpty) return;
+        final avg = _rasterMs.reduce((a, b) => a + b) / _rasterMs.length;
+        final stressed = avg > 20; // > ~60 FPS budget
+        if (isStressed.value != stressed) isStressed.value = stressed;
+      });
+    } catch (_) {}
+  }
+}
+

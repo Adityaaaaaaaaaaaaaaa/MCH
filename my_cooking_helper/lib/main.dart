@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
@@ -35,10 +36,14 @@ import 'features/meal_planner/planner.dart';
 import 'features/cravings/cravings.dart';
 import 'features/cravings/craving_recipe.dart';
 import 'features/shopping/shopping.dart';
+import 'utils/adaptive_transition.dart';
 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
   perfObserver.attach();
   await perfBootstrap();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -208,6 +213,32 @@ class MyApp extends ConsumerWidget {
           darkTheme: AppThemes.darkTheme,
           themeMode: themeMode,
           routerConfig: _router,
+          builder: (context, child) {
+            // ✅ Use the global _router; do NOT use GoRouter.of(context) here
+            final routeInfo = _router.routeInformationProvider.value;
+            final location  = routeInfo.uri.path;   // e.g. "/inventory"
+
+            final weight = kRouteWeights[location] ?? PageWeight.light;
+
+            return ValueListenableBuilder<bool>(
+              valueListenable: JankMonitor.isStressed,
+              builder: (context, stressed, _) {
+                final spec = TransitionSpec.from(weight, stressed: stressed);
+
+                return AnimatedSwitcher(
+                  duration: spec.duration,
+                  switchInCurve: spec.curveIn,
+                  switchOutCurve: spec.curveOut,
+                  // 'widget' is non-null here; no '!' needed
+                  transitionBuilder: (widget, animation) => spec.builder(widget, animation),
+                  child: KeyedSubtree(
+                    key: ValueKey(location),               // forces switch on route change
+                    child: child ?? const SizedBox.shrink(), // guard during router boot
+                  ),
+                );
+              },
+            );
+          },
         );
       },
     );
