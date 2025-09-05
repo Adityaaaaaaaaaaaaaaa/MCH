@@ -187,13 +187,38 @@ class AnimatedMultiSelectSmall extends StatelessWidget {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(14.r),
                         onTap: () {
-                          // --- SINGLE-SELECT LOGIC ---
-                          if (selected) {
-                            // tapping the selected chip -> deselect all
-                            onChanged(<String>[]);
+                          // Detect whether this group uses an exclusive "None" option.
+                          final bool hasExclusiveNone = options.any((o) => o.label == 'None');
+                          final String label = opt.label;
+
+                          if (hasExclusiveNone) {
+                            if (label == 'None') {
+                              // Selecting "None" clears everything else and keeps only "None"
+                              onChanged(<String>['None']);
+                            } else {
+                              // Selecting any non-"None" behaves like normal multi-select,
+                              // but make sure "None" is removed if it was selected.
+                              final newValues = List<String>.from(values);
+                              newValues.remove('None');
+
+                              final alreadySelected = newValues.contains(label);
+                              if (alreadySelected) {
+                                newValues.remove(label);
+                              } else {
+                                newValues.add(label);
+                              }
+                              onChanged(newValues);
+                            }
                           } else {
-                            // tapping a new chip -> replace any existing selection
-                            onChanged(<String>[opt.label]);
+                            // Generic multi-select toggle (for cuisines, barriers, etc.)
+                            final newValues = List<String>.from(values);
+                            final alreadySelected = newValues.contains(label);
+                            if (alreadySelected) {
+                              newValues.remove(label);
+                            } else {
+                              newValues.add(label);
+                            }
+                            onChanged(newValues);
                           }
                         },
                         child: Padding(

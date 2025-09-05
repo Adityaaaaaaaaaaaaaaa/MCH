@@ -334,10 +334,31 @@ class _PreferenceEditModalState<T extends PreferenceOption>
                     selected: selected,
                     onSelected: (val) {
                       setState(() {
-                        if (selected) {
-                          selectedValues.remove(option);
+                        final bool hasExclusiveNone = widget.options.any((o) => o.label == 'None');
+                        final bool isNone = option.label == 'None';
+
+                        if (hasExclusiveNone) {
+                          if (isNone) {
+                            // "None" is exclusive: clear others and keep only "None"
+                            selectedValues
+                              ..clear()
+                              ..add(option);
+                          } else {
+                            // Selecting a non-"None": remove "None" if present, then toggle normally
+                            selectedValues.removeWhere((o) => o.label == 'None');
+                            if (selected) {
+                              selectedValues.remove(option);
+                            } else {
+                              if (!selectedValues.contains(option)) selectedValues.add(option);
+                            }
+                          }
                         } else {
-                          selectedValues.add(option);
+                          // Generic multi-select (no "None" in this group)
+                          if (selected) {
+                            selectedValues.remove(option);
+                          } else {
+                            if (!selectedValues.contains(option)) selectedValues.add(option);
+                          }
                         }
                       });
                     },
