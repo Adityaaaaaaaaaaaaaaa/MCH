@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart';
 import 'package:go_router/go_router.dart';
@@ -22,44 +20,31 @@ class SmartScan extends ConsumerStatefulWidget {
 }
 
 class _SmartScanState extends ConsumerState<SmartScan> {
-  bool isOnline = true;
-  StreamSubscription<bool>? _statusSubscription;
-
-  @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final service = ref.read(connectivityServiceProvider);
-
-      _statusSubscription = service.onStatusChange.listen((status) {
-        SnackbarUtils.alert(
-          context,
-          status ? "You're online" : "You're offline",
-          icon: status ? Icons.wifi : Icons.wifi_off,
-          iconColor: status ? Colors.greenAccent : Colors.redAccent,
-          typeInfo: status ? TypeInfo.success : TypeInfo.error,
-          position: MessagePosition.top,
-          duration: 3,
-        );
-
-        setState(() => isOnline = status);
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _statusSubscription?.cancel();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Listen for side-effects safely during build
+    ref.listen<AsyncValue<bool>>(isOnlineProvider, (prev, next) {
+      next.whenOrNull(data: (curr) {
+        final prevVal = prev?.value;
+        if (prevVal == curr) return; // avoid duplicates on rebuilds
+        if (!mounted) return;
+        SnackbarUtils.alert(
+          context,
+          curr ? "You're online" : "You're offline",
+          icon: curr ? Icons.wifi : Icons.wifi_off,
+          iconColor: curr ? Colors.greenAccent : Colors.redAccent,
+          typeInfo: curr ? TypeInfo.success : TypeInfo.error,
+          position: MessagePosition.top,
+          duration: 3,
+        );
+      });
+    });
+
     final isOnline = ref.watch(isOnlineProvider).maybeWhen(
-      data: (val) => val,
-      orElse: () => true,
+      data: (v) => v, orElse: () => true,
     );
 
     return Scaffold(
@@ -149,7 +134,7 @@ class _SmartScanState extends ConsumerState<SmartScan> {
                       SizedBox(height: 40.h),
                       ScanActionButton(
                         label: "Scan Food",
-                        icon: EmojiAnimation(name: 'cameraFlash', size: 25,),
+                        icon: isOnline ? EmojiAnimation(name: 'cameraFlash', size: 25,) : Icon(Icons.wifi_off_rounded, color: Colors.red,),
                         color: Colors.green,
                         enabled: isOnline,
                         onPressed: () {
@@ -177,7 +162,7 @@ class _SmartScanState extends ConsumerState<SmartScan> {
                       SizedBox(height: 20.h),
                       ScanActionButton(
                         label: "Scan Receipt",
-                        icon: EmojiAnimation(name: 'wand', size: 25,),
+                        icon: isOnline ? EmojiAnimation(name: 'wand', size: 25,) : Icon(Icons.wifi_off_rounded, color: Colors.red,),
                         color: Colors.orange,
                         enabled: isOnline,
                         onPressed: () {

@@ -13,7 +13,6 @@ import '/utils/colors.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
 import '/widgets/navigation/nav.dart';
-// UPDATED: renamed file
 import '/widgets/inventory_widgets.dart';
 import 'inventory_controller.dart';
 import 'inventory_sort.dart';
@@ -28,8 +27,6 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
   List<String> selectedIds = [];
   bool deleteMode = false;
   String sortBy = "default";
-  bool isOnline = true;
-  StreamSubscription<bool>? _statusSubscription;
 
   List<Map<String, dynamic>> sortInventory(List<Map<String, dynamic>> items) {
     switch (sortBy) {
@@ -48,33 +45,14 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
     return items;
   }
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final service = ref.read(connectivityServiceProvider);
-      _statusSubscription = service.onStatusChange.listen((isOnline) {
-        SnackbarUtils.alert(
-          context,
-          isOnline ? "You're online" : "You're offline",
-          icon: isOnline ? Icons.wifi : Icons.wifi_off,
-          iconColor: isOnline ? Colors.greenAccent : Colors.redAccent,
-          typeInfo: isOnline ? TypeInfo.success : TypeInfo.error,
-          position: MessagePosition.top,
-          duration: 3,
-        );
-        setState(() => this.isOnline = isOnline);
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _statusSubscription?.cancel();
-    super.dispose();
-  }
-
   Future<void> _refreshInventory() async {
+    final online = ref.read(isOnlineProvider).maybeWhen(
+      data: (v) => v, orElse: () => true,
+    );
+    if (!online) {
+      SnackbarUtils.alert(context, "Offline — showing cached items");
+      return;
+    }
     await ref.read(inventoryControllerProvider.notifier).refreshFromFirestore();
   }
 
@@ -83,9 +61,26 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
     final items = ref.watch(inventoryControllerProvider);
     final sortedItems = sortInventory(List<Map<String, dynamic>>.from(items));
 
+    // Listen for connectivity flips & show snackbar
+    ref.listen<AsyncValue<bool>>(isOnlineProvider, (prev, next) {
+      next.whenOrNull(data: (online) {
+        final prevVal = prev?.value;
+        if (prevVal == online) return;
+        if (!mounted) return;
+        SnackbarUtils.alert(
+          context,
+          online ? "You're online" : "You're offline",
+          icon: online ? Icons.wifi : Icons.wifi_off,
+          iconColor: online ? Colors.greenAccent : Colors.redAccent,
+          typeInfo: online ? TypeInfo.success : TypeInfo.error,
+          position: MessagePosition.top,
+          duration: 3,
+        );
+      });
+    });
+
     final isOnline = ref.watch(isOnlineProvider).maybeWhen(
-      data: (val) => val,
-      orElse: () => true,
+      data: (v) => v, orElse: () => true,
     );
 
     return Scaffold(
