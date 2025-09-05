@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import '/utils/loader.dart';
 import '/models/recipe_history.dart' show RecipeHistoryEntry, UnifiedHistoryItem, RecipeSource;
 import '/widgets/recipe/recipe_tracker_widgets.dart';
 import '/services/recipe_tracker_service.dart';
@@ -49,6 +50,7 @@ class RecipeFavouritesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final normalAsync = ref.watch(favouriteRecipesProvider);
     final aiAsync = ref.watch(aiFavouriteProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: bgColor(context),
@@ -80,7 +82,14 @@ class RecipeFavouritesPage extends ConsumerWidget {
             Expanded(
               child: Builder(builder: (_) {
                 if (normalAsync.isLoading || aiAsync.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(child: loader(
+                      isDark ? Colors.deepOrange : Colors.orange,
+                      70,
+                      5,
+                      8,
+                      500,
+                    ),
+                  );
                 }
                 if (normalAsync.hasError) {
                   return Center(child: Text("Error: ${normalAsync.error}"));
@@ -159,7 +168,14 @@ class RecipeFavouritesPage extends ConsumerWidget {
                         showDialog(
                           context: context,
                           barrierDismissible: false,
-                          builder: (_) => const Center(child: CircularProgressIndicator()),
+                          builder: (_) => Center(child: loader(
+                              isDark ? Colors.deepOrangeAccent : Colors.orange,
+                              70,
+                              5,
+                              8,
+                              500,
+                            ),
+                          ),
                         );
 
                         // Normal favourites -> open RecipePage
