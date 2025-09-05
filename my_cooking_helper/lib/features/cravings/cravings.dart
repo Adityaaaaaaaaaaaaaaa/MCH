@@ -16,6 +16,7 @@ import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
 import '/widgets/navigation/nav.dart';
 import '/widgets/cravings/cravings_widget.dart';
+import '/utils/connectivity_provider.dart';
 
 // Rebuilds on sign-in, sign-out, and user switches
 final authUserProvider = StreamProvider<User?>(
@@ -211,6 +212,11 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
     final auth = ref.watch(authUserProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // ✅ online state
+    final isOnline = ref.watch(isOnlineProvider).maybeWhen(
+      data: (v) => v, orElse: () => true,
+    );
+
     if (auth.isLoading) {
       return Scaffold(
         body: Center(child: loader(
@@ -279,9 +285,15 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                 )
               else if (!_loading && !hasResults)
                 _buildCenteredWithCaution(
-                  content: _buildCenterContent(
-                    "What are you craving today?",
-                    showActions: true,
+                  // ✅ if offline: disable text field and hide actions
+                  content: AbsorbPointer(
+                    absorbing: !isOnline,
+                    child: _buildCenterContent(
+                      isOnline
+                          ? "What are you craving today?"
+                          : "You are offline",
+                      showActions: isOnline,
+                    ),
                   ),
                 )
 
@@ -310,10 +322,13 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                     minH: 56.h,
                     maxH: 56.h,
                     padding: EdgeInsets.symmetric(horizontal: 15.w),
-                    child: GlassSearchBar(
-                      controller: _queryCtrl,
-                      onSubmit: _generate,
-                      onClear: _resetToLoadingFromClear,
+                    child: AbsorbPointer( // ✅ disable search when offline
+                      absorbing: !isOnline,
+                      child: GlassSearchBar(
+                        controller: _queryCtrl,
+                        onSubmit: _generate,
+                        onClear: _resetToLoadingFromClear,
+                      ),
                     ),
                   ),
                 ),
