@@ -429,6 +429,288 @@ class _CravingsActionsState extends State<CravingsActions>
 class CautionBannerGlass extends StatelessWidget {
   const CautionBannerGlass({super.key});
 
+  void _showInfoModal(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => Container(
+          margin: EdgeInsets.symmetric(horizontal: 12.w),
+          child: Stack(
+            children: [
+              // Main modal content
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+                  border: Border.all(
+                    color: isDark 
+                      ? const Color(0xFF4A5568).withOpacity(0.5) 
+                      : const Color(0xFFE2E8F0).withOpacity(0.8),
+                    width: 1.5,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // Drag handle
+                    Container(
+                      width: 40.w,
+                      height: 4.h,
+                      margin: EdgeInsets.only(top: 12.h),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2.r),
+                        color: const Color(0xFF94A3B8).withOpacity(0.6),
+                      ),
+                    ),
+                    
+                    // Content
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: scrollController,
+                        padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 32.h),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header
+                            Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(14.w),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(18.r),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(0xFFFBBF24).withOpacity(0.15),
+                                        const Color(0xFFF59E0B).withOpacity(0.1),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    border: Border.all(
+                                      color: const Color(0xFFFBBF24).withOpacity(0.3),
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.auto_awesome_rounded,
+                                    color: const Color(0xFFF59E0B),
+                                    size: 26.sp,
+                                  ),
+                                ),
+                                SizedBox(width: 16.w),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Gemini Recipe Assistant",
+                                        style: theme.textTheme.titleLarge?.copyWith(
+                                          color: const Color(0xFFF59E0B),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 22.sp,
+                                          height: 1.2,
+                                        ),
+                                      ),
+                                      Text(
+                                        "AI-Powered Cooking Guide",
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          color: textColor(context),
+                                          fontSize: 13.sp,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => Navigator.pop(context),
+                                  child: Container(
+                                    padding: EdgeInsets.all(10.w),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16.r),
+                                      color: const Color(0xFF64748B).withOpacity(0.1),
+                                    ),
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      size: 20.sp,
+                                      color: const Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            
+                            SizedBox(height: 28.h),
+                            
+                            // Safety Warning
+                            _buildInfoCard(
+                              context,
+                              "🛡️",
+                              "Safety First",
+                              "Always verify AI-generated recipes for accuracy. Double-check cooking temperatures, times, and ingredient compatibility. Be especially careful with food allergies and dietary restrictions.",
+                              const Color(0xFFEF4444),
+                              isDark,
+                            ),
+                            
+                            SizedBox(height: 16.h),
+                            
+                            // Pro Tips
+                            _buildInfoCard(
+                              context,
+                              "💡",
+                              "Pro Tips for Better Results",
+                              "• Be specific: \"Gluten-free pasta for 4 people, 30 minutes\"\n"
+                              "• Mention your skill level: \"Beginner-friendly\" or \"Advanced\"\n"
+                              "• Include equipment: \"No oven\" or \"One-pot meal\"\n"
+                              "• State preferences: \"Low sodium\" or \"Kid-friendly\"\n"
+                              "• Ask for substitutions: \"Replace dairy with alternatives\"",
+                              const Color(0xFF3B82F6),
+                              isDark,
+                            ),
+                            
+                            SizedBox(height: 16.h),
+                            
+                            // Smart Prompts
+                            _buildInfoCard(
+                              context,
+                              "✨",
+                              "Smart Prompt Examples",
+                              "• \"Quick 20-minute dinner with chicken breast and vegetables\"\n"
+                              "• \"Vegan dessert using coconut milk, serves 6 people\"\n"
+                              "• \"High-protein breakfast for muscle building, no eggs\"\n"
+                              "• \"Keto-friendly lunch under 500 calories with salmon\"\n"
+                              "• \"Comfort food for cold weather, easy to make ahead\"",
+                              const Color(0xFF10B981),
+                              isDark,
+                            ),
+                            
+                            SizedBox(height: 16.h),
+                            
+                            // Cooking Wisdom
+                            _buildInfoCard(
+                              context,
+                              "👨‍🍳",
+                              "Cooking Wisdom",
+                              "• Always taste and adjust seasonings gradually\n"
+                              "• Check doneness with thermometer for meat dishes\n"
+                              "• Prep all ingredients before you start cooking\n"
+                              "• Start with less spice - you can always add more\n"
+                              "• When in doubt, cook low and slow",
+                              const Color(0xFF8B5CF6),
+                              isDark,
+                            ),
+                            
+                            SizedBox(height: 24.h),
+                            
+                            // Action button
+                            Container(
+                              width: double.infinity,
+                              height: 52.h,
+                              child: ElevatedButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFF59E0B),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16.r),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.check_circle_outline, size: 20.sp),
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      "Got it, let's cook!",
+                                      style: TextStyle(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ).asGlass(
+                tintColor: isDark 
+                  ? const Color(0xFF1E293B).withOpacity(0.95) 
+                  : const Color(0xFFFAFAFA).withOpacity(0.95),
+                clipBorderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+                blurX: 20,
+                blurY: 20,
+                frosted: true,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(BuildContext context, String emoji, String title, 
+      String content, Color accentColor, bool isDark) {
+    final theme = Theme.of(context);
+    
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(18.w),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18.r),
+        color: accentColor.withOpacity(0.05),
+        border: Border.all(
+          color: isDark ? accentColor.withOpacity(0.5) : accentColor.withOpacity(0.7),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                emoji,
+                style: TextStyle(fontSize: 20.sp),
+              ),
+              SizedBox(width: 10.w),
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: isDark ? accentColor : Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16.sp,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            content,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: textColor(context),
+              height: 1.5,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -436,116 +718,136 @@ class CautionBannerGlass extends StatelessWidget {
     
     return Container(
       width: double.infinity,
-      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
       child: Stack(
         children: [
-          // Subtle glow effect behind the glass
+          // Optimized glow effect
           Container(
             width: double.infinity,
-            height: 60.h,
+            height: 56.h,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20.r),
+              borderRadius: BorderRadius.circular(18.r),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.amber.withOpacity(0.1),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 4),
+                  color: const Color(0xFFFBBF24).withOpacity(0.12),
+                  blurRadius: 16,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
           ),
-          // Main glass container
+          // Main banner container
           Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+            height: 56.h,
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20.r),
+              borderRadius: BorderRadius.circular(18.r),
               border: Border.all(
-                color: Colors.red,
+                color: const Color(0xFFF59E0B).withOpacity(0.4),
                 width: 1.5,
               ),
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Animated warning icon with gradient
+                // Enhanced AI icon
                 Container(
-                  padding: EdgeInsets.all(6.w),
+                  width: 32.w,
+                  height: 32.h,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12.r),
+                    borderRadius: BorderRadius.circular(10.r),
                     gradient: LinearGradient(
                       colors: [
-                        Colors.amber.withOpacity(0.3),
-                        Colors.orange.withOpacity(0.2),
+                        const Color(0xFFFBBF24).withOpacity(0.2),
+                        const Color(0xFFF59E0B).withOpacity(0.15),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     border: Border.all(
-                      color: textColor(context),
+                      color: const Color(0xFFFBBF24).withOpacity(0.4),
                       width: 1,
                     ),
                   ),
                   child: Icon(
-                    Icons.info_outline_rounded,
-                    color: isDark? Colors.amber.shade300 : Colors.deepOrange.withOpacity(0.7),
-                    size: 20.sp,
+                    Icons.auto_awesome_rounded,
+                    color: const Color(0xFFF59E0B),
+                    size: 18.sp,
                   ),
                 ),
+                
                 SizedBox(width: 12.w),
-                // Text content
+                
+                // Improved text content
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "AI Generated",
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: isDark? Colors.orange.shade500 : Colors.deepOrange.withOpacity(0.7),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11.sp,
-                          letterSpacing: 0.5,
+                        "Gemini AI Recipe",
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: Colors.blueAccent,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.sp,
+                          letterSpacing: 0.3,
                         ),
                       ),
-                      SizedBox(height: 2.h),
                       Text(
-                        "Please review for accuracy and food safety",
+                        "Verify for safety & accuracy",
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: textColor(context).withOpacity(0.7),
-                          fontSize: 13.sp,
-                          height: 1.2,
-                          fontWeight: FontWeight.w400,
+                          color: textColor(context),
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ),
-                // Optional dismiss button or accent
-                Container(
-                  width: 4.w,
-                  height: 24.h,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2.r),
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.red.withOpacity(0.4),
-                        Colors.amber.withOpacity(0.2),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+                
+                // Interactive info button with better feedback
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showInfoModal(context),
+                    borderRadius: BorderRadius.circular(12.r),
+                    child: Container(
+                      width: 32.w,
+                      height: 32.h,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12.r),
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF3B82F6).withOpacity(0.15),
+                            const Color(0xFF1D4ED8).withOpacity(0.1),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        border: Border.all(
+                          color: const Color(0xFF3B82F6).withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.info_outline_rounded,
+                        color: const Color(0xFF3B82F6),
+                        size: 16.sp,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ).asGlass(
-            tintColor: isDark? Colors.orange.shade500 : Colors.red.withOpacity(0.4),
+            tintColor: isDark
+              ? const Color(0xFFF59E0B).withOpacity(0.1) 
+              : const Color(0xFFFEF3C7).withOpacity(0.7),
             clipBorderRadius: BorderRadius.circular(20.r),
-            blurX: 25,
-            blurY: 25,
-            frosted: true,
+            blurX: 15,
+            blurY: 15,
+            frosted: false,
           ),
         ],
       ),
