@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import '/utils/loader.dart';
 import '/theme/app_theme.dart';
 import '/models/cravings.dart';
 import '/services/cravings_service.dart';
@@ -208,10 +209,18 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
   Widget build(BuildContext context) {
     //final uid = FirebaseAuth.instance.currentUser?.uid;
     final auth = ref.watch(authUserProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (auth.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        body: Center(child: loader(
+            isDark ? Colors.deepOrangeAccent : Colors.orange,
+            70,
+            5,
+            8,
+            500,
+          ),
+        ),
       );
     }
 

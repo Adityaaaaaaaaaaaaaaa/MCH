@@ -50,12 +50,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   void _openSettings(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => Center(
         child: loader(
-          Colors.deepOrangeAccent,
+          isDark ? Colors.deepOrangeAccent : Colors.orange,
           70,
           5,
           8,
@@ -94,7 +96,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
       body: Stack(
         children: [
-          // --- BACKGROUND IMAGES (unchanged, but nicely arranged) ---
           Positioned(
             top: 120,
             left: -150,
@@ -103,7 +104,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: Opacity(
                 opacity: imgOpacity,
                 child: Image.asset(
-                  //'assets/images/home/salad.png',
                   'assets/images/home/food_plate_1.png',
                   width: 300,
                   height: 300,
@@ -120,7 +120,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: Opacity(
                 opacity: imgOpacity,
                 child: Image.asset(
-                  //'assets/images/home/salad.png',
                   'assets/images/home/food_plate_5.png',
                   width: 150,
                   height: 150,
@@ -137,7 +136,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: Opacity(
                 opacity: imgOpacity,
                 child: Image.asset(
-                  //'assets/images/home/curry.png',
                   'assets/images/home/food_plate_3.png',
                   width: 250,
                   height: 250,
@@ -154,7 +152,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: Opacity(
                 opacity: imgOpacity,
                 child: Image.asset(
-                  //'assets/images/home/burger.png',
                   'assets/images/home/food_plate_2.png',
                   width: 200,
                   height: 200,
@@ -171,7 +168,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: Opacity(
                 opacity: imgOpacity,
                 child: Image.asset(
-                  //'assets/images/home/tenders.png',
                   'assets/images/home/food_plate_4.png',
                   width: 150,
                   height: 150,
@@ -180,7 +176,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
             ),
           ),
-          // --- FEATURE CARDS WITH IMPROVED VISUALS ---
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 20.0.w, vertical: 20.0.h),
             child: Center(
@@ -214,7 +209,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         ).asGlass(
                           blurX: 15,
                           blurY: 15,
-                          //tintColor: Colors.white.withOpacity(0.12),
                           tintColor: Colors.black,
                           clipBorderRadius: BorderRadius.circular(20.r),
                           frosted: true,
