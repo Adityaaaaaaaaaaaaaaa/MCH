@@ -193,6 +193,28 @@ final GoRouter _router = GoRouter(
   ],
 );
 
+// Safe, version-agnostic way to read the current path without poking notifiers.
+String _readLocation() {
+  try {
+    // Newer go_router: RouteMatchList has a `uri` (Uri)
+    final cfg = _router.routerDelegate.currentConfiguration;
+    final Uri? uri = (cfg as dynamic).uri as Uri?;
+    if (uri != null) return uri.path;
+
+    // Some versions expose a `location` (String) instead
+    final String? loc = (cfg as dynamic).location as String?;
+    if (loc != null) return Uri.parse(loc).path;
+  } catch (_) {
+    // fall through
+  }
+  try {
+    // Last resort (may notify) — used only if the above fails
+    return _router.routeInformationProvider.value.uri.path;
+  } catch (_) {
+    return '/';
+  }
+}
+
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
@@ -215,8 +237,12 @@ class MyApp extends ConsumerWidget {
           routerConfig: _router,
           builder: (context, child) {
             // ✅ Use the global _router; do NOT use GoRouter.of(context) here
-            final routeInfo = _router.routeInformationProvider.value;
-            final location  = routeInfo.uri.path;   // e.g. "/inventory"
+            // Replace these two lines:
+            // final routeInfo = _router.routeInformationProvider.value;
+            // final location  = routeInfo.uri.path;
+
+            // With this single line:
+            final location = _readLocation();   // read-only and safe
 
             final weight = kRouteWeights[location] ?? PageWeight.light;
 
@@ -229,6 +255,10 @@ class MyApp extends ConsumerWidget {
                   duration: spec.duration,
                   switchInCurve: spec.curveIn,
                   switchOutCurve: spec.curveOut,
+
+                  // ✅ Keep only the current child (prevents two Navigators with same GlobalKey)
+                  layoutBuilder: (current, previous) => current ?? const SizedBox.shrink(),
+
                   // 'widget' is non-null here; no '!' needed
                   transitionBuilder: (widget, animation) => spec.builder(widget, animation),
                   child: KeyedSubtree(
