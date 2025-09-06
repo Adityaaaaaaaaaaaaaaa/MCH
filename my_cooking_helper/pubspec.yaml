@@ -68,9 +68,8 @@ dev_dependencies:
 flutter_icons:
   android: true
   ios: true
-  web:
-    generate: true
-  image_path: "assets/app_icon.png"
+  image_path_android: "app_icon/app_icon_android.png"
+  image_path_ios: "app_icon/app_icon_ios.png"
 
 # assets
 flutter:
@@ -84,6 +83,7 @@ flutter:
     - assets/images/onboarding/
     - assets/images/loginSignup/
     - assets/images/home/
+    - assets/images/icons/
     - assets/images/smartScan/
     - assets/images/smartScan/scanFood/
     - assets/images/smartScan/scanReceipt/

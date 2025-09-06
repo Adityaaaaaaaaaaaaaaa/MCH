@@ -1137,7 +1137,7 @@ class ReceiptHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
-                'assets/app_icon.png', // <-- add file, see step 3
+                'assets/images/icons/app_icon_transparent.png',
                 height: 36.h,
                 fit: BoxFit.contain,
               ),
