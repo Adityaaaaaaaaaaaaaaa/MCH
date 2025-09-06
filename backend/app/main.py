@@ -10,7 +10,7 @@ from app.api.meal_planner.meal_planner_change_day import router as meal_planner_
 from app.api.meal_planner.meal_planner_ping import router as meal_planner_ping_router
 from app.api.meal_planner.meal_planner_admin import router as meal_planner_admin_router
 from app.api.cravings.ai_recipe_generator import router as ai_recipe_router
-from app.api.cravings.image_proxy import router as image_router
+from app.api.recipe.deduct_inventory import router as recipe_inv_router
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -43,7 +43,7 @@ app.include_router(meal_planner_change_day_router, prefix="/mealPlanner/day")
 app.include_router(meal_planner_ping_router, prefix="/mealPlanner/ping")
 app.include_router(meal_planner_admin_router, prefix="/mealPlanner/userPlan")
 app.include_router(ai_recipe_router, prefix="/recipes/gemini")
-app.include_router(image_router, prefix="/recipes/gemini")
+app.include_router(recipe_inv_router, prefix="/recipes/gemini")
 
 @app.get("/")
 async def root():

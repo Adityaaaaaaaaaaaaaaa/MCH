@@ -429,6 +429,288 @@ class _CravingsActionsState extends State<CravingsActions>
 class CautionBannerGlass extends StatelessWidget {
   const CautionBannerGlass({super.key});
 
+  void _showInfoModal(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => Container(
+          margin: EdgeInsets.symmetric(horizontal: 12.w),
+          child: Stack(
+            children: [
+              // Main modal content
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+                  border: Border.all(
+                    color: isDark 
+                      ? const Color(0xFF4A5568).withOpacity(0.5) 
+                      : const Color(0xFFE2E8F0).withOpacity(0.8),
+                    width: 1.5,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // Drag handle
+                    Container(
+                      width: 40.w,
+                      height: 4.h,
+                      margin: EdgeInsets.only(top: 12.h),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2.r),
+                        color: const Color(0xFF94A3B8).withOpacity(0.6),
+                      ),
+                    ),
+                    
+                    // Content
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: scrollController,
+                        padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 32.h),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header
+                            Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(14.w),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(18.r),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(0xFFFBBF24).withOpacity(0.15),
+                                        const Color(0xFFF59E0B).withOpacity(0.1),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    border: Border.all(
+                                      color: const Color(0xFFFBBF24).withOpacity(0.3),
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.auto_awesome_rounded,
+                                    color: const Color(0xFFF59E0B),
+                                    size: 26.sp,
+                                  ),
+                                ),
+                                SizedBox(width: 16.w),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Gemini Recipe Assistant",
+                                        style: theme.textTheme.titleLarge?.copyWith(
+                                          color: const Color(0xFFF59E0B),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 22.sp,
+                                          height: 1.2,
+                                        ),
+                                      ),
+                                      Text(
+                                        "AI-Powered Cooking Guide",
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          color: textColor(context),
+                                          fontSize: 13.sp,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => Navigator.pop(context),
+                                  child: Container(
+                                    padding: EdgeInsets.all(10.w),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16.r),
+                                      color: const Color(0xFF64748B).withOpacity(0.1),
+                                    ),
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      size: 20.sp,
+                                      color: const Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            
+                            SizedBox(height: 28.h),
+                            
+                            // Safety Warning
+                            _buildInfoCard(
+                              context,
+                              "🛡️",
+                              "Safety First",
+                              "Always verify AI-generated recipes for accuracy. Double-check cooking temperatures, times, and ingredient compatibility. Be especially careful with food allergies and dietary restrictions.",
+                              const Color(0xFFEF4444),
+                              isDark,
+                            ),
+                            
+                            SizedBox(height: 16.h),
+                            
+                            // Pro Tips
+                            _buildInfoCard(
+                              context,
+                              "💡",
+                              "Pro Tips for Better Results",
+                              "• Be specific: \"Gluten-free pasta for 4 people, 30 minutes\"\n"
+                              "• Mention your skill level: \"Beginner-friendly\" or \"Advanced\"\n"
+                              "• Include equipment: \"No oven\" or \"One-pot meal\"\n"
+                              "• State preferences: \"Low sodium\" or \"Kid-friendly\"\n"
+                              "• Ask for substitutions: \"Replace dairy with alternatives\"",
+                              const Color(0xFF3B82F6),
+                              isDark,
+                            ),
+                            
+                            SizedBox(height: 16.h),
+                            
+                            // Smart Prompts
+                            _buildInfoCard(
+                              context,
+                              "✨",
+                              "Smart Prompt Examples",
+                              "• \"Quick 20-minute dinner with chicken breast and vegetables\"\n"
+                              "• \"Vegan dessert using coconut milk, serves 6 people\"\n"
+                              "• \"High-protein breakfast for muscle building, no eggs\"\n"
+                              "• \"Keto-friendly lunch under 500 calories with salmon\"\n"
+                              "• \"Comfort food for cold weather, easy to make ahead\"",
+                              const Color(0xFF10B981),
+                              isDark,
+                            ),
+                            
+                            SizedBox(height: 16.h),
+                            
+                            // Cooking Wisdom
+                            _buildInfoCard(
+                              context,
+                              "👨‍🍳",
+                              "Cooking Wisdom",
+                              "• Always taste and adjust seasonings gradually\n"
+                              "• Check doneness with thermometer for meat dishes\n"
+                              "• Prep all ingredients before you start cooking\n"
+                              "• Start with less spice - you can always add more\n"
+                              "• When in doubt, cook low and slow",
+                              const Color(0xFF8B5CF6),
+                              isDark,
+                            ),
+                            
+                            SizedBox(height: 24.h),
+                            
+                            // Action button
+                            Container(
+                              width: double.infinity,
+                              height: 52.h,
+                              child: ElevatedButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFF59E0B),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16.r),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.check_circle_outline, size: 20.sp),
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      "Got it, let's cook!",
+                                      style: TextStyle(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ).asGlass(
+                tintColor: isDark 
+                  ? const Color(0xFF1E293B).withOpacity(0.95) 
+                  : const Color(0xFFFAFAFA).withOpacity(0.95),
+                clipBorderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+                blurX: 20,
+                blurY: 20,
+                frosted: true,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(BuildContext context, String emoji, String title, 
+      String content, Color accentColor, bool isDark) {
+    final theme = Theme.of(context);
+    
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(18.w),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18.r),
+        color: accentColor.withOpacity(0.05),
+        border: Border.all(
+          color: isDark ? accentColor.withOpacity(0.5) : accentColor.withOpacity(0.7),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                emoji,
+                style: TextStyle(fontSize: 20.sp),
+              ),
+              SizedBox(width: 10.w),
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: isDark ? accentColor : Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16.sp,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            content,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: textColor(context),
+              height: 1.5,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -436,116 +718,136 @@ class CautionBannerGlass extends StatelessWidget {
     
     return Container(
       width: double.infinity,
-      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
       child: Stack(
         children: [
-          // Subtle glow effect behind the glass
+          // Optimized glow effect
           Container(
             width: double.infinity,
-            height: 60.h,
+            height: 56.h,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20.r),
+              borderRadius: BorderRadius.circular(18.r),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.amber.withOpacity(0.1),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 4),
+                  color: const Color(0xFFFBBF24).withOpacity(0.12),
+                  blurRadius: 16,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
           ),
-          // Main glass container
+          // Main banner container
           Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+            height: 56.h,
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20.r),
+              borderRadius: BorderRadius.circular(18.r),
               border: Border.all(
-                color: Colors.red,
+                color: const Color(0xFFF59E0B).withOpacity(0.4),
                 width: 1.5,
               ),
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Animated warning icon with gradient
+                // Enhanced AI icon
                 Container(
-                  padding: EdgeInsets.all(6.w),
+                  width: 32.w,
+                  height: 32.h,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12.r),
+                    borderRadius: BorderRadius.circular(10.r),
                     gradient: LinearGradient(
                       colors: [
-                        Colors.amber.withOpacity(0.3),
-                        Colors.orange.withOpacity(0.2),
+                        const Color(0xFFFBBF24).withOpacity(0.2),
+                        const Color(0xFFF59E0B).withOpacity(0.15),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     border: Border.all(
-                      color: textColor(context),
+                      color: const Color(0xFFFBBF24).withOpacity(0.4),
                       width: 1,
                     ),
                   ),
                   child: Icon(
-                    Icons.info_outline_rounded,
-                    color: isDark? Colors.amber.shade300 : Colors.deepOrange.withOpacity(0.7),
-                    size: 20.sp,
+                    Icons.auto_awesome_rounded,
+                    color: const Color(0xFFF59E0B),
+                    size: 18.sp,
                   ),
                 ),
+                
                 SizedBox(width: 12.w),
-                // Text content
+                
+                // Improved text content
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "AI Generated",
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: isDark? Colors.orange.shade500 : Colors.deepOrange.withOpacity(0.7),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11.sp,
-                          letterSpacing: 0.5,
+                        "Gemini AI Recipe",
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: Colors.blueAccent,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.sp,
+                          letterSpacing: 0.3,
                         ),
                       ),
-                      SizedBox(height: 2.h),
                       Text(
-                        "Please review for accuracy and food safety",
+                        "Verify for safety & accuracy",
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: textColor(context).withOpacity(0.7),
-                          fontSize: 13.sp,
-                          height: 1.2,
-                          fontWeight: FontWeight.w400,
+                          color: textColor(context),
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ),
-                // Optional dismiss button or accent
-                Container(
-                  width: 4.w,
-                  height: 24.h,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2.r),
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.red.withOpacity(0.4),
-                        Colors.amber.withOpacity(0.2),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+                
+                // Interactive info button with better feedback
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showInfoModal(context),
+                    borderRadius: BorderRadius.circular(12.r),
+                    child: Container(
+                      width: 32.w,
+                      height: 32.h,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12.r),
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF3B82F6).withOpacity(0.15),
+                            const Color(0xFF1D4ED8).withOpacity(0.1),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        border: Border.all(
+                          color: const Color(0xFF3B82F6).withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.info_outline_rounded,
+                        color: const Color(0xFF3B82F6),
+                        size: 16.sp,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ).asGlass(
-            tintColor: isDark? Colors.orange.shade500 : Colors.red.withOpacity(0.4),
+            tintColor: isDark
+              ? const Color(0xFFF59E0B).withOpacity(0.1) 
+              : const Color(0xFFFEF3C7).withOpacity(0.7),
             clipBorderRadius: BorderRadius.circular(20.r),
-            blurX: 25,
-            blurY: 25,
-            frosted: true,
+            blurX: 15,
+            blurY: 15,
+            frosted: false,
           ),
         ],
       ),
@@ -553,6 +855,7 @@ class CautionBannerGlass extends StatelessWidget {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////
 class CravingsFiltersSheet extends StatelessWidget {
   final int spiceLevel;         // 0..4 (ignored if randomEnabled)
   final bool randomEnabled;
@@ -595,237 +898,265 @@ class CravingsFiltersSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    // Use a StatefulBuilder to sync chips -> picker and vice‑versa.
     return StatefulBuilder(
       builder: (ctx, setModalState) {
         final clamped = timeMinutes.clamp(0, _kMaxMinutes);
         final quick = <int>[15, 30, 45, 60, 90, 120];
 
-        // When chips/picker change, update both UI + parent via callback.
         void _setTime(int mins) {
           final v = mins.clamp(0, _kMaxMinutes);
-          setModalState(() {});     // rebuild this sheet
-          onTimeChanged(v);         // inform parent (you’re already logging blue debug)
+          setModalState(() {});
+          onTimeChanged(v);
         }
 
-        return Padding(
-          padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h + MediaQuery.of(context).viewInsets.bottom),
-          child: Container(
-            width: double.infinity,
-            padding: EdgeInsets.zero,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24.r),
-              gradient: LinearGradient(
-                colors: [Colors.deepOrangeAccent.withOpacity(0.95), Colors.redAccent.withOpacity(0.8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+        return SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h + MediaQuery.of(context).viewInsets.bottom),
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20.r),
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                border: Border.all(
+                  color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Padding(
-                  padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 8.h),
-                  child: Row(
-                    children: [
-                      Text('✨ Craving Filters',
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(20.w, 16.h, 16.w, 12.h),
+                    child: Row(
+                      children: [
+                        Text(
+                          '🎯 Craving Filters',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          )),
-                      const Spacer(),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close_rounded, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Body (glass)
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(16.w),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(24.r),
-                      bottomRight: Radius.circular(24.r),
+                            color: isDark ? Colors.white : Colors.grey[800],
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // -------- Spice ------------
-                      Text('Spice level', style: theme.textTheme.labelLarge?.copyWith(color: Colors.white)),
-                      SizedBox(height: 10.h),
 
-                      // Chilli row (disabled when random is on)
-                      Opacity(
-                        opacity: randomEnabled ? 0.35 : 1.0,
-                        child: IgnorePointer(
-                          ignoring: randomEnabled,
-                          child: Center(
-                            child: ChilliMeter5(
-                              value: spiceLevel,
-                              onChanged: (v) {
-                                onSpiceChanged(v);
-                              },
+                  Divider(
+                    color: isDark ? Colors.grey[700] : Colors.grey[300],
+                    height: 1,
+                  ),
+
+                  // Body
+                  Padding(
+                    padding: EdgeInsets.all(20.w),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Spice Level Section
+                        Text(
+                          'Spice level',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: isDark ? Colors.white : Colors.grey[800],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 12.h),
+
+                        // Spice Level Selector - keeping original logic
+                        Opacity(
+                          opacity: randomEnabled ? 0.35 : 1.0,
+                          child: IgnorePointer(
+                            ignoring: randomEnabled,
+                            child: Center(
+                              child: _ModernChilliMeter(
+                                value: spiceLevel,
+                                onChanged: (v) {
+                                  onSpiceChanged(v);
+                                },
+                                isDark: isDark,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: 8.h),
+                        
+                        SizedBox(height: 12.h),
 
-                      // Selected label badge (glass)
-                      Align(
-                        alignment: Alignment.center,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: Colors.white.withOpacity(0.35)),
+                        // Selected spice label
+                        Align(
+                          alignment: Alignment.center,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16.r),
+                              color: isDark 
+                                ? Colors.grey[800]
+                                : Colors.grey[100],
+                              border: Border.all(
+                                color: isDark 
+                                  ? Colors.grey[600]!
+                                  : Colors.grey[300]!,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('🌶️', style: TextStyle(fontSize: 14.sp)),
+                                SizedBox(width: 6.w),
+                                Text(
+                                  randomEnabled ? _spiceLabels[5] : _spiceLabels[spiceLevel],
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: isDark ? Colors.white : Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                        ),
+
+                        SizedBox(height: 12.h),
+
+                        // Random Toggle - keeping original logic
+                        Align(
+                          alignment: Alignment.center,
+                          child: _SimpleRandomPill(
+                            enabled: randomEnabled,
+                            onChanged: (on) => onRandomChanged(on),
+                            isDark: isDark,
+                          ),
+                        ),
+
+                        SizedBox(height: 24.h),
+
+                        // Time Section
+                        Text(
+                          'Max cook time',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: isDark ? Colors.white : Colors.grey[800],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 12.h),
+
+                        // Quick select chips
+                        Center(
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 6.w,
+                            runSpacing: 6.h,
                             children: [
-                              Text('🌶️', style: TextStyle(fontSize: 16.sp)),
-                              SizedBox(width: 6.w),
+                              for (final m in quick)
+                                _SimpleTimeChip(
+                                  label: _fmtDuration(m),
+                                  selected: clamped == m,
+                                  onSelected: (_) => _setTime(m),
+                                  isDark: isDark,
+                                ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(height: 16.h),
+
+                        // Timer picker
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12.r),
+                            color: isDark 
+                              ? Colors.grey[850]
+                              : Colors.grey[50],
+                            border: Border.all(
+                              color: isDark 
+                                ? Colors.grey[700]!
+                                : Colors.grey[300]!,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                height: 120.h,
+                                child: CupertinoTimerPicker(
+                                  key: ValueKey(clamped),
+                                  mode: CupertinoTimerPickerMode.hm,
+                                  minuteInterval: 5,
+                                  initialTimerDuration: Duration(minutes: clamped),
+                                  onTimerDurationChanged: (dur) {
+                                    final mins = dur.inMinutes.clamp(0, _kMaxMinutes);
+                                    _setTime(mins);
+                                  },
+                                ),
+                              ),
                               Text(
-                                randomEnabled ? _spiceLabels[5] : _spiceLabels[spiceLevel],
-                                style: theme.textTheme.labelMedium?.copyWith(color: Colors.white),
+                                'Selected: ${_fmtDuration(clamped)}  •  limit: up to 4h',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                ),
                               ),
                             ],
                           ),
-                        ).asGlass(
-                          tintColor: Colors.white,
-                          clipBorderRadius: BorderRadius.circular(999),
-                          blurX: 18,
-                          blurY: 18,
-                          frosted: true,
                         ),
-                      ),
 
-                      SizedBox(height: 12.h),
+                        SizedBox(height: 24.h),
 
-                      // Random pill (moved here, less eye‑catching) — glass style
-                      Align(
-                        alignment: Alignment.center,
-                        child: _RandomPill(
-                          enabled: randomEnabled,
-                          onChanged: (on) => onRandomChanged(on),
-                        ),
-                      ),
-
-                      SizedBox(height: 20.h),
-
-                      // -------- Time ------------
-                      Text('Max cook time', style: theme.textTheme.labelLarge?.copyWith(color: Colors.white)),
-                      SizedBox(height: 8.h),
-
-                      // Centered quick select pills
-                      Center(
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 8.w,
-                          runSpacing: 8.h,
+                        // Actions
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            for (final m in quick)
-                              ChoiceChip(
-                                label: Text(_fmtDuration(m)),
-                                selected: clamped == m,
-                                onSelected: (_) => _setTime(m), // sync chips -> picker
-                                selectedColor: Colors.white,
-                                labelStyle: TextStyle(
-                                  color: clamped == m ? Colors.redAccent : Colors.white,
-                                  fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: isDark ? Colors.grey[400] : Colors.grey[700],
+                                  side: BorderSide(
+                                    color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                                  ),
                                 ),
-                                backgroundColor: Colors.white.withOpacity(0.20),
-                                shape: StadiumBorder(
-                                  side: BorderSide(color: Colors.white.withOpacity(0.35)),
-                                ),
-                                visualDensity: VisualDensity.compact,
-                              ),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: 12.h),
-
-                      // Timer picker (hours + minutes), clamped to 0..4h
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(vertical: 8.h),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16.r),
-                          color: Colors.white.withOpacity(0.15),
-                        ),
-                        child: Column(
-                          children: [
-                            SizedBox(
-                              height: 150.h,
-                              // Key forces recreation so the picker jumps to chip selection immediately
-                              child: CupertinoTimerPicker(
-                                key: ValueKey(clamped),
-                                mode: CupertinoTimerPickerMode.hm,
-                                minuteInterval: 5,
-                                initialTimerDuration: Duration(minutes: clamped),
-                                onTimerDurationChanged: (dur) {
-                                  final mins = dur.inMinutes.clamp(0, _kMaxMinutes);
-                                  _setTime(mins); // sync picker -> chips
-                                },
+                                onPressed: () => Navigator.pop(context),
+                                icon: const Icon(Icons.close_rounded),
+                                label: const Text('Close'),
                               ),
                             ),
-                            SizedBox(height: 6.h),
-                            Text(
-                              'Selected: ${_fmtDuration(clamped)}  •  limit: up to 4h',
-                              style: theme.textTheme.labelMedium?.copyWith(color: Colors.white),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isDark ? Colors.blue[700] : Colors.blue[600],
+                                  foregroundColor: Colors.white,
+                                ),
+                                onPressed: onApply,
+                                icon: const Icon(Icons.check_rounded),
+                                label: const Text('Apply'),
+                              ),
                             ),
-                            SizedBox(height: 6.h),
                           ],
                         ),
-                      ).asGlass(
-                        tintColor: Colors.blue,
-                        clipBorderRadius: BorderRadius.circular(16.r),
-                        blurX: 18,
-                        blurY: 18,
-                        frosted: true,
-                      ),
-
-                      SizedBox(height: 18.h),
-
-                      // Actions
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.close_rounded),
-                            label: const Text('Close'),
-                          ),
-                          SizedBox(width: 10.w),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.redAccent,
-                            ),
-                            onPressed: onApply,
-                            icon: const Icon(Icons.check_rounded),
-                            label: const Text('Apply'),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ).asGlass(
-              tintColor: Colors.blueGrey,
-              clipBorderRadius: BorderRadius.all(Radius.circular(24.r)),
-              blurX: 10,
-              blurY: 10,
+              tintColor: isDark ? Colors.black : Colors.white,
+              clipBorderRadius: BorderRadius.circular(20.r),
+              blurX: 8,
+              blurY: 8,
               frosted: true,
             ),
           ),
@@ -835,35 +1166,60 @@ class CravingsFiltersSheet extends StatelessWidget {
   }
 }
 
-/// 5 tappable chilli emojis 🌶️ for fixed levels 0..4
-class ChilliMeter5 extends StatelessWidget {
+/// Modern chilli meter keeping exact same logic as ChilliMeter5
+class _ModernChilliMeter extends StatelessWidget {
   final int value; // 0..4
   final ValueChanged<int> onChanged;
-  const ChilliMeter5({super.key, required this.value, required this.onChanged});
+  final bool isDark;
+  
+  const _ModernChilliMeter({
+    required this.value,
+    required this.onChanged,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 10.w,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: List.generate(5, (i) {
-        // grey(0) -> deep red(4)
-        final color = Color.lerp(Colors.grey, Colors.redAccent, i / 4)!;
         final isActive = i <= value;
+        final intensity = i / 4.0; // 0 to 1
+        
         return GestureDetector(
           onTap: () => onChanged(i),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 140),
-            transform: Matrix4.identity()..scale(isActive ? 1.08 : 1.0),
-            child: Opacity(
-              opacity: isActive ? 1.0 : 0.45,
+            width: 40.w,
+            height: 40.w,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isActive 
+                ? Color.lerp(Colors.yellow[600], Colors.red[600], intensity)
+                : isDark ? Colors.grey[700] : Colors.grey[300],
+              border: Border.all(
+                color: isActive 
+                  ? Color.lerp(Colors.yellow[400], Colors.red[400], intensity)!
+                  : Colors.transparent,
+                width: 2,
+              ),
+              boxShadow: isActive ? [
+                BoxShadow(
+                  color: Color.lerp(Colors.yellow, Colors.red, intensity)!.withOpacity(0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ] : null,
+            ),
+            child: Center(
               child: Text(
-                "🌶️",
+                '${i + 1}',
                 style: TextStyle(
-                  fontSize: 30.sp,
-                  color: color,
-                  shadows: isActive
-                      ? [Shadow(color: color.withOpacity(0.6), blurRadius: 8)]
-                      : const [],
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                  color: isActive 
+                    ? Colors.white
+                    : isDark ? Colors.grey[400] : Colors.grey[600],
                 ),
               ),
             ),
@@ -874,25 +1230,37 @@ class ChilliMeter5 extends StatelessWidget {
   }
 }
 
-/// Glassy random spice pill toggle (less eye‑catching, centered under chilli)
-class _RandomPill extends StatelessWidget {
+/// Simple random pill keeping exact same logic as _RandomPill
+class _SimpleRandomPill extends StatelessWidget {
   final bool enabled;
   final ValueChanged<bool> onChanged;
-  const _RandomPill({required this.enabled, required this.onChanged});
+  final bool isDark;
+
+  const _SimpleRandomPill({
+    required this.enabled,
+    required this.onChanged,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20.r)),
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(20.r),
         onTap: () => onChanged(!enabled),
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withOpacity(0.35)),
-            color: enabled ? Colors.white : Colors.white.withOpacity(0.18),
+            borderRadius: BorderRadius.circular(20.r),
+            color: enabled 
+              ? (isDark ? Colors.blue[800] : Colors.blue[100])
+              : (isDark ? Colors.grey[800] : Colors.grey[200]),
+            border: Border.all(
+              color: enabled
+                ? (isDark ? Colors.blue[600]! : Colors.blue[300]!)
+                : (isDark ? Colors.grey[600]! : Colors.grey[400]!),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -902,25 +1270,61 @@ class _RandomPill extends StatelessWidget {
               Text(
                 enabled ? 'Random spice: ON' : 'Random spice: OFF',
                 style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: enabled ? Colors.redAccent : Colors.white,
+                  fontWeight: FontWeight.w600,
+                  color: enabled 
+                    ? (isDark ? Colors.blue[200] : Colors.blue[700])
+                    : (isDark ? Colors.grey[400] : Colors.grey[700]),
                 ),
               ),
             ],
           ),
-        ).asGlass(
-          tintColor: Colors.white,
-          clipBorderRadius: BorderRadius.circular(999),
-          blurX: 16,
-          blurY: 16,
-          frosted: true,
         ),
       ),
     );
   }
 }
 
+/// Simple time chip keeping same selection logic
+class _SimpleTimeChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final ValueChanged<bool> onSelected;
+  final bool isDark;
 
+  const _SimpleTimeChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: onSelected,
+      selectedColor: isDark ? Colors.blue[700] : Colors.blue[100],
+      labelStyle: TextStyle(
+        color: selected 
+          ? (isDark ? Colors.white : Colors.blue[700])
+          : (isDark ? Colors.grey[400] : Colors.grey[700]),
+        fontWeight: FontWeight.w600,
+      ),
+      backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: selected
+            ? (isDark ? Colors.blue[500]! : Colors.blue[300]!)
+            : (isDark ? Colors.grey[600]! : Colors.grey[400]!),
+        ),
+      ),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // /widgets/cravings/cravings_widget.dart
 class CravingsResultsGrid extends StatelessWidget {
   const CravingsResultsGrid({

@@ -68,27 +68,31 @@ class RecipeDetailModal extends StatelessWidget {
                     RecipeImageCard(imageUrl: recipe.imageUrl, isDark: isDark,),
                     
                   // TITLE
-                  RecipeTitle(title: recipe.title),
+                  Center(child: RecipeTitle(title: recipe.title)),
                   SizedBox(height: 15.h),
 
                   // DISH TYPE (one line)
                   if (recipe.dishTypes.isNotEmpty)
-                    InfoChip(
-                      icon: Icons.restaurant_rounded, 
-                      text: recipe.dishTypes.join(', ').replaceFirstMapped(
-                          RegExp(r'^\w'),
-                          (m) => m.group(0)!.toUpperCase(),
-                        ), 
-                      isDark: isDark
+                    Center(
+                      child: InfoChip(
+                        icon: Icons.restaurant_rounded, 
+                        text: recipe.dishTypes.join(', ').replaceFirstMapped(
+                            RegExp(r'^\w'),
+                            (m) => m.group(0)!.toUpperCase(),
+                          ), 
+                        isDark: isDark
+                      ),
                     ),
                   SizedBox(height: 7.h),
 
                   // SERVINGS (separate line)
                   if (recipe.servings > 0)
-                    InfoChip(
-                      icon: Icons.people_rounded, 
-                      text: 'Serves ${recipe.servings}', 
-                      isDark: isDark
+                    Center(
+                      child: InfoChip(
+                        icon: Icons.people_rounded, 
+                        text: 'Serves ${recipe.servings}', 
+                        isDark: isDark
+                      ),
                     ),
                   SizedBox(height: 10.h),
 
@@ -149,8 +153,6 @@ class RecipeDetailModal extends StatelessWidget {
                       isDark: isDark,
                       onTap: (url) => showRecipeWebView(context, url),
                     ),
-                    if (recipe.website.startsWith('http://'))
-                      HttpWarningCard(isDark: isDark),
                   ],
                 ],
               ),

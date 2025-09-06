@@ -39,7 +39,7 @@ class SpoonacularProvider:
         params = {
             "ingredients": ",".join(ingredients),
             "number": number,
-            "ranking": ranking,
+            "ranking": ranking, # 1 for max ingredients in inventory , 2 for min new ingredients 
             "ignorePantry": str(ignore_pantry).lower(),
         }
         print(f"{BLUE}[DEBUG] Sending request to RapidAPI Spoonacular endpoint...{RESET}")

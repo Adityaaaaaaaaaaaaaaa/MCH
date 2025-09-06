@@ -151,6 +151,8 @@ class _AddItemModalState extends State<AddItemModal>
   late final AnimationController _borderController;
   late final Animation<Offset> _slideAnimation;
   late final Animation<Color?> _borderAnimation;
+  double _parseNum(String s) => double.tryParse(s.replaceAll(',', '.')) ?? 0.0;
+
 
   @override
   void initState() {
@@ -202,7 +204,12 @@ class _AddItemModalState extends State<AddItemModal>
   void _submit() {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
-    widget.onSubmit(name: name, need: _qty <= 0 ? 1 : _qty, unit: _unit);
+
+    // parse from controller to be extra sure + clamp + enforce min 1
+    var v = _parseNum(_qtyCtrl.text);
+    v = clampByUnit(v <= 0 ? 1 : v, _unit);
+
+    widget.onSubmit(name: name, need: v, unit: _unit);
     Navigator.pop(context);
   }
 
@@ -291,278 +298,288 @@ class _AddItemModalState extends State<AddItemModal>
 
     return SlideTransition(
       position: _slideAnimation,
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 16.w,
-          right: 16.w,
-          top: 20.h,
-        ),
-        child: AnimatedBuilder(
-          animation: _borderAnimation,
-          builder: (context, child) {
-            return Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25.r),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors:
-                      isDark
-                          ? [const Color(0xFF1E1E1E), const Color(0xFF2A2A2A)]
-                          : [Colors.white, const Color(0xFFFAFAFA)],
-                ),
-                border: Border.all(
-                  color: _borderAnimation.value ?? Colors.transparent,
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        isDark
-                            ? Colors.black.withOpacity(0.5)
-                            : Colors.grey.withOpacity(0.3),
-                    blurRadius: 25,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+      child: SafeArea(
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 12,
+            left: 16.w,
+            right: 16.w,
+            top: 20.h,
+          ),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                // keep the sheet comfy with keyboard up
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
               ),
-              child: Padding(
-                padding: EdgeInsets.all(24.w),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Modal Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Add Ingredient",
-                          style: TextStyle(
-                            fontSize: 20.sp,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            padding: EdgeInsets.all(8.w),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color:
-                                  isDark ? Colors.grey[800] : Colors.grey[200],
-                            ),
-                            child: Icon(
-                              Icons.close,
-                              size: 20.sp,
-                              color: isDark ? Colors.white70 : Colors.black54,
-                            ),
-                          ),
+              child: AnimatedBuilder(
+                animation: _borderAnimation,
+                builder: (context, child) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(25.r),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDark
+                            ? [const Color(0xFF1E1E1E), const Color(0xFF2A2A2A)]
+                            : [Colors.white, const Color(0xFFFAFAFA)],
+                      ),
+                      border: Border.all(
+                        color: _borderAnimation.value ?? Colors.transparent,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark
+                              ? Colors.black.withOpacity(0.5)
+                              : Colors.grey.withOpacity(0.3),
+                          blurRadius: 25,
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
-
-                    SizedBox(height: 24.h),
-
-                    // Item Name Input
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15.r),
-                        color:
-                            isDark
-                                ? const Color(0xFF2A2A2A)
-                                : const Color(0xFFF8F8F8),
-                        border: Border.all(
-                          color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-                          width: 1,
-                        ),
-                      ),
-                      child: TextField(
-                        controller: _nameCtrl,
-                        textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => _submit(),
-                        decoration: InputDecoration(
-                          hintText: 'Enter ingredient name...',
-                          hintStyle: TextStyle(
-                            color: isDark ? Colors.grey[500] : Colors.grey[600],
-                            fontSize: 16.sp,
-                          ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16.w,
-                            vertical: 16.h,
-                          ),
-                          border: InputBorder.none,
-                        ),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16.sp,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 24.h),
-
-                    // Quantity Section
-                    Row(
-                      children: [
-                        Text(
-                          "Quantity:",
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.grey[300] : Colors.grey[700],
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(15.r),
-                            color:
-                                isDark
-                                    ? const Color(0xFF2A2A2A)
-                                    : const Color(0xFFF8F8F8),
-                            border: Border.all(
-                              color: primary.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                    child: Padding(
+                      padding: EdgeInsets.all(24.w),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Modal Header
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              GestureDetector(
-                                onTap: () => _applyQty(_qty - 1),
-                                child: Container(
-                                  padding: EdgeInsets.all(12.w),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: Radius.circular(15.r),
-                                      bottomLeft: Radius.circular(15.r),
-                                    ),
-                                    color: Colors.red.withOpacity(0.1),
-                                  ),
-                                  child: Icon(
-                                    Icons.remove,
-                                    size: 20.sp,
-                                    color: Colors.red[600],
-                                  ),
-                                ),
-                              ),
-                              SizedBox(
-                                width: 72.w,
-                                child: TextField(
-                                  controller: _qtyCtrl,
-                                  textAlign: TextAlign.center,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  inputFormatters: formattersForUnit(_unit),
-                                  decoration: const InputDecoration(
-                                    isCollapsed: true,
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16.sp,
-                                    color: isDark ? Colors.white : Colors.black87,
-                                  ),
-                                  onChanged: (t) {
-                                    final v = double.tryParse(t) ?? 0;
-                                    setState(() => _qty = v); // let user type freely; we clamp on commit/submit
-                                  },
-                                  onEditingComplete: () {
-                                    _qty = clampByUnit(_qty, _unit);
-                                    _qtyCtrl.text = normalizedQtyTextForField(_unit, _qty);
-                                    FocusScope.of(context).unfocus();
-                                  },
-                                  onSubmitted: (_) => _submit(),
+                              Text(
+                                "Add Ingredient",
+                                style: TextStyle(
+                                  fontSize: 20.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : Colors.black87,
                                 ),
                               ),
                               GestureDetector(
-                                onTap: () => _applyQty(_qty + 1),
+                                onTap: () => Navigator.pop(context),
                                 child: Container(
-                                  padding: EdgeInsets.all(12.w),
+                                  padding: EdgeInsets.all(8.w),
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.only(
-                                      topRight: Radius.circular(15.r),
-                                      bottomRight: Radius.circular(15.r),
-                                    ),
-                                    color: Colors.green.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                    color: isDark ? Colors.grey[800] : Colors.grey[200],
                                   ),
                                   child: Icon(
-                                    Icons.add,
+                                    Icons.close,
                                     size: 20.sp,
-                                    color: Colors.green[600],
+                                    color: isDark ? Colors.white70 : Colors.black54,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
 
-                    SizedBox(height: 24.h),
+                          SizedBox(height: 24.h),
 
-                    // Unit Selection
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Unit:",
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.grey[300] : Colors.grey[700],
+                          // Item Name Input
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(15.r),
+                              color:
+                                  isDark
+                                      ? const Color(0xFF2A2A2A)
+                                      : const Color(0xFFF8F8F8),
+                              border: Border.all(
+                                color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                                width: 1,
+                              ),
+                            ),
+                            child: TextField(
+                              controller: _nameCtrl,
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (_) => _submit(),
+                              decoration: InputDecoration(
+                                hintText: 'Enter ingredient name...',
+                                hintStyle: TextStyle(
+                                  color: isDark ? Colors.grey[500] : Colors.grey[600],
+                                  fontSize: 16.sp,
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 16.w,
+                                  vertical: 16.h,
+                                ),
+                                border: InputBorder.none,
+                              ),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16.sp,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 12.h),
-                        Row(
-                          children: [
-                            unitChip('g', Icons.scale),
-                            SizedBox(width: 12.w),
-                            unitChip('ml', Icons.opacity),
-                            SizedBox(width: 12.w),
-                            unitChip('count', Icons.tag),
-                          ],
-                        ),
-                      ],
-                    ),
 
-                    SizedBox(height: 32.h),
+                          SizedBox(height: 24.h),
 
-                    // Submit Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primary,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 16.h),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15.r),
+                          // Quantity Section
+                          Row(
+                            children: [
+                              Text(
+                                "Quantity:",
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.grey[300] : Colors.grey[700],
+                                ),
+                              ),
+                              const Spacer(),
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(15.r),
+                                  color:
+                                      isDark
+                                          ? const Color(0xFF2A2A2A)
+                                          : const Color(0xFFF8F8F8),
+                                  border: Border.all(
+                                    color: primary.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () => _applyQty(_qty - 1),
+                                      child: Container(
+                                        padding: EdgeInsets.all(12.w),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: Radius.circular(15.r),
+                                            bottomLeft: Radius.circular(15.r),
+                                          ),
+                                          color: Colors.red.withOpacity(0.1),
+                                        ),
+                                        child: Icon(
+                                          Icons.remove,
+                                          size: 20.sp,
+                                          color: Colors.red[600],
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 72.w,
+                                      child: TextField(
+                                        controller: _qtyCtrl,
+                                        textAlign: TextAlign.center,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        inputFormatters: formattersForUnit(_unit),
+                                        decoration: const InputDecoration(
+                                          isCollapsed: true,
+                                          border: InputBorder.none,
+                                          contentPadding: EdgeInsets.zero,
+                                        ),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16.sp,
+                                          color: isDark ? Colors.white : Colors.black87,
+                                        ),
+                                        onChanged: (t) {
+                                          final v = _parseNum(t);
+                                          setState(() => _qty = v); // live preview; clamp on commit/submit
+                                        },
+                                        onEditingComplete: () {
+                                          _qty = clampByUnit(_parseNum(_qtyCtrl.text), _unit);
+                                          _qtyCtrl.text = normalizedQtyTextForField(_unit, _qty);
+                                          FocusScope.of(context).unfocus();
+                                        },
+                                        onSubmitted: (_) => _submit(),
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () => _applyQty(_qty + 1),
+                                      child: Container(
+                                        padding: EdgeInsets.all(12.w),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.only(
+                                            topRight: Radius.circular(15.r),
+                                            bottomRight: Radius.circular(15.r),
+                                          ),
+                                          color: Colors.green.withOpacity(0.1),
+                                        ),
+                                        child: Icon(
+                                          Icons.add,
+                                          size: 20.sp,
+                                          color: Colors.green[600],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          elevation: 8,
-                          shadowColor: primary.withOpacity(0.4),
-                        ),
-                        child: Text(
-                          "ADD TO LIST",
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
+
+                          SizedBox(height: 24.h),
+
+                          // Unit Selection
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Unit:",
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.grey[300] : Colors.grey[700],
+                                ),
+                              ),
+                              SizedBox(height: 12.h),
+                              Row(
+                                children: [
+                                  unitChip('g', Icons.scale),
+                                  SizedBox(width: 12.w),
+                                  unitChip('ml', Icons.opacity),
+                                  SizedBox(width: 12.w),
+                                  unitChip('count', Icons.tag),
+                                ],
+                              ),
+                            ],
                           ),
-                        ),
+
+                          SizedBox(height: 32.h),
+
+                          // Submit Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _submit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primary,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(vertical: 16.h),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15.r),
+                                ),
+                                elevation: 8,
+                                shadowColor: primary.withOpacity(0.4),
+                              ),
+                              child: Text(
+                                "ADD TO LIST",
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+          )
         ),
-      ),
+      )
     );
   }
 }
@@ -623,6 +640,22 @@ class _ShoppingListTileState extends State<ShoppingListTile>
       end: 1.02,
     ).animate(CurvedAnimation(parent: _hoverController, curve: Curves.easeOut));
   }
+
+  @override
+  void didUpdateWidget(covariant ShoppingListTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Re-sync local qty whenever the backing model changes (need/unit/name)
+    if (oldWidget.item.need != widget.item.need ||
+        oldWidget.item.unit != widget.item.unit ||
+        oldWidget.item.name != widget.item.name) {
+      final next = widget.item.need > 0 ? widget.item.need : 1;
+      setState(() {
+        qty = next.toDouble();
+        _qtyCtrl.text = normalizedQtyTextForField(widget.item.unit, qty);
+      });
+    }
+  }
+
 
   @override
   void didChangeDependencies() {
@@ -893,6 +926,8 @@ class _ShoppingListTileState extends State<ShoppingListTile>
                                       ),
                                     ),
 
+                                    SizedBox(width: 2.w),
+
                                     // Delete Button
                                     GestureDetector(
                                       onTap: widget.onDelete,
@@ -1102,7 +1137,7 @@ class ReceiptHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
-                'assets/app_icon.png', // <-- add file, see step 3
+                'assets/images/icons/app_icon_transparent.png',
                 height: 36.h,
                 fit: BoxFit.contain,
               ),
@@ -1762,7 +1797,7 @@ class ClearListButton extends StatelessWidget {
       child: ElevatedButton.icon(
         onPressed: canPress ? _confirmAndClear : null,
         icon: const Icon(Icons.delete_sweep_outlined),
-        label: Text(itemCount > 0 ? 'Clear list (${itemCount})' : 'Clear list'),
+        label: Text(itemCount > 0 ? 'Clear list ($itemCount)' : 'Clear list'),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.red[600],
           foregroundColor: Colors.white,

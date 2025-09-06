@@ -20,6 +20,13 @@ def _pretty(obj: Any, max_chars: int = 50000) -> str:
         s = str(obj)
     return s if len(s) <= max_chars else s[:max_chars] + "\n... [truncated]"
 
+# NEW: bubble 503 up to the router so the UI can show a proper error
+class ProviderUnavailable(Exception):
+    def __init__(self, status_code: int = 503, message: str = "Service unavailable"):
+        super().__init__(message)
+        self.status_code = status_code
+
+
 # --- Lite, local validation models (no JSON schema sent to Gemini) ---
 class _IngredientReq(BaseModel):
     name: str
@@ -407,6 +414,13 @@ async def generate_recipes(
                 raise
 
     except Exception as e:
+        msg = str(e)
+        # If Gemini is overloaded, don't return stubs — signal 503 upstream
+        if ("503" in msg) or ("UNAVAILABLE" in msg) or ("overloaded" in msg):
+            _blue(f"[Gemini][recipes] UNAVAILABLE/503: {msg}")
+            raise ProviderUnavailable(503, "The model is overloaded. Please try again later.")
+        # Otherwise keep your current behavior
+
         _blue(f"[Gemini][recipes] ERROR {e} — returning stub")
         # … keep your existing stub exactly …
         return {

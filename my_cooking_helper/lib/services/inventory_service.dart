@@ -1,5 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart'; // for debugPrint (blue logs)
+import 'package:http/http.dart' as http;
+import '/config/backend_config.dart';
+import 'shopping_service.dart';
 
 String toTitleCase(String input) {
   if (input.isEmpty) return input;
@@ -11,6 +17,22 @@ String toTitleCase(String input) {
       .join(' ');
 }
 
+// ---------- Blue debug helper ----------
+extension _Blue on Object {
+  void blue() => debugPrint('\x1B[34m[DEBUG][InvDeduct] $this\x1B[0m');
+}
+
+// Payload used when calling the backend deduction endpoint
+class CookedIngredientPayload {
+  final String name;   // raw recipe line name
+  final double amount; // as provided by recipe
+  final String unit;   // raw recipe unit (e.g., "tbsp", "kg", "cup", "g", "ml", "count")
+
+  CookedIngredientPayload(this.name, this.amount, this.unit);
+
+  Map<String, dynamic> toJson() => {'name': name, 'amount': amount, 'unit': unit};
+}
+
 class InventoryService {
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
@@ -19,6 +41,8 @@ class InventoryService {
   /// For existing items, only the quantity is updated; other fields remain unchanged.
   /// For new items, all fields are set.
   Future<void> addItemsToInventory(List<Map<String, dynamic>> items) async {
+    '[addItemsToInventory] incoming items: ${items.length}'.blue();
+
     final user = _auth.currentUser;
     if (user == null) throw Exception("No user logged in");
 
@@ -38,8 +62,13 @@ class InventoryService {
     }
 
     // Fetch existing documents (those with the same documentId)
+    final existingKeys = itemsByName.keys.toList();
+    if (existingKeys.isEmpty) {
+      '[addItemsToInventory] nothing to save'.blue();
+      return;
+    }
     final existingDocs = await inventoryRef
-        .where(FieldPath.documentId, whereIn: itemsByName.keys.toList())
+        .where(FieldPath.documentId, whereIn: existingKeys)
         .get();
 
     final Set<String> existingIds = existingDocs.docs.map((doc) => doc.id).toSet();
@@ -61,7 +90,7 @@ class InventoryService {
 
       if (existingIds.contains(entry.key)) {
         // Existing item: Only update quantity (and optionally dateAdded)
-        final double newQuantity = existingQuantities[entry.key]! + addQuantity;
+        final double newQuantity = (existingQuantities[entry.key] ?? 0.0) + addQuantity;
         batch.update(docRef, {
           'quantity': newQuantity,
           'dateAdded': FieldValue.serverTimestamp(), // Optional: update date
@@ -81,5 +110,63 @@ class InventoryService {
       }
     }
     await batch.commit();
+    '[addItemsToInventory] Firestore batch committed for ${itemsByName.length} items'.blue();
+
+    // Deduct per item from the shopping list (best-effort; no throw)
+    int triggered = 0;
+    for (final entry in itemsByName.entries) {
+      final item = entry.value;
+      final name = (item['itemName'] ?? '').toString();
+      final unit = ((item['unit'] ?? 'count') as String).trim().toLowerCase();
+      final double addQty = (item['quantity'] is num)
+          ? (item['quantity'] as num).toDouble()
+          : double.tryParse(item['quantity']?.toString() ?? '') ?? 0.0;
+
+      if (name.isEmpty || addQty <= 0) continue;
+      triggered++;
+      unawaited(ShoppingService.deductForInventoryIncrease(
+        name: name,
+        delta: addQty,
+        unit: unit,
+      ));
+    }
+    '[addItemsToInventory] triggered ShoppingService deductions for $triggered items'.blue();
+  }
+
+  /// Fire-and-forget call to the backend to deduct inventory based on cooked recipe.
+  /// Uses aiRecipeInvCal (from backend_config.dart) as the endpoint.
+  Future<void> deductViaBackend({
+    required String uid,
+    required List<CookedIngredientPayload> ingredients,
+    bool apply = true,
+  }) async {
+    try {
+      if (ingredients.isEmpty) {
+        '[deductViaBackend] no ingredients to process'.blue();
+        return;
+      }
+      final url = Uri.parse(aiRecipeInvCal); // defined in backend_config.dart
+      final payload = {
+        'uid': uid,
+        'apply': apply,
+        'ingredients': ingredients.map((e) => e.toJson()).toList(),
+      };
+      'POST $url'.blue();
+      const encoder = JsonEncoder.withIndent('  ');
+      encoder.convert(payload).blue();
+
+      final resp = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
+
+      '[deductViaBackend] response ${resp.statusCode}'.blue();
+      resp.body.blue();
+      // UI remains unaffected; Firestore listeners will reflect changes when backend applies them.
+    } catch (e, st) {
+      '[deductViaBackend] error: $e'.blue();
+      st.toString().blue();
+    }
   }
 }

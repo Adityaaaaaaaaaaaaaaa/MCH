@@ -24,6 +24,7 @@ class SnackbarUtils {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (icon != null)
               Icon(icon, color: iconColor ?? Colors.white, size: 20),

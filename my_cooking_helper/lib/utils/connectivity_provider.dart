@@ -1,3 +1,4 @@
+// lib/utils/connectivity_provider.dart
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -6,23 +7,25 @@ class ConnectivityService {
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<List<ConnectivityResult>>? _subscription;
 
-  // Internal cache
+  bool _initialized = false;
   bool _isOnline = true;
   List<ConnectivityResult> _lastResults = [];
 
-  // Expose last known state
   bool get isOnline => _isOnline;
   List<ConnectivityResult> get lastResults => _lastResults;
 
   final _controller = StreamController<bool>.broadcast();
   Stream<bool> get onStatusChange => _controller.stream;
 
-  /// Initializes the connectivity listener and checks the current state.
   Future<void> init() async {
-    final results = await _connectivity.checkConnectivity(); // Now a List
+    if (_initialized) return; // idempotent
+    _initialized = true;
+
+    final results = await _connectivity.checkConnectivity();
     _lastResults = results;
     _isOnline = results.any((r) => r != ConnectivityResult.none);
     _controller.add(_isOnline);
+    blueDebugPrint('init -> $_lastResults | isOnline=$_isOnline');
 
     _subscription = _connectivity.onConnectivityChanged.listen((results) {
       _lastResults = results;
@@ -30,6 +33,7 @@ class ConnectivityService {
       if (online != _isOnline) {
         _isOnline = online;
         _controller.add(_isOnline);
+        blueDebugPrint('change -> $_lastResults | isOnline=$_isOnline');
       }
     });
   }
@@ -41,10 +45,8 @@ class ConnectivityService {
 
   Future<ConnectivityResult> getCurrentConnectionType() async {
     final results = await _connectivity.checkConnectivity();
-    return results.firstWhere(
-      (r) => r != ConnectivityResult.none,
-      orElse: () => ConnectivityResult.none,
-    );
+    return results.firstWhere((r) => r != ConnectivityResult.none,
+        orElse: () => ConnectivityResult.none);
   }
 
   Future<bool> isWifi() async {
@@ -64,14 +66,13 @@ class ConnectivityService {
 
   void blueDebugPrint(String msg) {
     for (final line in msg.split('\n')) {
+      // ignore: avoid_print
       print('\x1B[34m[Connectivity] $line\x1B[0m');
     }
   }
 
   void logStatus() {
-    //print('[Connectivity] isOnline: $_isOnline');
     blueDebugPrint('isOnline: $_isOnline');
-    //print('[Connectivity] Current: $_lastResults');
     blueDebugPrint('Current: $_lastResults');
   }
 
@@ -81,19 +82,14 @@ class ConnectivityService {
   }
 }
 
-//
-// Riverpod Providers
-//
-
 final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
   final service = ConnectivityService();
+  service.init();                 // fire-and-forget; happens on first read
   ref.onDispose(service.dispose);
   return service;
 });
 
-/// Reactive online status: true = online, false = offline
-final isOnlineProvider = StreamProvider<bool>((ref) async* {
-  final service = ref.read(connectivityServiceProvider);
-  await service.init();
-  yield* service.onStatusChange;
+final isOnlineProvider = StreamProvider<bool>((ref) {
+  final service = ref.watch(connectivityServiceProvider);
+  return service.onStatusChange;  // stream only; no extra init here
 });

@@ -1,9 +1,12 @@
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import '/utils/loader.dart';
 import '/models/recipe_history.dart' show RecipeHistoryEntry, UnifiedHistoryItem, RecipeSource;
 import '/services/recipe_tracker_service.dart';
 import '/services/cravings_recipe_service.dart';
@@ -59,6 +62,7 @@ class RecipeHistoryPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final normalAsync = ref.watch(cookedRecipesProvider);
     final aiAsync = ref.watch(cookedAiRawProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: bgColor(context),
@@ -89,7 +93,14 @@ class RecipeHistoryPage extends ConsumerWidget {
             Expanded(
               child: Builder(builder: (_) {
                 if (normalAsync.isLoading || aiAsync.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(child: loader(
+                      isDark ? Colors.deepOrangeAccent : Colors.orange,
+                      70,
+                      5,
+                      8,
+                      500,
+                    ),
+                  );
                 }
                 if (normalAsync.hasError) {
                   return Center(child: Text("Error: ${normalAsync.error}"));
@@ -191,7 +202,14 @@ class RecipeHistoryPage extends ConsumerWidget {
                               showDialog(
                                 context: context,
                                 barrierDismissible: false,
-                                builder: (_) => const Center(child: CircularProgressIndicator()),
+                                builder: (_) => Center(child: loader(
+                                  isDark ? Colors.deepOrangeAccent : Colors.orange,
+                                    70,
+                                    5,
+                                    8,
+                                    500,
+                                  ),
+                                ),
                               );
 
                               // ===== normal recipe (unchanged) =====

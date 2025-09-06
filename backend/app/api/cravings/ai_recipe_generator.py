@@ -9,7 +9,7 @@ import anyio
 from app.utils.cravings.firestore_cravings import save_ai_cravings_session
 from app.utils.shopping.shopping_normalize import normalize_name
 from app.utils.shopping.firestore_inventory import fetch_inventory_once
-from app.providers.gemini.gemini_recipe_generator import generate_recipes
+from app.providers.gemini.gemini_recipe_generator import generate_recipes, ProviderUnavailable
 from app.providers.gemini.gemini_image_generator import generate_image_for_title
 from app.utils.cravings.id_utils import make_mru_id
 from app.utils.shopping.shopping import attach_shopping_to_candidates
@@ -121,15 +121,21 @@ async def ai_recipe(req: AiRecipeRequest):
         
         # ── Step 2: Call Gemini to generate 3 recipes ───────────────────
         _blue("[AI-RECIPES] Step 2/7: Calling Gemini recipe generator…")
-        gen = await generate_recipes(
-            query=req.query,
-            max_time=req.constraints.maxTimeMinutes,
-            spice_level=req.constraints.spice.resolvedLevel,
-            allergies=req.preferences.allergies,
-            cuisines=req.preferences.cuisines,
-            diets=req.preferences.diets,
-            allowed_canonicals=allowed,
-        )
+        try:
+            gen = await generate_recipes(
+                query=req.query,
+                max_time=req.constraints.maxTimeMinutes,
+                spice_level=req.constraints.spice.resolvedLevel,
+                allergies=req.preferences.allergies,
+                cuisines=req.preferences.cuisines,
+                diets=req.preferences.diets,
+                allowed_canonicals=allowed,
+            )
+        except ProviderUnavailable as e:
+            _blue(f"[AI-RECIPES] Gemini unavailable → HTTP {e.status_code}: {e}")
+            # Return 503 to frontend; nothing gets saved to Firestore
+            raise HTTPException(status_code=e.status_code, detail=str(e))
+
         _blue("[AI-RECIPES] Gemini raw candidates (truncated):")
         _blue(_pp(gen))
 

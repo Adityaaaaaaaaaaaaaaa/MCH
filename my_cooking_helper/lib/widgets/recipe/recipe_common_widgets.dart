@@ -2,12 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-// import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
-// import 'package:youtube_player_iframe/youtube_player_iframe.dart';
-// import 'package:glass/glass.dart';
-// import '/utils/recipe_webview_dialog.dart';
+import '/utils/web_check.dart';
 import '/models/recipe.dart';
-// import '/models/recipe_detail.dart';
 import '/utils/colors.dart';
 
 // Recipe Image Card
@@ -724,8 +720,8 @@ class _InstructionTileAnimatedState extends State<_InstructionTileAnimated>
                             : null,
                         label: Text(name),
                         backgroundColor: widget.isDark
-                            ? Colors.deepPurple[900]?.withOpacity(0.18)
-                            : Colors.deepPurple.withOpacity(0.11),
+                            ? Colors.blueGrey.withOpacity(0.20)
+                            : Colors.deepPurple.withOpacity(0.25),
                       );
                     }).toList(),
                   ),
@@ -756,8 +752,8 @@ class _InstructionTileAnimatedState extends State<_InstructionTileAnimated>
                             : null,
                         label: Text(name),
                         backgroundColor: widget.isDark
-                            ? Colors.blueGrey[900]?.withOpacity(0.18)
-                            : Colors.blueGrey.withOpacity(0.13),
+                            ? Colors.grey.withOpacity(0.20)
+                            : Colors.blueGrey.withOpacity(0.25),
                       );
                     }).toList(),
                   ),
@@ -805,23 +801,25 @@ class EquipmentChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 10.w,
-      runSpacing: 10.h,
-      children: equipment.map((e) => Chip(
-        label: Text(
-          e, 
-          style: TextStyle(
-            fontSize: 14.sp, 
-            fontWeight: FontWeight.w600
-          )
-        ),
-        backgroundColor: isDark 
-          ? Colors.deepPurple[900]?.withOpacity(0.15) 
-          : Colors.deepPurple.withOpacity(0.08),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
-      )).toList(),
+    return Center(
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 10.w,
+        runSpacing: 10.h,
+        children: equipment.map((e) => Chip(
+          label: Text(
+            e, 
+            style: TextStyle(
+              fontSize: 14.sp, 
+              fontWeight: FontWeight.w600
+            )
+          ),
+          backgroundColor: isDark 
+            ? Colors.deepPurple[900]?.withOpacity(0.15) 
+            : Colors.deepPurple.withOpacity(0.08),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+        )).toList(),
+      ),
     );
   }
 }
@@ -992,118 +990,226 @@ class WebsiteLinkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final originalUrl = url;
-    final fixedUrl = url.startsWith('http://') ? url.replaceFirst('http://', 'https://') : url;
-    print('\x1B[33m[DEBUG] Recipe Website tapped.\n[DEBUG] Original: $originalUrl\n[DEBUG] Modified: $fixedUrl\x1B[0m');
-    
-    return GestureDetector(
-      onTap: () => onTap(fixedUrl),
-      child: Container(
-        margin: EdgeInsets.only(bottom: 16.h),
-        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark 
-                ? [Colors.blue[700]!.withOpacity(0.2), Colors.blue[600]!.withOpacity(0.1)]
-                : [Colors.blue.withOpacity(0.08), Colors.blue.withOpacity(0.04)],
-          ),
-          borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(
-            color: isDark 
-                ? Colors.blue[400]!.withOpacity(0.3)
-                : Colors.blue.withOpacity(0.2),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.language_rounded, 
-              color: isDark ? Colors.blue[300] : Colors.blue[700], 
-              size: 20.sp
-            ),
-            SizedBox(width: 12.w),
-            Text(
-              buttonText,
-              style: TextStyle(
-                color: isDark ? Colors.blue[300] : Colors.blue[700],
-                fontWeight: FontWeight.w600,
-                fontSize: 16.sp,
+    return FutureBuilder<WebsiteCheckResult>(
+      future: WebChecker.check(url),
+      builder: (context, snap) {
+        final result = snap.data;
+        final resolvedUrl = result?.resolvedUrl ?? url;
+
+        // Blue debug prints (your convention)
+        // 34m => blue; 0m => reset
+        print('\x1B[34m[WEBCHK] url="$url" -> resolved="$resolvedUrl" '
+              'wasHttp=${result?.wasHttp} httpsOk=${result?.httpsAvailable} '
+              'mobileFriendly=${result?.mobileFriendly}\x1B[0m');
+
+        return GestureDetector(
+          onTap: () => onTap(resolvedUrl),
+          child: Container(
+            margin: EdgeInsets.only(bottom: 16.h),
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [Colors.blue[700]!.withOpacity(0.22), Colors.blue[600]!.withOpacity(0.10)]
+                    : [Colors.blue.withOpacity(0.10), Colors.blue.withOpacity(0.05)],
+              ),
+              borderRadius: BorderRadius.circular(16.r),
+              border: Border.all(
+                color: isDark
+                    ? Colors.blue[300]!.withOpacity(0.35)
+                    : Colors.blue.withOpacity(0.22),
               ),
             ),
-          ],
-        ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Main action row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.language_rounded,
+                        color: isDark ? Colors.blue[200] : Colors.blue[800],
+                        size: 20.sp),
+                    SizedBox(width: 10.w),
+                    Text(
+                      buttonText,
+                      style: TextStyle(
+                        color: isDark ? Colors.blue[200] : Colors.blue[800],
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16.sp,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    SizedBox(width: 6.w),
+                    Icon(Icons.arrow_outward_rounded,
+                        size: 18.sp,
+                        color: isDark ? Colors.blue[200] : Colors.blue[800]),
+                  ],
+                ),
+
+                SizedBox(height: 10.h),
+
+                // Status/warning row (sexy + minimal)
+                if (snap.connectionState == ConnectionState.waiting) ...[
+                  _StatusShimmer(isDark: isDark),
+                ] else ...[
+                  if (result == null) _StatusChip(
+                    isDark: isDark,
+                    icon: Icons.warning_amber_rounded,
+                    text: 'Could not verify website',
+                    danger: true,
+                  ) else ...[
+                    if (result.warnings.isEmpty) Wrap(
+                      spacing: 8.w,
+                      runSpacing: 6.h,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        _StatusChip(
+                          isDark: isDark,
+                          icon: Icons.lock_rounded,
+                          text: 'Secure',
+                        ),
+                        _StatusChip(
+                          isDark: isDark,
+                          icon: Icons.phone_iphone_rounded,
+                          text: 'Mobile-friendly',
+                        ),
+                      ],
+                    ) else Column(
+                      children: [
+                        // Single title: "Warning"
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.warning_amber_rounded,
+                                color: isDark ? Colors.red[300] : Colors.red[700],
+                                size: 18.sp),
+                            SizedBox(width: 6.w),
+                            Text(
+                              'Warning',
+                              style: TextStyle(
+                                color: isDark ? Colors.red[300] : Colors.red[700],
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13.sp,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 6.h),
+                        // Specific issues as chips
+                        Wrap(
+                          spacing: 8.w,
+                          runSpacing: 6.h,
+                          alignment: WrapAlignment.center,
+                          children: result.warnings.map((w) => _StatusChip(
+                            isDark: isDark,
+                            icon: w.contains('HTTP')
+                                ? Icons.lock_open_rounded
+                                : Icons.smartphone_rounded,
+                            text: w,
+                            danger: true,
+                          )).toList(),
+                        ),
+                        if (result.wasHttp && result.httpsAvailable) ...[
+                          SizedBox(height: 6.h),
+                          Text(
+                            'We will open the HTTPS version automatically.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: isDark ? Colors.green[300] : Colors.green[700],
+                              fontWeight: FontWeight.w500,
+                              fontSize: 11.sp,
+                            ),
+                          ),
+                        ],
+                      ],
+                    )
+                  ]
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final bool isDark;
+  final IconData icon;
+  final String text;
+  final bool danger;
+  const _StatusChip({
+    required this.isDark,
+    required this.icon,
+    required this.text,
+    this.danger = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = danger
+        ? (isDark ? Colors.red[200]! : Colors.red[800]!)
+        : (isDark ? Colors.green[200]! : Colors.green[800]!);
+    final bg = danger
+        ? (isDark ? Colors.red[900]!.withOpacity(0.18) : Colors.red[50]!)
+        : (isDark ? Colors.green[900]!.withOpacity(0.18) : Colors.green[50]!);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999.r),
+        border: Border.all(color: fg.withOpacity(0.25)),
+      ),
+      // Cap max width defensively to avoid rare overflows on very long labels
+      constraints: BoxConstraints(
+        // Use the available screen width; Wrap will still break lines as needed
+        maxWidth: MediaQuery.of(context).size.width - 48.w,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14.sp, color: fg),
+          SizedBox(width: 6.w),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: fg,
+                fontWeight: FontWeight.w600,
+                fontSize: 11.5.sp,
+                height: 1.1,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// -- HTTP Warning Card Widget -- ///
-class HttpWarningCard extends StatelessWidget {
+class _StatusShimmer extends StatelessWidget {
   final bool isDark;
-
-  const HttpWarningCard({super.key, required this.isDark});
+  const _StatusShimmer({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(16.w),
-      margin: EdgeInsets.only(bottom: 16.h),
-      decoration: BoxDecoration(
-        color: isDark 
-             ? Colors.red[900]!.withOpacity(0.15) 
-             : Colors.red[50],
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: isDark 
-               ? Colors.red[400]!.withOpacity(0.3) 
-               : Colors.red[200]!,
+    // very lightweight placeholder without extra deps
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(2, (i) => Container(
+        width: 110.w, height: 22.h,
+        margin: EdgeInsets.symmetric(horizontal: 4.w),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white10 : Colors.black12,
+          borderRadius: BorderRadius.circular(999.r),
         ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.warning_amber_rounded, 
-            color: isDark ? Colors.red[300] : Colors.red[700], 
-            size: 30.sp
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'This website is not secure (HTTP).',
-                  style: TextStyle(
-                    color: isDark ? Colors.red[300] : Colors.red[700],
-                    fontWeight: FontWeight.w500,
-                    fontSize: 13.sp,
-                    height: 1.4,
-                  ),
-                ),
-                Text(
-                  'Your connection may not be private.',
-                  style: TextStyle(
-                    color: isDark ? Colors.red[300] : Colors.red[700],
-                    fontWeight: FontWeight.w500,
-                    fontSize: 12.sp,
-                    height: 1.4,
-                  ),
-                ),
-                Text(
-                  'HTTPS version will be used if available.',
-                  style: TextStyle(
-                    color: isDark ? Colors.green[300] : Colors.green[700],
-                    fontWeight: FontWeight.w500,
-                    fontSize: 12.sp,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      )),
     );
   }
 }
