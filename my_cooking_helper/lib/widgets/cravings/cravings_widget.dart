@@ -855,6 +855,7 @@ class CautionBannerGlass extends StatelessWidget {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////
 class CravingsFiltersSheet extends StatelessWidget {
   final int spiceLevel;         // 0..4 (ignored if randomEnabled)
   final bool randomEnabled;
@@ -897,237 +898,265 @@ class CravingsFiltersSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    // Use a StatefulBuilder to sync chips -> picker and vice‑versa.
     return StatefulBuilder(
       builder: (ctx, setModalState) {
         final clamped = timeMinutes.clamp(0, _kMaxMinutes);
         final quick = <int>[15, 30, 45, 60, 90, 120];
 
-        // When chips/picker change, update both UI + parent via callback.
         void _setTime(int mins) {
           final v = mins.clamp(0, _kMaxMinutes);
-          setModalState(() {});     // rebuild this sheet
-          onTimeChanged(v);         // inform parent (you’re already logging blue debug)
+          setModalState(() {});
+          onTimeChanged(v);
         }
 
-        return Padding(
-          padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h + MediaQuery.of(context).viewInsets.bottom),
-          child: Container(
-            width: double.infinity,
-            padding: EdgeInsets.zero,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24.r),
-              gradient: LinearGradient(
-                colors: [Colors.deepOrangeAccent.withOpacity(0.95), Colors.redAccent.withOpacity(0.8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+        return SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h + MediaQuery.of(context).viewInsets.bottom),
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20.r),
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                border: Border.all(
+                  color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Padding(
-                  padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 8.h),
-                  child: Row(
-                    children: [
-                      Text('✨ Craving Filters',
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(20.w, 16.h, 16.w, 12.h),
+                    child: Row(
+                      children: [
+                        Text(
+                          '🎯 Craving Filters',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          )),
-                      const Spacer(),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close_rounded, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Body (glass)
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(16.w),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(24.r),
-                      bottomRight: Radius.circular(24.r),
+                            color: isDark ? Colors.white : Colors.grey[800],
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // -------- Spice ------------
-                      Text('Spice level', style: theme.textTheme.labelLarge?.copyWith(color: Colors.white)),
-                      SizedBox(height: 10.h),
 
-                      // Chilli row (disabled when random is on)
-                      Opacity(
-                        opacity: randomEnabled ? 0.35 : 1.0,
-                        child: IgnorePointer(
-                          ignoring: randomEnabled,
-                          child: Center(
-                            child: ChilliMeter5(
-                              value: spiceLevel,
-                              onChanged: (v) {
-                                onSpiceChanged(v);
-                              },
+                  Divider(
+                    color: isDark ? Colors.grey[700] : Colors.grey[300],
+                    height: 1,
+                  ),
+
+                  // Body
+                  Padding(
+                    padding: EdgeInsets.all(20.w),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Spice Level Section
+                        Text(
+                          'Spice level',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: isDark ? Colors.white : Colors.grey[800],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 12.h),
+
+                        // Spice Level Selector - keeping original logic
+                        Opacity(
+                          opacity: randomEnabled ? 0.35 : 1.0,
+                          child: IgnorePointer(
+                            ignoring: randomEnabled,
+                            child: Center(
+                              child: _ModernChilliMeter(
+                                value: spiceLevel,
+                                onChanged: (v) {
+                                  onSpiceChanged(v);
+                                },
+                                isDark: isDark,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: 8.h),
+                        
+                        SizedBox(height: 12.h),
 
-                      // Selected label badge (glass)
-                      Align(
-                        alignment: Alignment.center,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: Colors.white.withOpacity(0.35)),
+                        // Selected spice label
+                        Align(
+                          alignment: Alignment.center,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16.r),
+                              color: isDark 
+                                ? Colors.grey[800]
+                                : Colors.grey[100],
+                              border: Border.all(
+                                color: isDark 
+                                  ? Colors.grey[600]!
+                                  : Colors.grey[300]!,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('🌶️', style: TextStyle(fontSize: 14.sp)),
+                                SizedBox(width: 6.w),
+                                Text(
+                                  randomEnabled ? _spiceLabels[5] : _spiceLabels[spiceLevel],
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: isDark ? Colors.white : Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                        ),
+
+                        SizedBox(height: 12.h),
+
+                        // Random Toggle - keeping original logic
+                        Align(
+                          alignment: Alignment.center,
+                          child: _SimpleRandomPill(
+                            enabled: randomEnabled,
+                            onChanged: (on) => onRandomChanged(on),
+                            isDark: isDark,
+                          ),
+                        ),
+
+                        SizedBox(height: 24.h),
+
+                        // Time Section
+                        Text(
+                          'Max cook time',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: isDark ? Colors.white : Colors.grey[800],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 12.h),
+
+                        // Quick select chips
+                        Center(
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 6.w,
+                            runSpacing: 6.h,
                             children: [
-                              Text('🌶️', style: TextStyle(fontSize: 16.sp)),
-                              SizedBox(width: 6.w),
+                              for (final m in quick)
+                                _SimpleTimeChip(
+                                  label: _fmtDuration(m),
+                                  selected: clamped == m,
+                                  onSelected: (_) => _setTime(m),
+                                  isDark: isDark,
+                                ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(height: 16.h),
+
+                        // Timer picker
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12.r),
+                            color: isDark 
+                              ? Colors.grey[850]
+                              : Colors.grey[50],
+                            border: Border.all(
+                              color: isDark 
+                                ? Colors.grey[700]!
+                                : Colors.grey[300]!,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                height: 120.h,
+                                child: CupertinoTimerPicker(
+                                  key: ValueKey(clamped),
+                                  mode: CupertinoTimerPickerMode.hm,
+                                  minuteInterval: 5,
+                                  initialTimerDuration: Duration(minutes: clamped),
+                                  onTimerDurationChanged: (dur) {
+                                    final mins = dur.inMinutes.clamp(0, _kMaxMinutes);
+                                    _setTime(mins);
+                                  },
+                                ),
+                              ),
                               Text(
-                                randomEnabled ? _spiceLabels[5] : _spiceLabels[spiceLevel],
-                                style: theme.textTheme.labelMedium?.copyWith(color: Colors.white),
+                                'Selected: ${_fmtDuration(clamped)}  •  limit: up to 4h',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                ),
                               ),
                             ],
                           ),
-                        ).asGlass(
-                          tintColor: Colors.white,
-                          clipBorderRadius: BorderRadius.circular(999),
-                          blurX: 18,
-                          blurY: 18,
-                          frosted: true,
                         ),
-                      ),
 
-                      SizedBox(height: 12.h),
+                        SizedBox(height: 24.h),
 
-                      // Random pill (moved here, less eye‑catching) — glass style
-                      Align(
-                        alignment: Alignment.center,
-                        child: _RandomPill(
-                          enabled: randomEnabled,
-                          onChanged: (on) => onRandomChanged(on),
-                        ),
-                      ),
-
-                      SizedBox(height: 20.h),
-
-                      // -------- Time ------------
-                      Text('Max cook time', style: theme.textTheme.labelLarge?.copyWith(color: Colors.white)),
-                      SizedBox(height: 8.h),
-
-                      // Centered quick select pills
-                      Center(
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 8.w,
-                          runSpacing: 8.h,
+                        // Actions
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            for (final m in quick)
-                              ChoiceChip(
-                                label: Text(_fmtDuration(m)),
-                                selected: clamped == m,
-                                onSelected: (_) => _setTime(m), // sync chips -> picker
-                                selectedColor: Colors.white,
-                                labelStyle: TextStyle(
-                                  color: clamped == m ? Colors.redAccent : Colors.white,
-                                  fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: isDark ? Colors.grey[400] : Colors.grey[700],
+                                  side: BorderSide(
+                                    color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                                  ),
                                 ),
-                                backgroundColor: Colors.white.withOpacity(0.20),
-                                shape: StadiumBorder(
-                                  side: BorderSide(color: Colors.white.withOpacity(0.35)),
-                                ),
-                                visualDensity: VisualDensity.compact,
-                              ),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: 12.h),
-
-                      // Timer picker (hours + minutes), clamped to 0..4h
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(vertical: 8.h),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16.r),
-                          color: Colors.white.withOpacity(0.15),
-                        ),
-                        child: Column(
-                          children: [
-                            SizedBox(
-                              height: 150.h,
-                              // Key forces recreation so the picker jumps to chip selection immediately
-                              child: CupertinoTimerPicker(
-                                key: ValueKey(clamped),
-                                mode: CupertinoTimerPickerMode.hm,
-                                minuteInterval: 5,
-                                initialTimerDuration: Duration(minutes: clamped),
-                                onTimerDurationChanged: (dur) {
-                                  final mins = dur.inMinutes.clamp(0, _kMaxMinutes);
-                                  _setTime(mins); // sync picker -> chips
-                                },
+                                onPressed: () => Navigator.pop(context),
+                                icon: const Icon(Icons.close_rounded),
+                                label: const Text('Close'),
                               ),
                             ),
-                            SizedBox(height: 6.h),
-                            Text(
-                              'Selected: ${_fmtDuration(clamped)}  •  limit: up to 4h',
-                              style: theme.textTheme.labelMedium?.copyWith(color: Colors.white),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isDark ? Colors.blue[700] : Colors.blue[600],
+                                  foregroundColor: Colors.white,
+                                ),
+                                onPressed: onApply,
+                                icon: const Icon(Icons.check_rounded),
+                                label: const Text('Apply'),
+                              ),
                             ),
-                            SizedBox(height: 6.h),
                           ],
                         ),
-                      ).asGlass(
-                        tintColor: Colors.blue,
-                        clipBorderRadius: BorderRadius.circular(16.r),
-                        blurX: 18,
-                        blurY: 18,
-                        frosted: true,
-                      ),
-
-                      SizedBox(height: 18.h),
-
-                      // Actions
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.close_rounded),
-                            label: const Text('Close'),
-                          ),
-                          SizedBox(width: 10.w),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.redAccent,
-                            ),
-                            onPressed: onApply,
-                            icon: const Icon(Icons.check_rounded),
-                            label: const Text('Apply'),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ).asGlass(
-              tintColor: Colors.blueGrey,
-              clipBorderRadius: BorderRadius.all(Radius.circular(24.r)),
-              blurX: 10,
-              blurY: 10,
+              tintColor: isDark ? Colors.black : Colors.white,
+              clipBorderRadius: BorderRadius.circular(20.r),
+              blurX: 8,
+              blurY: 8,
               frosted: true,
             ),
           ),
@@ -1137,35 +1166,60 @@ class CravingsFiltersSheet extends StatelessWidget {
   }
 }
 
-/// 5 tappable chilli emojis 🌶️ for fixed levels 0..4
-class ChilliMeter5 extends StatelessWidget {
+/// Modern chilli meter keeping exact same logic as ChilliMeter5
+class _ModernChilliMeter extends StatelessWidget {
   final int value; // 0..4
   final ValueChanged<int> onChanged;
-  const ChilliMeter5({super.key, required this.value, required this.onChanged});
+  final bool isDark;
+  
+  const _ModernChilliMeter({
+    required this.value,
+    required this.onChanged,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 10.w,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: List.generate(5, (i) {
-        // grey(0) -> deep red(4)
-        final color = Color.lerp(Colors.grey, Colors.redAccent, i / 4)!;
         final isActive = i <= value;
+        final intensity = i / 4.0; // 0 to 1
+        
         return GestureDetector(
           onTap: () => onChanged(i),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 140),
-            transform: Matrix4.identity()..scale(isActive ? 1.08 : 1.0),
-            child: Opacity(
-              opacity: isActive ? 1.0 : 0.45,
+            width: 40.w,
+            height: 40.w,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isActive 
+                ? Color.lerp(Colors.yellow[600], Colors.red[600], intensity)
+                : isDark ? Colors.grey[700] : Colors.grey[300],
+              border: Border.all(
+                color: isActive 
+                  ? Color.lerp(Colors.yellow[400], Colors.red[400], intensity)!
+                  : Colors.transparent,
+                width: 2,
+              ),
+              boxShadow: isActive ? [
+                BoxShadow(
+                  color: Color.lerp(Colors.yellow, Colors.red, intensity)!.withOpacity(0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ] : null,
+            ),
+            child: Center(
               child: Text(
-                "🌶️",
+                '${i + 1}',
                 style: TextStyle(
-                  fontSize: 30.sp,
-                  color: color,
-                  shadows: isActive
-                      ? [Shadow(color: color.withOpacity(0.6), blurRadius: 8)]
-                      : const [],
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                  color: isActive 
+                    ? Colors.white
+                    : isDark ? Colors.grey[400] : Colors.grey[600],
                 ),
               ),
             ),
@@ -1176,25 +1230,37 @@ class ChilliMeter5 extends StatelessWidget {
   }
 }
 
-/// Glassy random spice pill toggle (less eye‑catching, centered under chilli)
-class _RandomPill extends StatelessWidget {
+/// Simple random pill keeping exact same logic as _RandomPill
+class _SimpleRandomPill extends StatelessWidget {
   final bool enabled;
   final ValueChanged<bool> onChanged;
-  const _RandomPill({required this.enabled, required this.onChanged});
+  final bool isDark;
+
+  const _SimpleRandomPill({
+    required this.enabled,
+    required this.onChanged,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20.r)),
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(20.r),
         onTap: () => onChanged(!enabled),
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withOpacity(0.35)),
-            color: enabled ? Colors.white : Colors.white.withOpacity(0.18),
+            borderRadius: BorderRadius.circular(20.r),
+            color: enabled 
+              ? (isDark ? Colors.blue[800] : Colors.blue[100])
+              : (isDark ? Colors.grey[800] : Colors.grey[200]),
+            border: Border.all(
+              color: enabled
+                ? (isDark ? Colors.blue[600]! : Colors.blue[300]!)
+                : (isDark ? Colors.grey[600]! : Colors.grey[400]!),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1204,25 +1270,61 @@ class _RandomPill extends StatelessWidget {
               Text(
                 enabled ? 'Random spice: ON' : 'Random spice: OFF',
                 style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: enabled ? Colors.redAccent : Colors.white,
+                  fontWeight: FontWeight.w600,
+                  color: enabled 
+                    ? (isDark ? Colors.blue[200] : Colors.blue[700])
+                    : (isDark ? Colors.grey[400] : Colors.grey[700]),
                 ),
               ),
             ],
           ),
-        ).asGlass(
-          tintColor: Colors.white,
-          clipBorderRadius: BorderRadius.circular(999),
-          blurX: 16,
-          blurY: 16,
-          frosted: true,
         ),
       ),
     );
   }
 }
 
+/// Simple time chip keeping same selection logic
+class _SimpleTimeChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final ValueChanged<bool> onSelected;
+  final bool isDark;
 
+  const _SimpleTimeChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: onSelected,
+      selectedColor: isDark ? Colors.blue[700] : Colors.blue[100],
+      labelStyle: TextStyle(
+        color: selected 
+          ? (isDark ? Colors.white : Colors.blue[700])
+          : (isDark ? Colors.grey[400] : Colors.grey[700]),
+        fontWeight: FontWeight.w600,
+      ),
+      backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: selected
+            ? (isDark ? Colors.blue[500]! : Colors.blue[300]!)
+            : (isDark ? Colors.grey[600]! : Colors.grey[400]!),
+        ),
+      ),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // /widgets/cravings/cravings_widget.dart
 class CravingsResultsGrid extends StatelessWidget {
   const CravingsResultsGrid({
