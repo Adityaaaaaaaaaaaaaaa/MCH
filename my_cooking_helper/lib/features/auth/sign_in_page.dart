@@ -42,7 +42,7 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
 
     // ⬇️ Smoother, seamless loop (linear curve + longer period)
     _borderController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 6000),
       vsync: this,
     );
 
