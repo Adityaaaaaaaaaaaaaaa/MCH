@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
@@ -35,10 +36,14 @@ import 'features/meal_planner/planner.dart';
 import 'features/cravings/cravings.dart';
 import 'features/cravings/craving_recipe.dart';
 import 'features/shopping/shopping.dart';
+import 'utils/adaptive_transition.dart';
 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
   perfObserver.attach();
   await perfBootstrap();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -188,6 +193,28 @@ final GoRouter _router = GoRouter(
   ],
 );
 
+// Safe, version-agnostic way to read the current path without poking notifiers.
+String _readLocation() {
+  try {
+    // Newer go_router: RouteMatchList has a `uri` (Uri)
+    final cfg = _router.routerDelegate.currentConfiguration;
+    final Uri? uri = (cfg as dynamic).uri as Uri?;
+    if (uri != null) return uri.path;
+
+    // Some versions expose a `location` (String) instead
+    final String? loc = (cfg as dynamic).location as String?;
+    if (loc != null) return Uri.parse(loc).path;
+  } catch (_) {
+    // fall through
+  }
+  try {
+    // Last resort (may notify) — used only if the above fails
+    return _router.routeInformationProvider.value.uri.path;
+  } catch (_) {
+    return '/';
+  }
+}
+
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
@@ -208,6 +235,40 @@ class MyApp extends ConsumerWidget {
           darkTheme: AppThemes.darkTheme,
           themeMode: themeMode,
           routerConfig: _router,
+          builder: (context, child) {
+            // ✅ Use the global _router; do NOT use GoRouter.of(context) here
+            // Replace these two lines:
+            // final routeInfo = _router.routeInformationProvider.value;
+            // final location  = routeInfo.uri.path;
+
+            // With this single line:
+            final location = _readLocation();   // read-only and safe
+
+            final weight = kRouteWeights[location] ?? PageWeight.light;
+
+            return ValueListenableBuilder<bool>(
+              valueListenable: JankMonitor.isStressed,
+              builder: (context, stressed, _) {
+                final spec = TransitionSpec.from(weight, stressed: stressed);
+
+                return AnimatedSwitcher(
+                  duration: spec.duration,
+                  switchInCurve: spec.curveIn,
+                  switchOutCurve: spec.curveOut,
+
+                  // ✅ Keep only the current child (prevents two Navigators with same GlobalKey)
+                  layoutBuilder: (current, previous) => current ?? const SizedBox.shrink(),
+
+                  // 'widget' is non-null here; no '!' needed
+                  transitionBuilder: (widget, animation) => spec.builder(widget, animation),
+                  child: KeyedSubtree(
+                    key: ValueKey(location),               // forces switch on route change
+                    child: child ?? const SizedBox.shrink(), // guard during router boot
+                  ),
+                );
+              },
+            );
+          },
         );
       },
     );

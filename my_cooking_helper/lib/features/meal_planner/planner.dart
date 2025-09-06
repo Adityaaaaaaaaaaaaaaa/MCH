@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '/utils/loader.dart';
 import '/widgets/shimmer/meal_planner_skeleton.dart';
 import '/widgets/navigation/nav.dart';
 import '/theme/app_theme.dart';
@@ -124,11 +125,20 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     if (tuple == null) return;
     final planId = tuple.$1.planId;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // Optional: quick loading overlay
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+      builder: (_) => Center(child: loader(
+          isDark ? Colors.deepOrangeAccent : Colors.orange,
+          70,
+          5,
+          8,
+          500,
+        ),
+      ),
     );
 
     try {

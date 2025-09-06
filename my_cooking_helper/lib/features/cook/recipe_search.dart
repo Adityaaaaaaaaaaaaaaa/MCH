@@ -10,7 +10,7 @@ import '/models/recipe_detail.dart';
 import '/theme/app_theme.dart';
 import '/utils/emoji_animation.dart';
 import '/models/recipe.dart';
-import '/widgets/recipe/cook_picker.dart';
+import '/widgets/recipe/recipe_timeXingredient_picker.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
 import '/utils/colors.dart';
@@ -820,24 +820,149 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
       appBar: CustomAppBar(
         title: "Find Recipes",
         showMenu: false,
-        themeToggleWidget: ThemeToggleButton(), ////////////////////////// remove aftrer test 
+        themeToggleWidget: ThemeToggleButton(),
         height: 70.h,
         borderRadius: 26.r,
         topPadding: 40.h,
       ),
       body: errorMsg != null
           ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 60.sp, color: Colors.red),
-                  SizedBox(height: 16.h),
-                  Text(
-                    errorMsg!,
-                    style: TextStyle(color: Colors.red, fontSize: 18.sp),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 22.w),
+                child: Builder(
+                  builder: (context) {
+                    final String raw = errorMsg ?? '';
+
+                    // --- Sanitize sensitive bits (IPs, ports, URLs, uri=, host:, port:) ---
+                    String sanitize(String s) {
+                      String out = s;
+                      // hide uri=..., host:..., port:...
+                      out = out.replaceAll(RegExp(r'uri=\S+', caseSensitive: false), 'uri=<hidden>');
+                      out = out.replaceAll(RegExp(r'host:\s*\S+', caseSensitive: false), 'host:<hidden>');
+                      out = out.replaceAll(RegExp(r'port:\s*\d+', caseSensitive: false), 'port:<hidden>');
+                      // hide http/https URLs
+                      out = out.replaceAll(RegExp(r'https?:\/\/[^\s)]+', caseSensitive: false), '<url>');
+                      // hide bare IPs (optionally with port)
+                      out = out.replaceAll(RegExp(r'\b\d{1,3}(\.\d{1,3}){3}\b(:\d+)?'), '<ip>');
+                      return out;
+                    }
+
+                    // --- Friendly classification/messages ---
+                    String lower = raw.toLowerCase();
+                    String title = 'Something went wrong';
+                    String friendly = 'Please try again. If the issue persists, check your connection or try later.';
+                    Color accent = Colors.redAccent;
+
+                    if (lower.contains('timed out') || lower.contains('timeout')) {
+                      title = 'Connection timed out';
+                      friendly = "The server didn't respond in time. Check your internet or try again.";
+                      accent = Colors.orangeAccent;
+                    } else if (lower.contains('socketexception') || lower.contains('failed host lookup')) {
+                      title = 'Network issue';
+                      friendly = 'We couldn\'t reach the service. Please verify your connection and VPN/proxy settings.';
+                      accent = Colors.deepOrangeAccent;
+                    } else if (RegExp(r'\b(5\d{2})\b').hasMatch(lower) || lower.contains('internal server error')) {
+                      title = 'Server problem';
+                      friendly = 'The service had a hiccup. Please try again shortly.';
+                      accent = Colors.pinkAccent;
+                    } else if (RegExp(r'\b(4\d{2})\b').hasMatch(lower)) {
+                      title = 'Request error';
+                      friendly = 'The request could not be completed. Please review your inputs and try again.';
+                      accent = Colors.amber;
+                    }
+
+                    final String details = sanitize(raw);
+
+                    return Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          EmojiAnimation(name: 'warning', size: 48), // subtle animated warning
+                          SizedBox(height: 12.h),
+                          Text(
+                            title,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 20.sp,
+                              fontWeight: FontWeight.w900,
+                              color: textColor(context),
+                            ),
+                          ),
+                          SizedBox(height: 8.h),
+                          Text(
+                            friendly,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              height: 1.4,
+                              color: textColor(context).withOpacity(0.8),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 14.h),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ElevatedButton.icon(
+                                onPressed: startFlow, // reuse your existing function
+                                icon: Icon(Icons.refresh, size: 18.sp),
+                                label: Text('Retry', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.sp)),
+                                style: ElevatedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  backgroundColor: accent.withOpacity(0.9),
+                                  padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 10.h),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                                  elevation: 2,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8.h),
+                          Theme(
+                            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                            child: ExpansionTile(
+                              tilePadding: EdgeInsets.zero,
+                              collapsedIconColor: textColor(context).withOpacity(0.6),
+                              iconColor: textColor(context).withOpacity(0.6),
+                              leading: Icon(Icons.info_outline_rounded, size: 18.sp, color: textColor(context).withOpacity(0.7)),
+                              title: Text(
+                                'Details (sanitized)',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w800,
+                                  color: textColor(context).withOpacity(0.7),
+                                ),
+                              ),
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.fromLTRB(8.w, 0, 8.w, 10.h),
+                                  child: SelectableText(
+                                    details,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontSize: 11.sp,
+                                      height: 1.3,
+                                      color: textColor(context).withOpacity(0.65),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ).asGlass(
+                      blurX: 18,
+                      blurY: 18,
+                      tintColor: accent.withOpacity(0.12),
+                      clipBorderRadius: BorderRadius.circular(18.r),
+                    );
+                  },
+                ),
               ),
             )
           : recipeResults.isEmpty
@@ -963,7 +1088,6 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                                 recipe: recipeResults[index],
                                 isSelected: false,
                                 formatTime: formatTime,
-                                //onTap: () => showRecipeDetails(recipeResults[index]),
                                 onLongPress: () => toggleRecipeSelection(recipeResults[index].id),
                                 onSelect: () => toggleRecipeSelection(recipeResults[index].id),
                                 onViewRecipe: () => showRecipeDetails(recipeResults[index]),
@@ -987,7 +1111,6 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
                             recipe: recipeResults[index],
                             isSelected: isSelected,
                             formatTime: formatTime,
-                            //onTap: () => showRecipeDetails(recipeResults[index]),
                             onLongPress: () => toggleRecipeSelection(recipeResults[index].id),
                             onSelect: () => toggleRecipeSelection(recipeResults[index].id),
                             onViewRecipe: () => showRecipeDetails(recipeResults[index]),
@@ -1096,7 +1219,7 @@ class _SearchRecipeScreenState extends State<SearchRecipeScreen> {
             ).asGlass(
               blurX: 20,
               blurY: 20,
-              tintColor: isRecipeSelected? Colors.green : Colors.red,
+              tintColor: isRecipeSelected? Colors.green : Colors.blue,
               clipBorderRadius: BorderRadius.circular(24.r),
             ),
           );

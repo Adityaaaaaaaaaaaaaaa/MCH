@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/utils/snackbar.dart';
 import '/services/shopping_service.dart';
 import '/services/cravings_recipe_service.dart';
 import '/models/cravings.dart';
@@ -50,6 +51,20 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
   final ValueNotifier<int> selectionDirtySignal = ValueNotifier<int>(0);
   final ValueNotifier<int> selectedCount = ValueNotifier<int>(0);
   final ValueNotifier<int> clearAllSignal = ValueNotifier<int>(0);
+  // Gate to ignore any selection events that might fire during initial build
+  // ignore: unused_field
+  bool _suppressInitSelectionEvents = true;
+
+  // Add near your ValueNotifiers:
+  bool _primingDone = false;
+  void _markUserInteraction() {
+    if (!_primingDone) {
+      _primingDone = true;
+      // BLUE
+      // ignore: avoid_print
+      print('\x1B[34m[SHOP] priming ended by user touch\x1B[0m');
+    }
+  }
 
   // Convert a data URL -> bytes (when you only have imageDataUrl on the model)
   Uint8List? _bytesFromDataUrl(String? dataUrl) {
@@ -90,12 +105,15 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
   @override
   void initState() {
     super.initState();
-    clearAllSignal.addListener(_onClearAll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _suppressInitSelectionEvents = false;
+      print('\x1B[34m[SHOP] selection gate OFF (user interactions will be processed)\x1B[0m');
+    });
   }
 
   void _onClearAll() {
-    // any tick means CTA asked for a full reset
-    ref.read(shoppingServiceProvider.notifier).clearAll();
+    // ignore: avoid_print
+    print('\x1B[34m[SHOP] clearAllSignal received – ignored by design (list not cleared)\x1B[0m');
   }
 
   @override
@@ -146,6 +164,7 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
     final bytes = widget.previewImageBytes ?? _bytesFromDataUrl(widget.recipe.imageDataUrl);
 
     final uid = ref.read(authUserProvider).value?.uid;
+    //final uid = FirebaseAuth.instance.currentUser?.uid;
     final recipeKey = widget.recipeKey ?? CravingsRecipeService.computeRecipeKey(widget.recipe);
 
     final svc = ref.read(shoppingServiceProvider.notifier);
@@ -315,88 +334,100 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
                     ModernSection(
                       title: "Ingredients",
                       icon: Icons.list_alt_rounded,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Required ingredients
-                          ...widget.recipe.requiredIngredients.map(
-                            (e) => ModernIngredientTile(
-                              data: e,
-                              shopping: widget.recipe.shopping,
-                              optionalIngredients: widget.recipe.optionalIngredients,
+                      child: Listener(
+                        onPointerDown: (_) => _markUserInteraction(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Required ingredients
+                            ...widget.recipe.requiredIngredients.map(
+                              (e) => ModernIngredientTile(
+                                data: e,
+                                shopping: widget.recipe.shopping,
+                                optionalIngredients: widget.recipe.optionalIngredients,
+                                selectAllSignal: selectAllSignal,
+                                selectionDirtySignal: selectionDirtySignal,
+                                selectionCount: selectedCount,
+                                initiallyInShopping: false, // never auto-activate
+                                onToggleShopping: () {},
+                                forcePlusOnly: widget.openedFromHistory,
+                                clearAllSignal: clearAllSignal,
+                                onSelectionChanged: (ev) {
+                                  final stillPriming = !_primingDone;
+                                  if (stillPriming) {
+                                    print('\x1B[34m[SHOP] (init) ignoring event for ${ev.name}\x1B[0m');
+                                    return;
+                                  }
+
+                                  final tag = ev.isBag ? 'buy' : 'add';
+                                  if (ev.active) {
+                                    svc.setItem(
+                                      name: ev.name,
+                                      tag: tag,
+                                      need: (ev.need == null || ev.need! <= 0) ? 1 : ev.need,
+                                      unit: ev.unit,
+                                    );
+                                  } else {
+                                    svc.removeItem(ev.name);
+                                  }
+                                  print('\x1B[34m[SHOP] ${ev.active ? "ADD" : "REMOVE"} $tag -> ${ev.name}\x1B[0m');
+                                },
+                              ),
+                            ),
+                        
+                            if (widget.recipe.optionalIngredients.isNotEmpty) SizedBox(height: 12.h),
+                        
+                            // Optional ingredients
+                            ...widget.recipe.optionalIngredients.map(
+                              (e) => ModernIngredientTile(
+                                data: e,
+                                shopping: widget.recipe.shopping,
+                                optionalIngredients: widget.recipe.optionalIngredients,
+                                selectAllSignal: selectAllSignal,
+                                selectionDirtySignal: selectionDirtySignal,
+                                selectionCount: selectedCount,
+                                initiallyInShopping: false,
+                                onToggleShopping: () {},
+                                forcePlusOnly: widget.openedFromHistory,
+                                clearAllSignal: clearAllSignal,
+                                onSelectionChanged: (ev) {
+                                  final stillPriming = !_primingDone;
+                                  if (stillPriming) {
+                                    print('\x1B[34m[SHOP] (init) ignoring event for ${ev.name}\x1B[0m');
+                                    return;
+                                  }
+
+                                  final tag = ev.isBag ? 'buy' : 'add';
+                                  if (ev.active) {
+                                    svc.setItem(
+                                      name: ev.name,
+                                      tag: tag,
+                                      need: (ev.need == null || ev.need! <= 0) ? 1 : ev.need,
+                                      unit: ev.unit,
+                                    );
+                                  } else {
+                                    svc.removeItem(ev.name);
+                                  }
+                                  print('\x1B[34m[SHOP] ${ev.active ? "ADD" : "REMOVE"} $tag -> ${ev.name}\x1B[0m');
+                                },
+                              ),
+                            ),
+                        
+                            SizedBox(height: 15.h),
+                            ModernCreateShoppingListButton(
                               selectAllSignal: selectAllSignal,
                               selectionDirtySignal: selectionDirtySignal,
-                              selectionCount: selectedCount, // NEW
-                              initiallyInShopping: false, // never auto-activate
-                              onToggleShopping: () {}, // hook later
-                              forcePlusOnly: widget.openedFromHistory,
-                              clearAllSignal: clearAllSignal,
-                              onSelectionChanged: (ev) {
-                                final tag = ev.isBag ? 'buy' : 'add';
-                                if (ev.active) {
-                                  svc.setItem(
-                                    name: ev.name,
-                                    tag: tag,
-                                    need: (ev.need == null || ev.need! <= 0) ? 1 : ev.need,
-                                    unit: ev.unit,
-                                  );
-                                } else {
-                                  svc.removeItem(ev.name);
-                                }
-                                // BLUE: provider update
-                                // ignore: avoid_print
-                                print('\x1B[34m[SHOP] ${ev.active ? "ADD" : "REMOVE"} $tag -> ${ev.name}\x1B[0m');
+                              selectedCount: selectedCount, // NEW
+                              eligibleCount: eligible, // NEW
+                              onCreate: () {
+                                _markUserInteraction();
+                                // Persist current selection snapshot (bagSelected/plusSelected) as you prefer.
+                                // (No duplicates; tiles are idempotent and you can de-dupe server-side too.)
                               },
-                            ),
-                          ),
-
-                          if (widget.recipe.optionalIngredients.isNotEmpty) SizedBox(height: 12.h),
-
-                          // Optional ingredients
-                          ...widget.recipe.optionalIngredients.map(
-                            (e) => ModernIngredientTile(
-                              data: e,
-                              shopping: widget.recipe.shopping,
-                              optionalIngredients: widget.recipe.optionalIngredients,
-                              selectAllSignal: selectAllSignal,
-                              selectionDirtySignal: selectionDirtySignal,
-                              selectionCount: selectedCount, // NEW
-                              initiallyInShopping: false,
-                              onToggleShopping: () {},
-                              forcePlusOnly: widget.openedFromHistory,
                               clearAllSignal: clearAllSignal,
-                              onSelectionChanged: (ev) {
-                                final tag = ev.isBag ? 'buy' : 'add';
-                                if (ev.active) {
-                                  svc.setItem(
-                                    name: ev.name,
-                                    tag: tag,
-                                    need: (ev.need == null || ev.need! <= 0) ? 1 : ev.need,
-                                    unit: ev.unit,
-                                  );
-                                } else {
-                                  svc.removeItem(ev.name);
-                                }
-                                // BLUE
-                                // ignore: avoid_print
-                                print('\x1B[34m[SHOP] ${ev.active ? "ADD" : "REMOVE"} $tag -> ${ev.name}\x1B[0m');
-                              },
                             ),
-                          ),
-
-                          SizedBox(height: 15.h),
-                          ModernCreateShoppingListButton(
-                            selectAllSignal: selectAllSignal,
-                            selectionDirtySignal: selectionDirtySignal,
-                            selectedCount: selectedCount, // NEW
-                            eligibleCount: eligible, // NEW
-                            onCreate: () {
-                              // Persist current selection snapshot (bagSelected/plusSelected) as you prefer.
-                              // (No duplicates; tiles are idempotent and you can de-dupe server-side too.)
-                            },
-                            clearAllSignal: clearAllSignal,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   if (widget.recipe.requiredIngredients.isNotEmpty || widget.recipe.optionalIngredients.isNotEmpty)
@@ -460,47 +491,74 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
                   cookedSuccess: cookedSuccess,
                   onFavourite: () async {
                     if (uid == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text("Please log in to use Favourites."),
-                          backgroundColor: Colors.red[600],
-                        ),
+                      SnackbarUtils.alert(
+                        context, 
+                        "Please log in to use Favourites.",
+                        typeInfo: TypeInfo.warning,
+                        position: MessagePosition.top,
+                        duration: 4,
                       );
                       return;
                     }
+
                     await CravingsRecipeService.updateFavouriteStatus(
                       uid: uid,
                       recipe: widget.recipe,
                       isFavourite: !isFavourite,
                     );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(!isFavourite ? "Added to Favourites!" : "Removed from Favourites."),
-                        backgroundColor: !isFavourite ? Colors.pink[400] : Colors.grey[600],
+
+                    SnackbarUtils.show(
+                      context, 
+                      !isFavourite ? "Added to Favourites!" : "Removed from Favourites.",
+                      duration: 1000, 
+                      behavior: SnackBarBehavior.floating,
+                      icon: !isFavourite ? Icons.favorite : Icons.heart_broken,
+                      iconColor: !isFavourite ? Colors.pinkAccent : Colors.blueGrey,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+                      textStyle: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: textColor(context),
                       ),
+                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+                      backgroundColor: !isFavourite ? Colors.pink[100] : Colors.grey.shade500,
+                      width: 200.w,
                     );
                   },
                   onMarkCooked: () async {
                     if (uid == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text("Please log in to mark as cooked."),
-                          backgroundColor: Colors.red[600],
-                        ),
+                      SnackbarUtils.alert(
+                        context, 
+                        "Please log in to mark as cooked.",
+                        typeInfo: TypeInfo.warning,
+                        position: MessagePosition.top,
+                        duration: 4,
                       );
                       return;
                     }
+
                     await CravingsRecipeService.markAsCooked(
                       uid: uid,
                       recipe: widget.recipe,
                       keepFavourite: isFavourite,
                     );
+
                     ref.read(cravingCookedSuccessProvider(recipeKey).notifier).state = true;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text("Marked as cooked!"),
-                        backgroundColor: Colors.green[600],
+
+                    SnackbarUtils.show(
+                      context, 
+                      "Marked as cooked!",
+                      duration: 1000, 
+                      behavior: SnackBarBehavior.floating,
+                      icon: Icons.check_circle,
+                      iconColor: isDark ? Colors.green : Colors.limeAccent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+                      textStyle: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: textColor(context),
                       ),
+                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+                      backgroundColor: Colors.green[600],
+                      width: 200.w,
                     );
                   },
                 ),

@@ -1,3 +1,4 @@
+// settings.dart:
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -33,10 +34,25 @@ class _SettingsScreenState extends ConsumerState<Settings>
   String? gender, cookingTime, spiceLevel;
   List<String> allergies = [], diets = [], cuisines = [], barriers = [];
 
+  // --------------------------
+  // Background performance helpers
+  // --------------------------
+  double imgOpacity = 0.80;
+
   @override
   void initState() {
     super.initState();
     _loadPrefs();
+
+    // Precache decorative images to avoid first-scroll jank
+    WidgetsBinding.instance.addPostFrameCallback((_) => _precacheBackgroundImages(context));
+  }
+
+  Future<void> _precacheBackgroundImages(BuildContext context) async {
+    // This does not change UI; it just warms up the image cache
+    await precacheImage(const AssetImage('assets/images/settings/settings1.png'), context);
+    await precacheImage(const AssetImage('assets/images/settings/settings2.png'), context);
+    await precacheImage(const AssetImage('assets/images/settings/settings3.png'), context);
   }
 
   Future<void> _loadPrefs() async {
@@ -44,6 +60,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
     final doc = await usersRef.doc(user!.uid).get();
     final data = doc.data();
     final prefs = data?['preferences'] as Map<String, dynamic>? ?? {};
+    if (!mounted) return;
     setState(() {
       gender = prefs['gender'] ?? "";
       cookingTime = prefs['cookingTime'] ?? "";
@@ -72,6 +89,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
         ? (value is List ? value.map((e) => e.label).toList() : [value.toString()])
         : (value is PreferenceOption ? value.label : value);
     await usersRef.doc(user!.uid).update({'preferences.$key': updateValue});
+    if (!mounted) return;
     setState(() {
       if (isMulti) {
         final listValue = updateValue as List;
@@ -111,7 +129,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
       icon: Icons.check_circle_sharp,
       iconColor: Colors.lightGreenAccent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
-      textStyle: TextStyle(
+      textStyle: const TextStyle(
         fontWeight: FontWeight.w900
       ),
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
@@ -164,7 +182,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
         behavior: SnackBarBehavior.floating,
         icon: Icons.logout_outlined,
         iconColor: Colors.amber[200],
-        textStyle: TextStyle(
+        textStyle: const TextStyle(
           fontWeight: FontWeight.w900
         ),
         padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
@@ -218,6 +236,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
         );
         final authResult = await FirebaseAuth.instance.signInWithCredential(credential);
         final switchedUser = authResult.user;
+        if (!mounted) return;
         setState(() {
           user = switchedUser;
         });
@@ -226,6 +245,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
         final userDoc = await usersRef.doc(switchedUser?.uid).get();
         if (userDoc.exists) {
           await _loadPrefs();
+          if (!mounted) return;
           SnackbarUtils.show(
             context, 
             "Account switched!",
@@ -234,7 +254,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
             icon: Icons.check_circle_sharp,
             iconColor: Colors.lightGreen,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
-            textStyle: TextStyle(
+            textStyle: const TextStyle(
               fontWeight: FontWeight.w900
             ),
             padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
@@ -254,6 +274,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
         }
       }
     } catch (e) {
+      if (!mounted) return;
       SnackbarUtils.alert(
         context, 
         "Could not switch account!",
@@ -342,6 +363,73 @@ class _SettingsScreenState extends ConsumerState<Settings>
     );
   }
 
+  // --------------------------
+  // Lightweight decorative background (single repaint boundary)
+  // --------------------------
+  Widget _decorBackground() {
+    return IgnorePointer(
+      ignoring: true,
+      child: RepaintBoundary(
+        child: Stack(
+          children: [
+            //BACKGROUND IMAGES
+            Positioned(
+              top: 0,
+              right: -40,
+              child: Transform.rotate(
+                angle: -1.7, //radians
+                child: Opacity(
+                  opacity: imgOpacity,
+                  child: Image.asset(
+                    'assets/images/settings/settings1.png',
+                    width: 150,
+                    height: 150,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.low,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 200,
+              left:-60,
+              child: Transform.rotate(
+                angle: 0.4, 
+                child: Opacity(
+                  opacity: imgOpacity,
+                  child: Image.asset(
+                    'assets/images/settings/settings3.png',
+                    width: 250,
+                    height: 250,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.low,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -20,
+              right: -50,
+              child: Transform.rotate(
+                angle: 0.1, 
+                child: Opacity(
+                  opacity: imgOpacity,
+                  child: Image.asset(
+                    'assets/images/settings/settings2.png',
+                    width: 350,
+                    height: 350,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.low,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -349,9 +437,9 @@ class _SettingsScreenState extends ConsumerState<Settings>
         ? NetworkImage(user!.photoURL!)
         : const AssetImage("assets/app_icon.png");
 
-    double imgOpacity = 0.80;
-
     return Scaffold(
+      extendBody: true,
+      extendBodyBehindAppBar: false,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: CustomAppBar(
         showMenu: false,
@@ -364,74 +452,10 @@ class _SettingsScreenState extends ConsumerState<Settings>
       ),
       body: Stack(
         children: [
-          //BACKGROUND IMAGES
-          Positioned(
-            top: 60,
-            left: 100,
-            child: Transform.rotate(
-              angle: -1.5708, //radians
-              child: Opacity(
-                opacity: imgOpacity,
-                child: Image.asset(
-                  'assets/images/settings/settings3.png',
-                  width: 300,
-                  height: 300,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 250,
-            left: 40,
-            child: Transform.rotate(
-              angle: 0.3, 
-              child: Opacity(
-                opacity: imgOpacity,
-                child: Image.asset(
-                  'assets/images/settings/settings1.png',
-                  width: 200,
-                  height: 200,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 55,
-            right: 35,
-            child: Transform.rotate(
-              angle: 0.1, 
-              child: Opacity(
-                opacity: imgOpacity,
-                child: Image.asset(
-                  'assets/images/settings/settings2.png',
-                  width: 150,
-                  height: 150,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 75,
-            left: 20,
-            child: Transform.rotate(
-              angle: -0.4, 
-              child: Opacity(
-                opacity: imgOpacity,
-                child: Image.asset(
-                  'assets/images/settings/settings3.png',
-                  width: 150,
-                  height: 150,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
+          _decorBackground(),
           ListView(
             cacheExtent: MediaQuery.of(context).size.height,
-            padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             children: [
               SizedBox(height: 30.h),
               // Profile: Only profile and switch account
@@ -478,7 +502,7 @@ class _SettingsScreenState extends ConsumerState<Settings>
                 onSignOut: _signOut,
                 onDelete: _showDeleteDialog,
               ),
-              SizedBox(height: 25.h),
+              SizedBox(height: 8.h),
             ],
           ),
         ],

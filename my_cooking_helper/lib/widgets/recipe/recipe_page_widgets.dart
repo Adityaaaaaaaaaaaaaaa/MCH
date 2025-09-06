@@ -5,6 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import 'package:glass/glass.dart';
+import 'dart:math';
+import 'package:visibility_detector/visibility_detector.dart';
 import '/utils/recipe_webview_dialog.dart';
 import '/models/recipe_detail.dart';
 import '/utils/colors.dart';
@@ -265,6 +267,7 @@ class RecipeSummaryText extends StatelessWidget {
             SizedBox(height: 7.h),
             Text(
               shortSummary,
+              //textAlign: TextAlign.justify,
               style: TextStyle(
                 fontSize: 16.sp,
                 height: 1.5,
@@ -277,6 +280,7 @@ class RecipeSummaryText extends StatelessWidget {
               (time != null && time.isNotEmpty)) ...[
             SizedBox(height: 10.h),
             Wrap(
+              alignment: WrapAlignment.center,
               spacing: 8,
               runSpacing: 6,
               children: [
@@ -293,6 +297,7 @@ class RecipeSummaryText extends StatelessWidget {
             const SizedBox(height: 9),
             Center(
               child: Wrap(
+                alignment: WrapAlignment.center,
                 spacing: 6,
                 runSpacing: 6,
                 children: highlights
@@ -1017,9 +1022,9 @@ class RecipeYoutubeVideo {
   final String channelTitle;
 
   RecipeYoutubeVideo({
-    required this.videoId, 
-    required this.title, 
-    required this.channelTitle
+    required this.videoId,
+    required this.title,
+    required this.channelTitle,
   });
 
   factory RecipeYoutubeVideo.fromJson(Map<String, dynamic> json) {
@@ -1039,15 +1044,20 @@ class RecipeVideosSection extends StatefulWidget {
   State<RecipeVideosSection> createState() => _RecipeVideosSectionState();
 }
 
-class _RecipeVideosSectionState extends State<RecipeVideosSection> {
+class _RecipeVideosSectionState extends State<RecipeVideosSection>
+    with WidgetsBindingObserver {
   bool showAll = false;
-  int selected = 0; // Only this index will have a controller
+  int selected = 0;
   YoutubePlayerController? _controller;
+  final GlobalKey _playerAnchorKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    _initController(selected);
+    WidgetsBinding.instance.addObserver(this);
+    if (widget.videos.isNotEmpty) {
+      _initController(selected);
+    }
   }
 
   void _initController(int index) {
@@ -1057,21 +1067,20 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection> {
       videoId: video.videoId,
       autoPlay: false,
       params: const YoutubePlayerParams(
-        mute: false,
         showControls: true,
         showFullscreenButton: true,
-        enableKeyboard: true,
         enableJavaScript: true,
+        playsInline: true,
+        strictRelatedVideos: true,
       ),
     );
-    // Only one controller/listener needed, so no risk of memory leak or UI lag
+    print('\x1B[34m[YT] controller -> ${video.videoId}\x1B[0m');
   }
 
   @override
   void didUpdateWidget(covariant RecipeVideosSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videos != widget.videos && widget.videos.isNotEmpty) {
-      // Reset selected and controller if the list changes
       selected = 0;
       _initController(selected);
     }
@@ -1079,44 +1088,156 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller?.close();
     super.dispose();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Pause if app goes background to save resources
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _controller?.pauseVideo();
+    }
+  }
+
+  void _selectVideo(int i) {
+    setState(() {
+      selected = i;
+      showAll = false;
+      _initController(selected);
+    });
+    // Scroll back to player (if in a scrollable)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _playerAnchorKey.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 300),
+          alignment: 0.1,
+          curve: Curves.easeOutCubic,
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (widget.videos.isEmpty) return const SizedBox.shrink();
-
     final mainVideo = widget.videos[selected];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Main player for the selected video
-        Padding(
-          padding: const EdgeInsets.only(bottom: 18),
+        // ===== Card: Main Player =====
+        Container(
+          key: _playerAnchorKey,
+          margin: EdgeInsets.only(bottom: 14.h),
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [Colors.blue[700]!.withOpacity(0.22), Colors.blue[600]!.withOpacity(0.10)]
+                  : [Colors.blue.withOpacity(0.10), Colors.blue.withOpacity(0.05)],
+            ),
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(
+              color: isDark ? Colors.blue[300]!.withOpacity(0.35) : Colors.blue.withOpacity(0.22),
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              YoutubePlayer(
-                controller: _controller!,
-                aspectRatio: 16 / 9,
+              // Header row
+              Row(
+                children: [
+                  Icon(Icons.ondemand_video_rounded,
+                      size: 18.sp,
+                      color: isDark ? Colors.blue[200] : Colors.blue[800]),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      'Recipe Videos',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isDark ? Colors.blue[200] : Colors.blue[800],
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15.sp,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(mainVideo.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-              Text(mainVideo.channelTitle, style: const TextStyle(color: Colors.grey)),
+              SizedBox(height: 10.h),
+
+              // Player with visibility-based pausing
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12.r),
+                child: VisibilityDetector(
+                  key: ValueKey('yt-player-$selected'),
+                  onVisibilityChanged: (info) {
+                    // Pause when less than ~35% visible
+                    if (info.visibleFraction < 0.35) {
+                      _controller?.pauseVideo();
+                    }
+                  },
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: _controller == null
+                        ? const SizedBox.shrink()
+                        : YoutubePlayer(controller: _controller!),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 10.h),
+
+              // Title + channel as chips
+              Text(
+                mainVideo.title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14.5.sp,
+                  height: 1.25,
+                ),
+              ),
+              SizedBox(height: 6.h),
+              Wrap(
+                spacing: 6.w,
+                runSpacing: 6.h,
+                children: [
+                  _InfoChip(
+                    text: 'YouTube',
+                    icon: Icons.play_circle_fill_rounded,
+                    isDark: isDark,
+                  ),
+                  _InfoChip(
+                    text: mainVideo.channelTitle,
+                    icon: Icons.account_circle_rounded,
+                    isDark: isDark,
+                  ),
+                ],
+              ),
             ],
           ),
         ),
-        // "Show More" reveals thumbnails and metadata for other videos, but never instantiates more YoutubePlayers
+
+        // ===== Show/Hide More Button =====
         if (widget.videos.length > 1 && !showAll)
           Align(
             alignment: Alignment.center,
-            child: TextButton(
+            child: TextButton.icon(
               onPressed: () => setState(() => showAll = true),
-              child: const Text("Show More Videos"),
+              icon: const Icon(Icons.expand_more_rounded),
+              label: const Text('Show More Videos'),
             ),
           ),
+
         if (showAll && widget.videos.length > 1)
           ListView.builder(
             cacheExtent: MediaQuery.of(context).size.height,
@@ -1124,23 +1245,145 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection> {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: widget.videos.length,
             itemBuilder: (context, i) {
-              if (i == selected) return const SizedBox.shrink(); // Skip main video
-              final video = widget.videos[i];
-              return ListTile(
-                leading: Image.network('https://img.youtube.com/vi/${video.videoId}/0.jpg', width: 80.w, fit: BoxFit.cover),
-                title: Text(video.title),
-                subtitle: Text(video.channelTitle),
-                onTap: () {
-                  setState(() {
-                    selected = i;
-                    showAll = false;
-                    _initController(selected); // Clean up and re-create only the needed player
-                  });
-                },
+              if (i == selected) return const SizedBox.shrink(); // skip current
+
+              final v = widget.videos[i];
+              return Container(
+                margin: EdgeInsets.only(bottom: 10.h),
+                padding: EdgeInsets.all(10.w),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white10 : Colors.black.withOpacity(0.03),
+                  borderRadius: BorderRadius.circular(14.r),
+                  border: Border.all(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                  ),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12.r),
+                  onTap: () => _selectVideo(i),
+                  child: Row(
+                    children: [
+                      // Thumbnail
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10.r),
+                        child: Image.network(
+                          // hq thumbnail
+                          'https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg',
+                          width: min(120.w, 160.w),
+                          height: (min(120.w, 160.w) * 9 / 16),
+                          fit: BoxFit.cover,
+                          filterQuality: FilterQuality.medium,
+                          gaplessPlayback: true,
+                          loadingBuilder: (ctx, child, progress) {
+                            if (progress == null) return child;
+                            return Container(
+                              width: min(120.w, 160.w),
+                              height: (min(120.w, 160.w) * 9 / 16),
+                              color: isDark ? Colors.white10 : Colors.black12,
+                              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            );
+                          },
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      // Texts
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(v.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13.5.sp,
+                                  height: 1.25,
+                                )),
+                            SizedBox(height: 6.h),
+                            Center(
+                              child: Row(
+                                children: [
+                                  Icon(Icons.account_circle_rounded,
+                                      size: 14.sp,
+                                      color: isDark ? Colors.white70 : Colors.black54),
+                                  SizedBox(width: 4.w),
+                                  Expanded(
+                                    child: Text(
+                                      v.channelTitle,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white70 : Colors.black54,
+                                        fontSize: 12.sp,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 6.w),
+                      Icon(Icons.play_arrow_rounded,
+                          size: 22.sp,
+                          color: isDark ? Colors.white70 : Colors.black54),
+                    ],
+                  ),
+                ),
               );
             },
           ),
       ],
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final String text;
+  final IconData icon;
+  final bool isDark;
+  const _InfoChip({
+    required this.text,
+    required this.icon,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = isDark ? Colors.green[200]! : Colors.green[800]!;
+    final bg = isDark ? Colors.green[900]!.withOpacity(0.18) : Colors.green[50]!;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999.r),
+        border: Border.all(color: fg.withOpacity(0.25)),
+      ),
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width - 48.w,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14.sp, color: fg),
+          SizedBox(width: 6.w),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: fg,
+                fontWeight: FontWeight.w600,
+                fontSize: 11.5.sp,
+                height: 1.1,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1228,7 +1471,7 @@ class DualActionButton extends StatelessWidget {
             width: 1.5.w,
             height: 35.h,
             margin: EdgeInsets.symmetric(horizontal: 3.w),
-            color: Colors.white,
+            color: textColor(context),
           ),
 
           // MARK AS COOKED BUTTON
@@ -1258,14 +1501,14 @@ class DualActionButton extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.check_circle_rounded,
-                      color: cookedSuccess ? Colors.green : Colors.grey[700],
+                      color: cookedSuccess ? Colors.green : textColor(context),
                       size: 32.sp,
                     ),
                     SizedBox(width: 8.w),
                     Text(
                       "Mark as Cooked",
                       style: TextStyle(
-                        color: cookedSuccess ? Colors.green[800] : Colors.black87,
+                        color: cookedSuccess ? Colors.green[900] : textColor(context),
                         fontWeight: FontWeight.w700,
                         fontSize: 15.sp,
                         letterSpacing: 0.1,
