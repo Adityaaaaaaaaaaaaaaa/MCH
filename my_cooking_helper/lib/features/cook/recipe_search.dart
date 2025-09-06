@@ -10,7 +10,7 @@ import '/models/recipe_detail.dart';
 import '/theme/app_theme.dart';
 import '/utils/emoji_animation.dart';
 import '/models/recipe.dart';
-import '/widgets/recipe/cook_picker.dart';
+import '/widgets/recipe/recipe_timeXingredient_picker.dart';
 import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
 import '/utils/colors.dart';
