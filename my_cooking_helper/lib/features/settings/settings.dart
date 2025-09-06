@@ -374,33 +374,16 @@ class _SettingsScreenState extends ConsumerState<Settings>
           children: [
             //BACKGROUND IMAGES
             Positioned(
-              top: 60,
-              left: 100,
+              top: 0,
+              right: -40,
               child: Transform.rotate(
-                angle: -1.5708, //radians
-                child: Opacity(
-                  opacity: imgOpacity,
-                  child: Image.asset(
-                    'assets/images/settings/settings3.png',
-                    width: 300,
-                    height: 300,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.low,
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 250,
-              left: 40,
-              child: Transform.rotate(
-                angle: 0.3, 
+                angle: -1.7, //radians
                 child: Opacity(
                   opacity: imgOpacity,
                   child: Image.asset(
                     'assets/images/settings/settings1.png',
-                    width: 200,
-                    height: 200,
+                    width: 150,
+                    height: 150,
                     fit: BoxFit.contain,
                     filterQuality: FilterQuality.low,
                   ),
@@ -408,33 +391,33 @@ class _SettingsScreenState extends ConsumerState<Settings>
               ),
             ),
             Positioned(
-              bottom: 55,
-              right: 35,
+              top: 200,
+              left:-60,
+              child: Transform.rotate(
+                angle: 0.4, 
+                child: Opacity(
+                  opacity: imgOpacity,
+                  child: Image.asset(
+                    'assets/images/settings/settings3.png',
+                    width: 250,
+                    height: 250,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.low,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -20,
+              right: -50,
               child: Transform.rotate(
                 angle: 0.1, 
                 child: Opacity(
                   opacity: imgOpacity,
                   child: Image.asset(
                     'assets/images/settings/settings2.png',
-                    width: 150,
-                    height: 150,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.low,
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 75,
-              left: 20,
-              child: Transform.rotate(
-                angle: -0.4, 
-                child: Opacity(
-                  opacity: imgOpacity,
-                  child: Image.asset(
-                    'assets/images/settings/settings3.png',
-                    width: 150,
-                    height: 150,
+                    width: 350,
+                    height: 350,
                     fit: BoxFit.contain,
                     filterQuality: FilterQuality.low,
                   ),
@@ -455,6 +438,8 @@ class _SettingsScreenState extends ConsumerState<Settings>
         : const AssetImage("assets/app_icon.png");
 
     return Scaffold(
+      extendBody: true,
+      extendBodyBehindAppBar: false,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: CustomAppBar(
         showMenu: false,
@@ -470,7 +455,6 @@ class _SettingsScreenState extends ConsumerState<Settings>
           _decorBackground(),
           ListView(
             cacheExtent: MediaQuery.of(context).size.height,
-            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
             physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             children: [
               SizedBox(height: 30.h),
