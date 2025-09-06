@@ -33,17 +33,17 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
     {
       "image": "assets/images/onboarding/onb1.png",
       "title": "Welcome to My Cooking Helper",
-      "desc": "Your smart kitchen companion. Plan meals, manage your pantry, and discover recipes tailored to you.",
+      "desc": "Plan meals, manage your pantry, and discover recipes - all in one smart kitchen app.",
     },
     {
       "image": "assets/images/onboarding/onb2.png",
       "title": "Track Your Pantry with Ease",
-      "desc": "Scan your groceries, manage what you have, and reduce food waste effortlessly.",
+      "desc": "Scan groceries, keep your pantry organized, and cut down on food waste effortlessly.",
     },
     {
       "image": "assets/images/onboarding/onb3.png",
       "title": "Get Personalised Recipe Ideas",
-      "desc": "Discover delicious recipes based on your preferences and what's in your kitchen.",
+      "desc": "Find tasty recipes tailored to your preferences and what you already have at home.",
     },
   ];
 
@@ -335,7 +335,7 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                                     Text(
                                       page["title"]!,
                                       style: TextStyle(
-                                        fontSize: 24.sp,
+                                        fontSize: 30.sp,
                                         fontWeight: FontWeight.w800,
                                         color: Colors.white,
                                         letterSpacing: 0.5,
@@ -350,7 +350,7 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                                       page["desc"]!,
                                       style: TextStyle(
                                         fontSize: 14.sp,
-                                        color: Colors.white.withOpacity(0.9),
+                                        color: Colors.white,
                                         height: 1.5,
                                         fontWeight: FontWeight.w400,
                                       ),
