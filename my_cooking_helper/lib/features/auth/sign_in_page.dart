@@ -121,11 +121,6 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
     return isDark ? const Color(0xFF8B5CF6) : const Color(0xFF7C3AED); // Premium purple
   }
 
-  Color _getSecondaryColor(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return isDark ? const Color(0xFF06B6D4) : const Color(0xFF0891B2); // Premium cyan
-  }
-
   List<Color> _getBackgroundGradient(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isDark) {
@@ -282,7 +277,6 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = _getPrimaryColor(context);
-    final secondaryColor = _getSecondaryColor(context);
     final backgroundGradient = _getBackgroundGradient(context);
     final textColor = _getTextColor(context);
 
