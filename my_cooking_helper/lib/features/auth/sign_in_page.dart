@@ -363,13 +363,6 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
                       Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: secondaryColor.withOpacity(0.2),
-                              blurRadius: 12.r,
-                              offset: Offset(0, 4.h),
-                            ),
-                          ],
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16.r),
