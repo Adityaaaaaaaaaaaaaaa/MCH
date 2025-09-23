@@ -113,7 +113,9 @@ class RecipePage extends ConsumerWidget {
     }
 
     final recipeId = recipe.id ?? "default";
-    final userId = ref.read(authUserProvider).value?.uid;
+    //final userId = ref.read(authUserProvider).value?.uid;
+    final user = ref.watch(authUserProvider).value ?? FirebaseAuth.instance.currentUser;
+    final userId = user?.uid;
 
     return Scaffold(
       backgroundColor: bgColor(context),

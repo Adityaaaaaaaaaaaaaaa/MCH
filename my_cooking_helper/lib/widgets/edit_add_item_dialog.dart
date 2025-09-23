@@ -248,7 +248,8 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
                   TextField(
                     controller: nameController,
                     textInputAction: TextInputAction.next,
-                    style: TextStyle(color: textColor(context)),
+                    //style: TextStyle(color: textColor(context)),
+                    style: TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: "Item Name",
                       labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),

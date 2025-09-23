@@ -129,7 +129,7 @@ class CravingsService {
     required bool randomSpice,
     int? fixedSpiceLevel,
     required int timeMinutes,
-    Duration timeout = const Duration(seconds: 75),
+    Duration timeout = const Duration(seconds: 180),
   }) async {
     final payload = await buildFinalBundle(
       userId: userId,
