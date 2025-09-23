@@ -179,7 +179,7 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
         randomSpice: useRandom,
         fixedSpiceLevel: useRandom ? null : useFixed,
         timeMinutes: timeMins,
-        timeout: const Duration(seconds: 75),
+        timeout: const Duration(seconds: 180),
       );
     } catch (e) {
       genError = e;

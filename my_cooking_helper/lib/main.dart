@@ -121,21 +121,50 @@ final GoRouter _router = GoRouter(
       path: '/searchRecipe',
       builder: (context, state) => const SearchRecipeScreen()
     ),
+    // GoRoute(
+    //   path: '/recipePage',
+    //   builder: (context, state) {
+    //     final extra = state.extra;
+    //     if (extra is RecipeDetail) {
+    //       // fallback for older navigation
+    //       return RecipePage(recipe: extra, fromHistory: false);
+    //     } else if (extra is Map<String, dynamic>) {
+    //       return RecipePage(
+    //         recipe: extra['recipe'] as RecipeDetail,
+    //         fromHistory: extra['fromHistory'] == true,
+    //       );
+    //     } else {
+    //       // error fallback
+    //       return Scaffold(body: Center(child: Text('Invalid data')));
+    //     }
+    //   },
+    // ),
     GoRoute(
       path: '/recipePage',
       builder: (context, state) {
         final extra = state.extra;
+
         if (extra is RecipeDetail) {
-          // fallback for older navigation
+          // Directly a RecipeDetail (from search, API, etc.)
           return RecipePage(recipe: extra, fromHistory: false);
-        } else if (extra is Map<String, dynamic>) {
+        } 
+        else if (extra is Map<String, dynamic>) {
+          final recipeRaw = extra['recipe'];
+
+          // Handle both RecipeDetail and Map<String,dynamic>
+          final recipe = recipeRaw is RecipeDetail
+              ? recipeRaw
+              : RecipeDetail.fromJson(Map<String, dynamic>.from(recipeRaw));
+
           return RecipePage(
-            recipe: extra['recipe'] as RecipeDetail,
+            recipe: recipe,
             fromHistory: extra['fromHistory'] == true,
           );
-        } else {
-          // error fallback
-          return Scaffold(body: Center(child: Text('Invalid data')));
+        } 
+        else {
+          return const Scaffold(
+            body: Center(child: Text('Invalid data passed to /recipePage')),
+          );
         }
       },
     ),
