@@ -165,7 +165,7 @@ class ManualInputScreen extends ConsumerWidget {
                       try {
                         lottieController.show(
                           context: context,
-                          assetPath: 'assets/animations/Animation_upload_cloud.json',
+                          assetPath: 'assets/animations/Animation_upload.json',
                           backgroundColor: bgColor(context),
                           repeat: true,
                           barrierDismissible: false,

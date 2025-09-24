@@ -85,8 +85,6 @@ flutter:
     - assets/images/home/
     - assets/images/icons/
     - assets/images/smartScan/
-    - assets/images/smartScan/scanFood/
-    - assets/images/smartScan/scanReceipt/
     - assets/images/settings/
 
   # example:

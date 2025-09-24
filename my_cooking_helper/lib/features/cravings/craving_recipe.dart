@@ -474,6 +474,7 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
                   SizedBox(height: 15.h),
 
                   const AiCautionBarFancy(),
+                  SizedBox(height: 60.h),
                 ],
               ),
             ),

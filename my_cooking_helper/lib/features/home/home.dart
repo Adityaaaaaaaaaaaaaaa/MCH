@@ -77,7 +77,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     //width/height of all feature cards!
     double cardWidth = 150.w;
     double cardHeight = 140.h;
-    double imgOpacity = 0.7;
+    // double imgOpacity = 0.7;
 
     return Scaffold(
       backgroundColor: bgColor(context),
