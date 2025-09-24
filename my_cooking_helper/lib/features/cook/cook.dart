@@ -43,6 +43,7 @@ class CookScreen extends ConsumerWidget {
       ),
     ];
 
+
     return Scaffold(
       backgroundColor: bgColor(context),
       extendBodyBehindAppBar: true,
@@ -59,8 +60,8 @@ class CookScreen extends ConsumerWidget {
       body: Stack(
         children: [
           Positioned(
-            top: 35,
-            right: 80,
+            top: 180,
+            right: -30,
             child: Transform.rotate(
               angle: -0.5,
               child: Image.asset(
@@ -72,10 +73,10 @@ class CookScreen extends ConsumerWidget {
             ),
           ),
           Positioned(
-            bottom: 170,
+            bottom: 50,
             left: 30,
             child: Transform.rotate(
-              angle: 0.7,
+              angle: 0.6,
               child: Image.asset(
                 'assets/images/home/curry.png',
                 width: 160,
@@ -102,6 +103,7 @@ class CookScreen extends ConsumerWidget {
                   'What do you want to do ?',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: textColor(context).withOpacity(0.7),
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
                 SizedBox(height: 40.h),
