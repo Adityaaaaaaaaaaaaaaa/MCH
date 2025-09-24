@@ -1238,7 +1238,7 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection>
             ),
           ),
 
-        if (showAll && widget.videos.length > 1)
+        if (showAll && widget.videos.length > 1) ...[
           ListView.builder(
             cacheExtent: MediaQuery.of(context).size.height,
             shrinkWrap: true,
@@ -1281,6 +1281,14 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection>
                               height: (min(120.w, 160.w) * 9 / 16),
                               color: isDark ? Colors.white10 : Colors.black12,
                               child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            );
+                          },
+                          errorBuilder: (ctx, err, stack) {
+                            return Container(
+                              width: min(120.w, 160.w),
+                              height: (min(120.w, 160.w) * 9 / 16),
+                              color: isDark ? Colors.white12 : Colors.black12,
+                              child: Icon(Icons.broken_image, color: isDark ? Colors.white54 : Colors.black54),
                             );
                           },
                         ),
@@ -1334,6 +1342,15 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection>
               );
             },
           ),
+          Align(
+            alignment: Alignment.center,
+            child: TextButton.icon(
+              onPressed: () => setState(() => showAll = false),
+              icon: const Icon(Icons.expand_less_rounded),
+              label: const Text('Show Less'),
+            ),
+          ),
+        ],
       ],
     );
   }

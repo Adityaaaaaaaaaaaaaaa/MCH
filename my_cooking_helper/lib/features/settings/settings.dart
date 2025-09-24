@@ -363,25 +363,38 @@ class _SettingsScreenState extends ConsumerState<Settings>
     );
   }
 
-  // --------------------------
-  // Lightweight decorative background (single repaint boundary)
-  // --------------------------
   Widget _decorBackground() {
     return IgnorePointer(
       ignoring: true,
       child: RepaintBoundary(
         child: Stack(
           children: [
-            //BACKGROUND IMAGES
             Positioned(
-              top: 0,
-              right: -40,
+              top: 10,
+              left: -150,
               child: Transform.rotate(
-                angle: -1.7, //radians
+                angle: -0.8, // radians
                 child: Opacity(
                   opacity: imgOpacity,
                   child: Image.asset(
-                    'assets/images/settings/settings1.png',
+                    'assets/images/home/food_plate_1.png',
+                    width: 300,
+                    height: 300,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.low,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 90,
+              right: -50,
+              child: Transform.rotate(
+                angle: -0.8, // radians
+                child: Opacity(
+                  opacity: imgOpacity,
+                  child: Image.asset(
+                    'assets/images/home/food_plate_5.png',
                     width: 150,
                     height: 150,
                     fit: BoxFit.contain,
@@ -391,14 +404,14 @@ class _SettingsScreenState extends ConsumerState<Settings>
               ),
             ),
             Positioned(
-              top: 200,
-              left:-60,
+              bottom: 240,
+              left: 80,
               child: Transform.rotate(
-                angle: 0.4, 
+                angle: 0.9,
                 child: Opacity(
                   opacity: imgOpacity,
                   child: Image.asset(
-                    'assets/images/settings/settings3.png',
+                    'assets/images/home/food_plate_4.png',
                     width: 250,
                     height: 250,
                     fit: BoxFit.contain,
@@ -408,16 +421,33 @@ class _SettingsScreenState extends ConsumerState<Settings>
               ),
             ),
             Positioned(
-              bottom: -20,
-              right: -50,
+              bottom: 40,
+              right: -90,
               child: Transform.rotate(
-                angle: 0.1, 
+                angle: 0.1,
                 child: Opacity(
                   opacity: imgOpacity,
                   child: Image.asset(
-                    'assets/images/settings/settings2.png',
-                    width: 350,
-                    height: 350,
+                    'assets/images/home/food_plate_2.png',
+                    width: 200,
+                    height: 200,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.low,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 20,
+              left: 0,
+              child: Transform.rotate(
+                angle: -0.4,
+                child: Opacity(
+                  opacity: imgOpacity,
+                  child: Image.asset(
+                    'assets/images/home/food_plate_3.png',
+                    width: 150,
+                    height: 150,
                     fit: BoxFit.contain,
                     filterQuality: FilterQuality.low,
                   ),

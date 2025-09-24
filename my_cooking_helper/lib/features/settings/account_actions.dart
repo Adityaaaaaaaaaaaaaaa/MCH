@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:glass/glass.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/utils/colors.dart';
 import '/utils/emoji_animation.dart';
 
 class AccountActionsSection extends StatelessWidget {
@@ -30,7 +31,7 @@ class AccountActionsSection extends StatelessWidget {
                 Text(
                   "Sign Out", 
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
+                    color: textColor(context),
                     fontWeight: FontWeight.w900,
                     fontSize: 17.sp
                   )),
