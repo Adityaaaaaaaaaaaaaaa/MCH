@@ -248,7 +248,6 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
                   TextField(
                     controller: nameController,
                     textInputAction: TextInputAction.next,
-                    //style: TextStyle(color: textColor(context)),
                     style: TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: "Item Name",
@@ -292,7 +291,11 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
                             });
                             FocusScope.of(context).unfocus();
                           },
-                          style: TextStyle(color: textColor(context), fontWeight: FontWeight.w800, fontSize: 16.sp),
+                          style: TextStyle(
+                            color: Colors.white, 
+                            fontWeight: FontWeight.w800, 
+                            fontSize: 16.sp
+                          ),
                           decoration: InputDecoration(
                             labelText: qtyLabel,
                             labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
@@ -325,7 +328,11 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
                     alignment: Alignment.center,
                     child: Text(
                       "Preview: ${_prettyPreview()}",
-                      style: TextStyle(color: Colors.white.withOpacity(0.7), fontWeight: FontWeight.w700, fontSize: 12.5.sp),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7), 
+                        fontWeight: FontWeight.w700, 
+                        fontSize: 12.5.sp
+                      ),
                     ),
                   ),
 
@@ -425,7 +432,7 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
 
                   // Actions
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       TextButton(
                         style: TextButton.styleFrom(

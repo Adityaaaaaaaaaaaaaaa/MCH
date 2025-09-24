@@ -109,7 +109,7 @@ class InventoryTile extends StatelessWidget {
     final fg = textColor(context);
     final soft = fg.withOpacity(.75);
     final border = fg.withOpacity(.16);
-    final accent = const Color(0xFF5AB2FF);
+    final accent = Colors.blueAccent;
 
     final amount = _prettyQtyUnitFromStrings(quantity, unit);
 
@@ -143,7 +143,7 @@ class InventoryTile extends StatelessWidget {
                             ? CachedNetworkImage(
                                 imageUrl: imageUrl,
                                 fit: BoxFit.contain,
-                                memCacheWidth: (220.w).toInt(),   // keep GPU/mem light
+                                memCacheWidth: (220.w).toInt(),
                                 memCacheHeight: (220.h).toInt(),
                                 placeholder: (_, __) => Center(
                                   child: Icon(Icons.image, size: 22.sp, color: soft),
@@ -176,7 +176,7 @@ class InventoryTile extends StatelessWidget {
                                 fontSize: 13.sp,
                                 color: fg,
                                 letterSpacing: .1,
-                                height: 1.1, // a bit tighter
+                                height: 1.1,
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,

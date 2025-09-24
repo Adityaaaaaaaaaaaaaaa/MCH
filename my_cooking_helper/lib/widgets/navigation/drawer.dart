@@ -99,7 +99,6 @@ class _CustomDrawerState extends State<CustomDrawer>
       curve: Curves.easeOutCubic,
     );
 
-    // kept for compatibility; not used to animate list anymore
     _itemsAnimation = CurvedAnimation(
       parent: _itemsController,
       curve: Curves.easeOut,
@@ -133,8 +132,6 @@ class _CustomDrawerState extends State<CustomDrawer>
       _currentEmojiIndex = Random().nextInt(foodEmojis.length);
       _headerController.forward();
       _emojiController.forward();
-      // NOTE: we intentionally don't animate list entrance anymore
-      // _itemsController.forward();
     });
   }
 
@@ -215,7 +212,7 @@ class _CustomDrawerState extends State<CustomDrawer>
       _DrawerRoute(icon: Icons.history_rounded, label: 'History', path: '/history', color: const Color(0xFF795548)),
       _DrawerRoute(icon: Icons.favorite_rounded, label: 'Favourites', path: '/favourites', color: const Color(0xFFF44336)),
       _DrawerRoute(icon: Icons.calendar_month_rounded, label: 'Meal Planner', path: '/planner', color: const Color(0xFF009688)),
-      _DrawerRoute(icon: Icons.fastfood_rounded, label: 'My Cravings', path: '/cravings', color: const Color(0xFFFF5722)),
+      _DrawerRoute(icon: Icons.auto_awesome, label: 'My Cravings', path: '/cravings', color: const Color(0xFFFF5722)),
       _DrawerRoute(icon: Icons.shopping_cart_rounded, label: 'Shopping List', path: '/shopping', color: const Color(0xFF3F51B5)),
     ];
 
