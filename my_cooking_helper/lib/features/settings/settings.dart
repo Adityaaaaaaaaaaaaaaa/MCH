@@ -45,15 +45,15 @@ class _SettingsScreenState extends ConsumerState<Settings>
     _loadPrefs();
 
     // Precache decorative images to avoid first-scroll jank
-    WidgetsBinding.instance.addPostFrameCallback((_) => _precacheBackgroundImages(context));
+   // WidgetsBinding.instance.addPostFrameCallback((_) => _precacheBackgroundImages(context));
   }
 
-  Future<void> _precacheBackgroundImages(BuildContext context) async {
-    // This does not change UI; it just warms up the image cache
-    await precacheImage(const AssetImage('assets/images/settings/settings1.png'), context);
-    await precacheImage(const AssetImage('assets/images/settings/settings2.png'), context);
-    await precacheImage(const AssetImage('assets/images/settings/settings3.png'), context);
-  }
+  // Future<void> _precacheBackgroundImages(BuildContext context) async {
+  //   // This does not change UI; it just warms up the image cache
+  //   await precacheImage(const AssetImage('assets/images/settings/settings1.png'), context);
+  //   await precacheImage(const AssetImage('assets/images/settings/settings2.png'), context);
+  //   await precacheImage(const AssetImage('assets/images/settings/settings3.png'), context);
+  // }
 
   Future<void> _loadPrefs() async {
     if (user == null) return;
