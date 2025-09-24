@@ -195,10 +195,10 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
         _errorMsg = null;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Generating with '
-            '${useRandom ? "random spice" : "spice=$useFixed"} • time=$timeMins min')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('Generating with '
+      //       '${useRandom ? "random spice" : "spice=$useFixed"} • time=$timeMins min')),
+      // );
     } else {
       // Backend didn’t respond or returned no items → show friendly error (no fallback)
       setState(() {
