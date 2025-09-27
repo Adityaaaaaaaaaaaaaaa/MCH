@@ -37,6 +37,7 @@ import 'features/cravings/cravings.dart';
 import 'features/cravings/craving_recipe.dart';
 import 'features/shopping/shopping.dart';
 import 'utils/adaptive_transition.dart';
+import 'utils/snackbar.dart';
 
 
 Future<void> main() async {
@@ -162,9 +163,33 @@ final GoRouter _router = GoRouter(
           );
         } 
         else {
-          return const Scaffold(
-            body: Center(child: Text('Invalid data passed to /recipePage')),
-          );
+          // 🚑 Instead of error page → snackbar + safe fallback with delay
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            SnackbarUtils.show(
+              context, 
+              "Recipe not available, please try again!",
+              duration: 750, 
+              behavior: SnackBarBehavior.floating,
+              icon: Icons.error_outline_rounded,
+              iconColor: Colors.red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.w900
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+              backgroundColor: Colors.grey.withOpacity(0.5),
+              width: 250.w,
+            );
+
+            // small delay so snackbar is noticeable before going back
+            await Future.delayed(const Duration(milliseconds: 500));
+
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+          });
+
+          return const SizedBox.shrink(); // temporary widget until pop
         }
       },
     ),
@@ -210,8 +235,31 @@ final GoRouter _router = GoRouter(
           );
         }
 
-        // Graceful fallback (helps during dev)
-        throw ArgumentError('Invalid /cravingRecipe extra: ${state.extra}');
+        // 🚑 Safe fallback instead of throw
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          SnackbarUtils.show(
+            ctx,
+            "AI recipe not available, please try again!",
+            duration: 750,
+            behavior: SnackBarBehavior.floating,
+            icon: Icons.error_outline_rounded,
+            iconColor: Colors.red,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            textStyle: const TextStyle(fontWeight: FontWeight.w900),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            backgroundColor: Colors.grey.withOpacity(0.5),
+            width: 250,
+          );
+
+          // delay so snackbar shows before going back
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          if (Navigator.of(ctx).canPop()) {
+            Navigator.of(ctx).pop();
+          }
+        });
+
+        return const SizedBox.shrink(); // temp widget until pop
       },
     ),
     GoRoute(
@@ -259,7 +307,7 @@ class MyApp extends ConsumerWidget {
         return MaterialApp.router(
           scrollBehavior: const TightScrollBehavior(),
           debugShowCheckedModeBanner: false,
-          title: 'My Cooking Helper',
+          title: 'Cookgenix',
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
           themeMode: themeMode,

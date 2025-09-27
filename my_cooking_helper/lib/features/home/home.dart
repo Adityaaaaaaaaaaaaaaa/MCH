@@ -86,7 +86,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       drawer: CustomDrawer(),
       bottomNavigationBar: CustomNavBar(currentIndex: 2),
       appBar: CustomAppBar(
-        title: "My Cooking Helper",
+        title: "Cookgenix",
         themeToggleWidget: ThemeToggleButton(),
         trailingWidget: EmojiAnimation(name: 'gear'),
         onTrailingIconTap: () => _openSettings(context),
