@@ -1,4 +1,4 @@
-# My Cooking Helper
+# Cookgenix: From Pantry to Plate
 
 <p align="center">
   <img src="https://img.shields.io/badge/Flutter-%5E3.7-blue?logo=flutter" />
@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/contributions-welcome-brightgreen" />
 </p>
 
-**My Cooking Helper** is your personal cooking companion. This Flutter-based app streamlines meal prep, recipe management, and shopping lists. Developed for my BSc (Hons.) Applied Computing final year project, it leverages Firebase and Google's Gemini AI for a smooth experience.
+**Cookgenix** is your personal cooking companion. This Flutter-based app streamlines meal prep, recipe management, and shopping lists. Developed for my BSc (Hons.) Applied Computing final year project, it leverages Firebase and Google's Gemini AI for a smooth experience.
 
 
 ---
@@ -43,7 +43,7 @@
 Pull requests are welcome! Feel free to open issues or propose new features.
 
 ## Status
-My Cooking Helper is currently under active development.
+Cookgenix is currently under active development.
 
 ---
 Started coding **21 May 2025**

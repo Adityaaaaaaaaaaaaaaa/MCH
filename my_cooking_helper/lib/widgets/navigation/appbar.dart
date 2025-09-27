@@ -76,7 +76,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.2, 
-                      fontSize: fontSize.sp, 
+                      fontSize: fontSize.sp,
                     ),
                   ),
                 ),

@@ -434,7 +434,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'My Cooking Helper',
+                    'cookgenix',
                     softWrap: false,
                     overflow: TextOverflow.visible, // no ellipsis
                     style: TextStyle(

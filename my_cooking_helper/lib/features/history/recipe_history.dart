@@ -237,20 +237,21 @@ class RecipeHistoryPage extends ConsumerWidget {
 
                               Navigator.of(context, rootNavigator: true).pop();
 
-                              if (found?.recipe == null) {
+                              // ✅ Guard before navigation
+                              if (found == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('AI recipe not found.')),
+                                  const SnackBar(content: Text('AI recipe not available yet, please try again.')),
                                 );
-                                return; // 🚫 Do not navigate if no recipe
+                                return; // 🚫 do not navigate at all
                               }
 
-                              // ✅ Safe: only navigate when recipe is present
+                              // ✅ Only navigate AFTER Firestore returns valid data
                               context.push('/cravingRecipe', extra: {
-                                'recipe': found!.recipe,
+                                'recipe': found.recipe,   // now guaranteed non-null
                                 'fromHistory': true,
-                                'recipeKey': it.id,            // <-- 'ai:<hash>' from the history item
-                                'sessionId': found.sessionId,  // optional
-                                'trackerId': found.trackerId,  // optional
+                                'recipeKey': it.id,
+                                'sessionId': found.sessionId,
+                                'trackerId': found.trackerId,
                               });
                             },
                           );

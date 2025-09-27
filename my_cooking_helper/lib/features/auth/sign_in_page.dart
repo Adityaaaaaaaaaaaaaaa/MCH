@@ -24,7 +24,7 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
   late Animation<double> _borderAnimation;
 
   bool _isGooglePressed = false;
-  bool _isApplePressed = false;
+  //bool _isApplePressed = false;
 
   @override
   void initState() {
@@ -339,7 +339,7 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
                               ],
                             ),
                             child: Text(
-                              'My Cooking Helper',
+                              'Cookgenix',
                               style: TextStyle(
                                 fontFamily: 'Poppins', // Premium font
                                 fontSize: 22.sp,
@@ -463,7 +463,7 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
                                       accentColor: const Color(0xFF4285F4),
                                     ),
                                     
-                                    _buildAuthButton(
+                                    /*_buildAuthButton(
                                       text: 'Continue with Apple',
                                       iconPath: "assets/images/loginSignup/apple_logo.png",
                                       onPressed: () {
@@ -488,7 +488,7 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
                                         });
                                       },
                                       accentColor: isDark ? Colors.white : const Color(0xFF1D1D1F),
-                                    ),
+                                    ),*/
                                     
                                     SizedBox(height: 16.h),
                                     
