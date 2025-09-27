@@ -237,16 +237,16 @@ class RecipeHistoryPage extends ConsumerWidget {
 
                               Navigator.of(context, rootNavigator: true).pop();
 
-                              if (found == null) {
+                              if (found?.recipe == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('AI recipe not found.')),
                                 );
-                                return;
+                                return; // 🚫 Do not navigate if no recipe
                               }
 
-                              // pass pointers too so the page can reflect "from history" state, etc.
+                              // ✅ Safe: only navigate when recipe is present
                               context.push('/cravingRecipe', extra: {
-                                'recipe': found.recipe,
+                                'recipe': found!.recipe,
                                 'fromHistory': true,
                                 'recipeKey': it.id,            // <-- 'ai:<hash>' from the history item
                                 'sessionId': found.sessionId,  // optional
