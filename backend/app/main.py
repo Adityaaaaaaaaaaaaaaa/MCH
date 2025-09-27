@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Cookgenix: From Pantry to Plate",
     version="0.1.0",
-    description="Backend for Cookgenix App (formerly My Cooking Helper) - your personal cooking companion.",
+    description="Backend for Cookgenix App",
     lifespan=lifespan,  # <-- instead of @app.on_event
 )
 
