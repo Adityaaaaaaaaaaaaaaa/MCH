@@ -49,6 +49,7 @@ async def generate_image_for_title(*, title: str) -> Optional[str]:
 
         resp = client.models.generate_content(
             model="gemini-2.0-flash-preview-image-generation",
+            #model="gemini-2.5-flash-image",
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_modalities=["TEXT", "IMAGE"]

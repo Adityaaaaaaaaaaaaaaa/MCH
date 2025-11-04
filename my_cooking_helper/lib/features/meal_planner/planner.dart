@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '/utils/snackbar.dart';
 import '/utils/loader.dart';
 import '/widgets/shimmer/meal_planner_skeleton.dart';
 import '/widgets/navigation/nav.dart';
@@ -90,10 +91,39 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   }
 
   Future<void> _scrapPlan(String uid, String planId) async {
+    SnackbarUtils.show(
+        context, 
+        "Deleting Meal Plan !",
+        duration: 750, 
+        behavior: SnackBarBehavior.floating,
+        icon: Icons.priority_high_rounded,
+        iconColor: Colors.orange.shade400,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w900,
+          color: Colors.black
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        backgroundColor: Colors.white,
+        width: 250.w,
+      );
     await ref.read(mealPlannerServiceProvider).deletePlan(userId: uid, planId: planId);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Plan deleted.')),
+      SnackbarUtils.show(
+        context, 
+        "Meal Plan Deleted!",
+        duration: 750, 
+        behavior: SnackBarBehavior.floating,
+        icon: Icons.delete_forever_rounded,
+        iconColor: Colors.red.shade400,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w900,
+          color: Colors.black
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        backgroundColor: Colors.white,
+        width: 250.w,
       );
     }
   }
@@ -101,10 +131,58 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   Future<void> _regeneratePlan(String uid, String planId) async {
     setState(() => generating = true);
     try {
+      SnackbarUtils.show(
+        context, 
+        "Generating New Meal Plan !",
+        duration: 750, 
+        behavior: SnackBarBehavior.floating,
+        icon: Icons.timer,
+        iconColor: Colors.orange.shade600,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w900,
+          color: Colors.black
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        backgroundColor: Colors.white,
+        width: 250.w,
+      );
       await ref.read(mealPlannerServiceProvider).regenerateWeek(userId: uid, planId: planId);
+      SnackbarUtils.show(
+        context, 
+        "Meal Plan Generated!",
+        duration: 750, 
+        behavior: SnackBarBehavior.floating,
+        icon: Icons.check_circle_outline_outlined,
+        iconColor: Colors.green.shade600,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w900,
+          color: Colors.black
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        backgroundColor: Colors.white,
+        width: 250.w,
+      );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed: $e')),
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('Failed: $e')),
+      // );
+      SnackbarUtils.show(
+        context, 
+        "Meal Plan Delete - Error",
+        duration: 750, 
+        behavior: SnackBarBehavior.floating,
+        icon: Icons.delete_forever_rounded,
+        iconColor: Colors.red.shade400,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w900,
+          color: Colors.black
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        backgroundColor: Colors.white,
+        width: 250.w,
       );
     } finally {
       setState(() => generating = false);
