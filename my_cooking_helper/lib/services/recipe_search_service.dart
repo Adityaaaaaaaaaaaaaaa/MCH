@@ -93,10 +93,17 @@ class RecipeSearchService {
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(payload),
+    ).timeout(
+      const Duration(minutes: 3),
+      onTimeout: () {
+        throw Exception('Connection timed out after 3 minutes');
+      },
     );
+
     if (response.statusCode != 200) {
       throw Exception('Backend error: ${response.body}');
     }
+    
     final data = jsonDecode(response.body);
     if (data['recipes'] == null || data['recipes'] is! List) {
        throw Exception('Invalid response from backend');

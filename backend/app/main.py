@@ -48,3 +48,15 @@ app.include_router(recipe_inv_router, prefix="/recipes/gemini")
 @app.get("/")
 async def root():
     return {"message": "API is running"}
+
+# --- Health Check Endpoints for UptimeRobot / Render keep-alive ---
+
+@app.head("/")
+async def root_head():
+    """Handle HEAD requests from uptime checkers (Render, UptimeRobot)."""
+    return {"status": "ok"}
+
+@app.get("/ping")
+async def ping():
+    """Simple keep-alive endpoint to verify uptime."""
+    return {"pong": True}
