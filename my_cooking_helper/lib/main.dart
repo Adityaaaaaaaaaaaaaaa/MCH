@@ -184,7 +184,12 @@ final GoRouter _router = GoRouter(
             // small delay so snackbar is noticeable before going back
             await Future.delayed(const Duration(milliseconds: 500));
 
-            if (Navigator.of(context).canPop()) {
+            // removed 
+            // if (Navigator.of(context).canPop()) {
+            //   Navigator.of(context).pop();
+            // }
+
+            if (context.mounted && Navigator.of(context).canPop()) {
               Navigator.of(context).pop();
             }
           });
@@ -211,7 +216,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/cravingRecipe',
-      builder: (ctx, state) {
+      builder: (context, state) {
         final extra = state.extra;
 
         // Back-compat: older callers pass the model directly
@@ -238,7 +243,7 @@ final GoRouter _router = GoRouter(
         // 🚑 Safe fallback instead of throw
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           SnackbarUtils.show(
-            ctx,
+            context,
             "AI recipe not available, please try again!",
             duration: 750,
             behavior: SnackBarBehavior.floating,
@@ -254,8 +259,12 @@ final GoRouter _router = GoRouter(
           // delay so snackbar shows before going back
           await Future.delayed(const Duration(milliseconds: 500));
 
-          if (Navigator.of(ctx).canPop()) {
-            Navigator.of(ctx).pop();
+          // if (Navigator.of(context).canPop()) {
+          //   Navigator.of(context).pop();
+          // }
+
+          if (context.mounted && Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
           }
         });
 
