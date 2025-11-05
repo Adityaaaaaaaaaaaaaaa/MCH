@@ -163,8 +163,8 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
     // 1) passed preview bytes  2) hydrated model imageDataUrl  3) none
     final bytes = widget.previewImageBytes ?? _bytesFromDataUrl(widget.recipe.imageDataUrl);
 
-    final uid = ref.read(authUserProvider).value?.uid;
-    //final uid = FirebaseAuth.instance.currentUser?.uid;
+    //final uid = ref.read(authUserProvider).value?.uid;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
     final recipeKey = widget.recipeKey ?? CravingsRecipeService.computeRecipeKey(widget.recipe);
 
     final svc = ref.read(shoppingServiceProvider.notifier);
