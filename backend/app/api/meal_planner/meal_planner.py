@@ -1,5 +1,3 @@
-# app/api/meal_planner.py
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
@@ -23,11 +21,7 @@ db = get_firestore_client()
 BLUE = "\x1B[34m"
 RESET = "\x1B[0m"
 
-# Static day names for consistency in Firestore document IDs
 _DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-
-
-# ----------------------------- Utility helpers ----------------------------- #
 
 def _monday_of_week(dt_utc: datetime) -> datetime:
     """
@@ -52,7 +46,7 @@ def _chunk(seq: List[int], size: int) -> List[List[int]]:
     return [seq[i:i + size] for i in range(0, len(seq), size)]
 
 
-# ------------------------------- Request model ------------------------------ #
+#  Request model 
 
 class WeekPlannerRequest(BaseModel):
     """
@@ -65,12 +59,12 @@ class WeekPlannerRequest(BaseModel):
     userId: str
     timeFrame: str = Field(default="week", pattern="^(week)$")
     diet: Optional[str] = None
-    exclude: Optional[str] = None            # comma-separated allergens/ingredients
+    exclude: Optional[str] = None            # allergens/ingredients
     targetCalories: Optional[int] = None
     planId: Optional[str] = None             # if absent, we compute ISO-Monday ID
 
 
-# --------------------------------- Endpoint -------------------------------- #
+#  Endpoint 
 
 @router.post("/weekPlanner")
 def week_planner(req: WeekPlannerRequest):

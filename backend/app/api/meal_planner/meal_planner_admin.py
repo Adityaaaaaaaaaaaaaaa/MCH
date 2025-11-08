@@ -1,4 +1,3 @@
-# app/api/meal_planner_admin.py
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.core.firestore_client import get_firestore_client

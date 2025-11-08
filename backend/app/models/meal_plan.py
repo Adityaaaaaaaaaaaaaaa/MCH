@@ -1,5 +1,3 @@
-# app/models/meal_plan.py
-
 from __future__ import annotations
 from typing import List, Optional, Dict, Any, Tuple
 from pydantic import BaseModel, Field
@@ -9,7 +7,7 @@ import json
 BLUE = "\x1B[34m"
 RESET = "\x1B[0m"
 
-# ---------- LITE models (used for initial normalization from Spoonacular "items") ----------
+#  LITE models 
 class MealLite(BaseModel):
     id: int
     title: str
@@ -20,10 +18,9 @@ class DayPlanLite(BaseModel):
     breakfast: Optional[MealLite] = None
     lunch: Optional[MealLite] = None
     dinner: Optional[MealLite] = None
-    # capture unexpected duplicates for debugging (avoid mutable default!)
     extras: List[MealLite] = Field(default_factory=list)
 
-# ---------- FINAL models (what you’ll return/store when using full Recipe objects) ----------
+# FINAL models 
 class MealPlanDay(BaseModel):
     dayIndex: int
     dayName: str
@@ -36,7 +33,7 @@ class WeeklyPlanResponse(BaseModel):
     meta: Dict[str, Any]
     week: List[MealPlanDay]      # final: contains full Recipe objects
 
-# ---------- Helpers ----------
+# Helpers
 _SLOT_TO_KEY = {1: "breakfast", 2: "lunch", 3: "dinner"}
 
 def _safe_parse_value(val: Any) -> Optional[Dict[str, Any]]:

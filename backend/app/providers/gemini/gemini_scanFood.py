@@ -1,4 +1,3 @@
-# app/providers/gemini/gemini_scan_food.py
 from __future__ import annotations
 
 import base64
@@ -14,10 +13,9 @@ BLUE = "\033[94m"
 RESET = "\033[0m"
 def _blue(msg: str): print(f"{BLUE}{msg}{RESET}")
 
-# ---- Structured schema for model output --------------------------------------
 class IngredientItem(BaseModel):
     itemName: str
-    quantity: float          # float for g/ml; will coerce to int when unit=='count'
+    quantity: float          
     unit: Literal["g", "ml", "count"]
     category: Literal["Fruits", "Vegetables", "Grains", "Dairy", "Protein", "Uncategorized"]
 
@@ -32,7 +30,6 @@ def _normalize_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         unit = (it.get("unit") or "").lower().strip()
         cat  = (it.get("category") or "Uncategorized").strip()
 
-        # basic cleanup
         if not name:
             continue
         if unit not in ALLOWED_UNITS:
@@ -74,12 +71,7 @@ def _repair_with_model(broken_json: str, client: genai.Client) -> List[Dict[str,
             "response_mime_type": "application/json",
             "response_schema": list[IngredientItem],  # schema control
         },
-        # Provide the broken payload as user content to repair:
-        # The SDK lets us append more contents:
     )
-    # Since we also need to pass the broken JSON, send a second call that includes it as content:
-    # (SDK requires contents at once; alternative simple path below)
-    # Simpler: do a second call including both the instruction and JSON:
     resp = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=[
@@ -131,7 +123,6 @@ def analyze_food_image_bytes(
         )
 
         raw_items: List[Dict[str, Any]] = []
-        # Prefer parsed when available (SDK returns instantiated Pydantic objects)
         if getattr(resp, "parsed", None):
             raw_items = [ii.model_dump() for ii in resp.parsed]  # type: ignore
         else:

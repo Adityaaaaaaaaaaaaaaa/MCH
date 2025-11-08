@@ -1,4 +1,3 @@
-# app/utils/shopping/firestore_inventory.py
 from __future__ import annotations
 from typing import List, Dict, Any
 
@@ -27,7 +26,6 @@ def fetch_inventory_once(user_id: str) -> List[Dict[str, Any]]:
 
         for d in docs:
             data = d.to_dict() or {}
-            # Your schema (from screenshot): itemName, quantity, unit
             name = (data.get("itemName") or d.id or "").strip()
             if not name:
                 continue
@@ -37,7 +35,6 @@ def fetch_inventory_once(user_id: str) -> List[Dict[str, Any]]:
                 qty = 0.0
             unit = str(data.get("unit") or "count").strip().lower()
             if unit not in {"g", "ml", "count"}:
-                # keep it permissive; shopping.py can normalize further
                 unit = "count"
 
             items.append({"name": name, "quantity": qty, "unit": unit})

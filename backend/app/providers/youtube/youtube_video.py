@@ -48,7 +48,6 @@ class YouTubeVideoProvider:
 
             videos = []
             for item in data.get("items", []):
-                # Defensive parsing, in case keys are missing
                 video_id = item.get("id", {}).get("videoId")
                 snippet = item.get("snippet", {})
                 if not video_id or not snippet:

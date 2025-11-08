@@ -1,11 +1,10 @@
-# app/provider/gemini_recipe_calculation.py
 import os
 from typing import List, Tuple
 from pydantic import BaseModel, Field
 from google import genai
-from google.genai import types as gtypes  # typed configs
+from google.genai import types as gtypes 
 
-# ----- Typed I/O for Gemini -----
+# Typed I/O
 class RecipeIn(BaseModel):
     name: str
     amount: float
@@ -33,8 +32,6 @@ class DeductionOut(BaseModel):
 BLUE = "\x1B[34m"; END = "\x1B[0m"
 def blog(msg: str): print(f"{BLUE}[DEBUG][gemini] {msg}{END}")
 
-# Conversions we want Gemini to respect (informational for the model)
-# --- Replace your existing CONV_HINT with this ---
 CONV_HINT = """
 You must express all deductions in these canonical units used by our inventory:
 - g  (grams)      -> weight
@@ -63,7 +60,6 @@ If the recipe unit is missing or unparseable:
 Round all numeric results to 1 decimal place.
 """
 
-# --- Replace your existing SYSTEM_RULES with this ---
 SYSTEM_RULES = """
 ROLE & GOAL
 You are a deterministic transformation engine. We have:
@@ -146,34 +142,29 @@ def compute_deduction(
             ),
         )
 
-        # 🔵 DEBUG: log Gemini's raw JSON (as returned) and the parsed object
         raw_text = getattr(resp, "text", "")
         blog("Gemini raw JSON (as text):")
         blog(raw_text if raw_text else "<empty>")
 
-        parsed: DeductionOut = resp.parsed  # already validated
+        parsed: DeductionOut = resp.parsed  
         try:
             blog("Gemini parsed JSON (schema-conformant):")
             blog(parsed.model_dump_json(indent=2))
         except Exception:
-            # best-effort: shouldn't happen with schema, but keep log safe
             blog("Parsed object dump failed (non-fatal)")
 
         return parsed.patch, parsed.unmatched
 
     except Exception as e:
         blog(f"Schema parse failed: {e}; retrying without schema…")
-        # Fallback: try strict JSON parse of response.text
         import json
         rtext = getattr(resp, "text", "{}") if "resp" in locals() else "{}"
 
-        # 🔵 DEBUG: log the fallback raw text too
         blog("Gemini fallback raw text:")
         blog(rtext)
 
         data = json.loads(rtext)
 
-        # 🔵 DEBUG: and the parsed dict
         try:
             blog("Gemini fallback parsed dict:")
             blog(json.dumps(data, indent=2))
