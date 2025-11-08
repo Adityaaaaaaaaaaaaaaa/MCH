@@ -9,15 +9,12 @@ import '/utils/image_data_url.dart';
 import '/utils/colors.dart';
 import '/models/cravings.dart';
 
-/// Clean glass search bar (no buttons)
 class GlassSearchBar extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSubmit;
   final String? hintText;
   final bool isLoading;
 
-  /// NEW: called when the clear (×) button is tapped.
-  /// Use it to reset your screen to State B (loading).
   final VoidCallback? onClear;
 
   const GlassSearchBar({
@@ -26,7 +23,7 @@ class GlassSearchBar extends StatelessWidget {
     required this.onSubmit,
     this.hintText,
     this.isLoading = false,
-    this.onClear, // 👈 new
+    this.onClear, 
   });
 
   @override
@@ -43,7 +40,6 @@ class GlassSearchBar extends StatelessWidget {
           margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
           child: Stack(
             children: [
-              // Subtle glow
               Container(
                 width: double.infinity,
                 height: 52.h,
@@ -249,7 +245,7 @@ class _CravingsActionsState extends State<CravingsActions>
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       child: Row(
         children: [
-          // Filter Button - Clean Glass Style
+          // Filter Button
           Expanded(
             flex: 2,
             child: Container(
@@ -310,7 +306,7 @@ class _CravingsActionsState extends State<CravingsActions>
           
           SizedBox(width: 12.w),
           
-          // Generate Button - Animated AI Style
+          // Generate Button
           Expanded(
             flex: 3,
             child: AnimatedBuilder(
@@ -341,11 +337,11 @@ class _CravingsActionsState extends State<CravingsActions>
                               center: Alignment.center,
                               startAngle: _rotationAnimation.value * 2 * 3.14159,
                               colors: const [
-                                Color(0xFF4285F4), // Google Blue
-                                Color(0xFFDB4437), // Google Red
-                                Color(0xFFF4B400), // Google Yellow
-                                Color(0xFF0F9D58), // Google Green
-                                Color(0xFF4285F4), // Back to Blue
+                                Color(0xFF4285F4),
+                                Color(0xFFDB4437), 
+                                Color(0xFFF4B400), 
+                                Color(0xFF0F9D58),
+                                Color(0xFF4285F4), 
                               ],
                               stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
                             ),
@@ -721,7 +717,6 @@ class CautionBannerGlass extends StatelessWidget {
       margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
       child: Stack(
         children: [
-          // Optimized glow effect
           Container(
             width: double.infinity,
             height: 56.h,
@@ -806,7 +801,7 @@ class CautionBannerGlass extends StatelessWidget {
                   ),
                 ),
                 
-                // Interactive info button with better feedback
+                // Interactive info button 
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
@@ -855,7 +850,6 @@ class CautionBannerGlass extends StatelessWidget {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////
 class CravingsFiltersSheet extends StatelessWidget {
   final int spiceLevel;         // 0..4 (ignored if randomEnabled)
   final bool randomEnabled;
@@ -979,7 +973,7 @@ class CravingsFiltersSheet extends StatelessWidget {
                         ),
                         SizedBox(height: 12.h),
 
-                        // Spice Level Selector - keeping original logic
+                        // Spice Level Selector 
                         Opacity(
                           opacity: randomEnabled ? 0.35 : 1.0,
                           child: IgnorePointer(
@@ -1032,7 +1026,7 @@ class CravingsFiltersSheet extends StatelessWidget {
 
                         SizedBox(height: 12.h),
 
-                        // Random Toggle - keeping original logic
+                        // Random Toggle
                         Align(
                           alignment: Alignment.center,
                           child: _SimpleRandomPill(
@@ -1166,7 +1160,7 @@ class CravingsFiltersSheet extends StatelessWidget {
   }
 }
 
-/// Modern chilli meter keeping exact same logic as ChilliMeter5
+/// Modern chilli meter 
 class _ModernChilliMeter extends StatelessWidget {
   final int value; // 0..4
   final ValueChanged<int> onChanged;
@@ -1230,7 +1224,7 @@ class _ModernChilliMeter extends StatelessWidget {
   }
 }
 
-/// Simple random pill keeping exact same logic as _RandomPill
+// random pill 
 class _SimpleRandomPill extends StatelessWidget {
   final bool enabled;
   final ValueChanged<bool> onChanged;
@@ -1284,7 +1278,7 @@ class _SimpleRandomPill extends StatelessWidget {
   }
 }
 
-/// Simple time chip keeping same selection logic
+// time chip
 class _SimpleTimeChip extends StatelessWidget {
   final String label;
   final bool selected;
@@ -1324,15 +1318,12 @@ class _SimpleTimeChip extends StatelessWidget {
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// /widgets/cravings/cravings_widget.dart
 class CravingsResultsGrid extends StatelessWidget {
   const CravingsResultsGrid({
     super.key,
     required this.items,
     this.onTap,
 
-    // ---- tunables ----
     this.outerHorizontalPadding = 24.0,
     this.mainAxisSpacing,
     this.crossAxisSpacing,
@@ -1365,7 +1356,6 @@ class CravingsResultsGrid extends StatelessWidget {
     final mainGap = (mainAxisSpacing ?? 14.h);
     final crossGap = (crossAxisSpacing ?? 14.w);
 
-    // phone: 1 column -> use ListView to avoid any grid tile height math (no gaps)
     if (crossAxisCount == 1) {
       return ListView.separated(
         cacheExtent: MediaQuery.of(context).size.height,
@@ -1383,19 +1373,16 @@ class CravingsResultsGrid extends StatelessWidget {
       );
     }
 
-    // tablet: 2+ columns -> compute exact tile height (mainAxisExtent)
     final availableW = (screenW - (outerHorizontalPadding * 2));
     final totalCrossSpacing = (crossAxisCount > 1) ? crossGap * (crossAxisCount - 1) : 0.0;
     final tileW = (availableW - totalCrossSpacing) / crossAxisCount;
 
-    // your card padding is EdgeInsets.all(12.w)
     final cardHPad = 12.w;
     final innerW = (tileW - cardHPad * 2).clamp(0.0, double.infinity);
 
-    // 16:9 image inside the card
     final imageH = innerW * 9.0 / 16.0;
 
-    // title (max 2 lines) using current theme (rough but close)
+    // title 
     final titleStyle = theme.textTheme.titleMedium;
     final titleFont = (titleStyle?.fontSize ?? 16.0);
     final titleLineH = titleFont * (titleStyle?.height ?? 1.15);
@@ -1405,8 +1392,8 @@ class CravingsResultsGrid extends StatelessWidget {
     final pillTextSize = (theme.textTheme.labelSmall?.fontSize ?? 12.0);
     final pillH = (6.h * 2) + pillTextSize + 2;
 
-    // vertical structure: padding/image/spacers/title/spacer/pill/padding
-    final topPad = 12.h;      // use .h for verticals
+    // vertical 
+    final topPad = 12.h;      
     final betweenImageTitle = 10.h;
     final betweenTitlePill = 6.h;
     final bottomPad = 12.h;
@@ -1419,10 +1406,7 @@ class CravingsResultsGrid extends StatelessWidget {
         pillH +
         bottomPad;
 
-    // Debug
-    // print('[Grid] tileW=$tileW innerW=$innerW imageH=$imageH cardH=$cardH');
 
-    // grid (tablet)
     return GridView.builder(
       cacheExtent: MediaQuery.of(context).size.height,
       shrinkWrap: true,
@@ -1432,7 +1416,7 @@ class CravingsResultsGrid extends StatelessWidget {
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: crossGap,
         mainAxisSpacing: mainGap,
-        mainAxisExtent: cardH, // <- matches card height: no blank under each tile
+        mainAxisExtent: cardH,
       ),
       itemBuilder: (_, i) => _CravingsCard(
         item: items[i],
@@ -1547,7 +1531,7 @@ class _CravingsCard extends StatelessWidget {
       padding: EdgeInsets.all(12.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min, // intrinsic height on phone/ListView
+        mainAxisSize: MainAxisSize.min, 
         children: [
           AspectRatio(
             aspectRatio: 16 / 9, 
@@ -1578,8 +1562,6 @@ class _CravingsCard extends StatelessWidget {
       tintColor: isDark ? Colors.deepPurpleAccent : Colors.deepOrange,
     );
 
-    // No Align wrapper — phone ListView handles intrinsic height;
-    // tablet Grid uses exact mainAxisExtent (so no blank below).
     return InkWell(
       onTap: onTap == null ? null : () => onTap!(item),
       borderRadius: BorderRadius.circular(20.r),

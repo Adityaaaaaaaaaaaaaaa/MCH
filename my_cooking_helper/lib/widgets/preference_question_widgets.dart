@@ -196,8 +196,6 @@ class AnimatedMultiSelectSmall extends StatelessWidget {
                               // Selecting "None" clears everything else and keeps only "None"
                               onChanged(<String>['None']);
                             } else {
-                              // Selecting any non-"None" behaves like normal multi-select,
-                              // but make sure "None" is removed if it was selected.
                               final newValues = List<String>.from(values);
                               newValues.remove('None');
 

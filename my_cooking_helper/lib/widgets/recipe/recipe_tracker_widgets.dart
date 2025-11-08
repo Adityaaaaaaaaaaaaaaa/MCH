@@ -10,7 +10,6 @@ import '/services/recipe_save_service.dart';
 import '/services/cravings_recipe_service.dart';
 import '/models/recipe_history.dart';
 
-// --- Grouping logic, unchanged ---
 class CookedRecipeGroup {
   final String label;
   final List<RecipeHistoryEntry> recipes;
@@ -50,7 +49,7 @@ class CookedRecipeCard extends StatefulWidget {
   final RecipeHistoryEntry recipe;
   final String? imageUrl;
   final void Function()? onTap;
-  final bool isAi; // unchanged
+  final bool isAi; 
 
   const CookedRecipeCard({
     required this.recipe,
@@ -97,7 +96,7 @@ class _CookedRecipeCardState extends State<CookedRecipeCard>
 
     if (widget.isAi) {
       _aiGlowController = AnimationController(
-        duration: const Duration(seconds: 6), // smooth & light
+        duration: const Duration(seconds: 6), 
         vsync: this,
       )..repeat();
     }
@@ -278,11 +277,10 @@ class _CookedRecipeCardState extends State<CookedRecipeCard>
 
           SizedBox(width: 14.w),
 
-          // === Texts & Meta ===
+          // Texts & Meta
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                // If vertical space is tight, use at most 2 lines; otherwise 3
                 final titleMaxLines = constraints.maxHeight < 115 ? 2 : 3;
 
                 return Column(
@@ -351,7 +349,7 @@ class _CookedRecipeCardState extends State<CookedRecipeCard>
                             ],
                           ),
                         ),
-                        // (AI chip is on the image only — no extra chip here)
+                        // AI chip is on the image
                       ],
                     ),
                   ],
@@ -360,7 +358,7 @@ class _CookedRecipeCardState extends State<CookedRecipeCard>
             ),
           ),
 
-          // === Favourite button (unchanged position) ===
+          // Favourite button
           Padding(
             padding: EdgeInsets.only(left: 8.w, right: 8.w),
             child: AnimatedBuilder(
@@ -408,9 +406,7 @@ class _CookedRecipeCardState extends State<CookedRecipeCard>
     );
   }
 
-  // === Image builders ===
-
-  // AI image: smooth rotating border around the image + static AI chip at top-left
+  // AI image: smooth
   Widget _buildAnimatedAiImage(BuildContext context, bool isDark) {
     // Inner image / AI fallback (static — no rotation)
     final Widget image = ClipRRect(
@@ -440,7 +436,7 @@ class _CookedRecipeCardState extends State<CookedRecipeCard>
           // Static image sits underneath
           image,
 
-          // Animated glow border on top (very light)
+          // Animated glow border on top
           IgnorePointer(
             child: AnimatedBuilder(
               animation: animation,
@@ -448,11 +444,11 @@ class _CookedRecipeCardState extends State<CookedRecipeCard>
                 return CustomPaint(
                   painter: _GlowBorderPainter(
                     progress: animation.value,        // 0..1, loops
-                    strokeWidth: 2.0,                 // thin stroke
-                    radius: 18.r,                     // match outer rounding
+                    strokeWidth: 2.0,     
+                    radius: 18.r,           
                     colors: const [
-                      Color(0xFF60A5FA),             // blue-400
-                      Color(0xFFA78BFA),             // violet-400
+                      Color(0xFF60A5FA),   
+                      Color(0xFFA78BFA),    
                       Color(0xFF60A5FA),
                     ],
                   ),
@@ -501,7 +497,7 @@ class _CookedRecipeCardState extends State<CookedRecipeCard>
     );
   }
 
-  // Standard (non-AI) thumbnail with graceful fallback
+  // Standard (non-AI)
   Widget _buildStandardThumb(BuildContext context, bool isDark) {
     return Container(
       decoration: BoxDecoration(
@@ -609,7 +605,6 @@ class _GlowBorderPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
 
-    // Rotate the sweep gradient around the center; image stays static beneath.
     final sweep = SweepGradient(
       colors: colors.map((c) => c.withOpacity(0.95)).toList(),
       transform: GradientRotation(progress * 6.28318530718), // 2π

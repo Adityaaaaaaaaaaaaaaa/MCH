@@ -1,4 +1,3 @@
-// settings.dart:
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,26 +33,13 @@ class _SettingsScreenState extends ConsumerState<Settings>
   String? gender, cookingTime, spiceLevel;
   List<String> allergies = [], diets = [], cuisines = [], barriers = [];
 
-  // --------------------------
-  // Background performance helpers
-  // --------------------------
   double imgOpacity = 0.80;
 
   @override
   void initState() {
     super.initState();
     _loadPrefs();
-
-    // Precache decorative images to avoid first-scroll jank
-   // WidgetsBinding.instance.addPostFrameCallback((_) => _precacheBackgroundImages(context));
   }
-
-  // Future<void> _precacheBackgroundImages(BuildContext context) async {
-  //   // This does not change UI; it just warms up the image cache
-  //   await precacheImage(const AssetImage('assets/images/settings/settings1.png'), context);
-  //   await precacheImage(const AssetImage('assets/images/settings/settings2.png'), context);
-  //   await precacheImage(const AssetImage('assets/images/settings/settings3.png'), context);
-  // }
 
   Future<void> _loadPrefs() async {
     if (user == null) return;
@@ -204,9 +190,6 @@ class _SettingsScreenState extends ConsumerState<Settings>
       if (!mounted) return;
       SnackbarUtils.alert(
         context,
-        //"Error deleting account!",
-        //typeInfo: TypeInfo.error,
-        //duration: 2,
         "Account Deleted !",
         typeInfo: TypeInfo.success,
         position: MessagePosition.top,
@@ -225,8 +208,6 @@ class _SettingsScreenState extends ConsumerState<Settings>
       if (GoogleSignIn.instance.supportsAuthenticate()) {
         account = await GoogleSignIn.instance.authenticate();
       } else {
-        // On platforms that do not support .authenticate(), 
-        // you need to provide a platform-specific sign-in flow (e.g., use web button)
         throw Exception("Google Sign-In not supported on this platform.");
       }
 

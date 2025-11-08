@@ -88,7 +88,6 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
       try {
         final cameras = await availableCameras();
         if (cameras.isEmpty) {
-          print('\x1B[34m[DEBUG] No cameras available\x1B[0m');
           _hasPermission = false;
           setState(() => _isLoading = false);
           return;
@@ -108,14 +107,11 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
         await _cameraController!.initialize();
         if (!mounted) return;
         setState(() => _isCameraReady = true);
-        print('\x1B[34m[DEBUG] Camera initialized and ready\x1B[0m');
       } catch (e) {
-        print('\x1B[34m[DEBUG] Failed to initialize camera: $e\x1B[0m');
         _hasPermission = false;
       }
     } else {
       _hasPermission = false;
-      print('\x1B[34m[DEBUG] Camera permission denied\x1B[0m');
     }
     setState(() => _isLoading = false);
   }
@@ -134,7 +130,6 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
         _isAutoFocus ? FocusMode.auto : FocusMode.locked,
       );
       setState(() {});
-      print('\x1B[34m[DEBUG] Focus mode toggled: ${_isAutoFocus ? "Auto" : "Locked"}\x1B[0m');
     } catch (e) {
       print('\x1B[34m[DEBUG] Toggling focus mode: $e\x1B[0m');
     }
@@ -148,7 +143,6 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
     );
     try {
       await _cameraController!.setFocusPoint(offset);
-      print('\x1B[34m[DEBUG] Focus set at: $offset\x1B[0m');
     } catch (e) {
       print('\x1B[34m[DEBUG] Failed to set focus point: $e\x1B[0m');
     }
@@ -160,7 +154,6 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
       _imageSizeForDrawing = null;
       _geminiResult = null;
     });
-    print('\x1B[34m[DEBUG] Resetting to live camera preview\x1B[0m');
   }
 
   Future<void> _resetStateForNewImage() async {
@@ -173,7 +166,6 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
 
   Future<void> _takePicture() async {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      print('\x1B[34m[DEBUG] Camera not ready to take picture\x1B[0m');
       return;
     }
     await _resetStateForNewImage();
@@ -182,14 +174,12 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
     try {
       final XFile image = await _cameraController!.takePicture();
       _pickedImage = File(image.path);
-      print('\x1B[34m[DEBUG] Photo captured: ${image.path}\x1B[0m');
       // After taking picture
       await _cameraController?.dispose();
-      // Then, when ready to scan again, re-initialize
+      //when ready to scan again, re-initialize
       await _initCamera();
       await _analyzeWithGemini(_pickedImage!);
     } catch (e) {
-      print('\x1B[34m[DEBUG] Error taking photo: $e\x1B[0m');
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
@@ -203,16 +193,13 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
       if (pickedFile == null) {
-        print('\x1B[34m[DEBUG] No gallery image picked\x1B[0m');
         if (!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
       _pickedImage = File(pickedFile.path);
-      print('\x1B[34m[DEBUG] Image picked from gallery: ${pickedFile.path}\x1B[0m');
       await _analyzeWithGemini(_pickedImage!);
     } catch (e) {
-      print('\x1B[34m[DEBUG] Error picking gallery image: $e\x1B[0m');
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
@@ -238,7 +225,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
       setState(() {
         _isLoading = false;
         if (result.error != null) {
-          _geminiError = "Error: ${result.error}"; // Could also display error code if desired
+          _geminiError = "Error: ${result.error}";
           _geminiResult = null;
         } else if (result.items.isEmpty) {
           _geminiError = "No ingredients detected.";
@@ -248,10 +235,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
           _geminiError = null;
         }
       });
-
-      print('\x1B[34m[DEBUG] Gemini receipt result: $result\x1B[0m');
     } catch (e) {
-      print('\x1B[34m[DEBUG] Failed to extract items from response: $e\x1B[0m');
       setState(() => _isLoading = false);
     }
     lottieController.hide();
@@ -447,7 +431,7 @@ class _ScanReceiptState extends ConsumerState<ScanReceipt> with TickerProviderSt
                           child: Text(_geminiError!, style: theme.textTheme.labelLarge?.copyWith(color: Colors.red)),
                         ),
                       SizedBox(height: 22.h),
-                      // --- ACTION BUTTONS LOGIC ---
+                      // ACTION BUTTONS LOGIC
                       if (_isLoading)
                         // While loading, only show "Try Manual Input"
                         FilledButton.icon(

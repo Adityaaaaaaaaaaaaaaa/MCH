@@ -115,7 +115,6 @@ class CookScreen extends ConsumerWidget {
                     itemBuilder: (context, index) {
                       final feature = features[index];
 
-                      // ✅ Only gate the "Cook Something New" action when offline
                       final bool enabled = feature.route == '/searchRecipe'
                           ? isOnline
                           : true;
@@ -168,7 +167,6 @@ class CookFeatureCard extends StatefulWidget {
   final VoidCallback onTap;
   final int index;
 
-  // ✅ NEW: enable/disable flag with default true
   final bool enabled;
 
   const CookFeatureCard({
@@ -226,16 +224,14 @@ class _CookFeatureCardState extends State<CookFeatureCard>
   }
 
   void _onTapDown(TapDownDetails details) {
-    if (!widget.enabled) return; // no press effect when disabled
+    if (!widget.enabled) return;
     setState(() => _isPressed = true);
     _controller.forward();
   }
 
   void _onTapUp(TapUpDetails details) {
     if (!widget.enabled) {
-      // press effect not applied, but we still reverse in case
       _controller.reverse();
-      // Parent onTap already handles snackbar; nothing to do here
       return;
     }
     setState(() => _isPressed = false);
@@ -252,7 +248,6 @@ class _CookFeatureCardState extends State<CookFeatureCard>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // ✅ Combine animation opacity with disabled dim (0.6)
     final disabledDim = widget.enabled ? 1.0 : 0.7;
 
     return AnimatedBuilder(
@@ -262,7 +257,7 @@ class _CookFeatureCardState extends State<CookFeatureCard>
           scale: _scaleAnimation.value,
           child: Opacity(
             opacity: _opacityAnimation.value * disabledDim,
-            child: AbsorbPointer( // ✅ blocks gestures when disabled
+            child: AbsorbPointer( 
               absorbing: !widget.enabled,
               child: Container(
                 height: 90.h,
@@ -313,7 +308,6 @@ class _CookFeatureCardState extends State<CookFeatureCard>
                         child: Row(
                           children: [
                             SizedBox(width: 20.w),
-                            // Icon container with enhanced glassmorphism
                             Container(
                               width: 56.w,
                               height: 56.h,
@@ -346,7 +340,7 @@ class _CookFeatureCardState extends State<CookFeatureCard>
                               ),
                             ),
                             SizedBox(width: 20.w),
-                            // Title and arrow (arrow dims when disabled)
+                            // Title and arrow
                             Expanded(
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -410,7 +404,6 @@ class _CookFeatureCardState extends State<CookFeatureCard>
   }
 }
 
-// Helper class for feature card metadata
 class _CookFeatureCardData {
   final String title;
   final IconData icon;

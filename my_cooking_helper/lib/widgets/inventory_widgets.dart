@@ -6,7 +6,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '/utils/colors.dart';
 
-// ---------- helpers ----------
 IconData _categoryIcon(String c) {
   final s = (c).toLowerCase();
   if (s.contains('fruit')) return Icons.apple_rounded;
@@ -79,7 +78,7 @@ Widget _categoryChip(BuildContext context, String category) {
   );
 }
 
-// ---------- tile ----------
+// tile 
 class InventoryTile extends StatelessWidget {
   final String imageUrl;
   final String itemName;
@@ -132,7 +131,6 @@ class InventoryTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Make image flexible so text area never overflows
                   Expanded(
                     child: ClipRRect(
                       borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
@@ -158,7 +156,6 @@ class InventoryTile extends StatelessWidget {
                     ),
                   ),
 
-                  // Compact content block
                   Padding(
                     padding: EdgeInsets.fromLTRB(8.w, 7.h, 8.w, 8.h),
                     child: Column(
@@ -195,7 +192,7 @@ class InventoryTile extends StatelessWidget {
                         ),
                         SizedBox(height: 6.h),
 
-                        // Category chip – scale down if it’s too wide
+                        // Category chip 
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.center,

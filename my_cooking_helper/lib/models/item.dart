@@ -3,9 +3,9 @@ class ScannedItem {
   final double quantity;
   final String? unit;
   final String source; // "food_scan" or "receipt_scan" or "manual_entry"
-  final String? category; // Optional
-  final String? nutritionId; // Optional, for future
-  final String? imageUrl; // Optional, for future, maybe we will not have it or use it
+  final String? category; 
+  final String? nutritionId; 
+  final String? imageUrl;
   bool isReviewed;
   bool isEdited;
 

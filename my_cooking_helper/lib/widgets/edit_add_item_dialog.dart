@@ -29,7 +29,7 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
   // Controllers/Focus
   late final TextEditingController nameController;
   late final TextEditingController qtyController;
-  late final TextEditingController unitController; // kept for compatibility
+  late final TextEditingController unitController; 
   late final FocusNode qtyFocusNode;
 
   // Model state
@@ -56,12 +56,10 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
 
     _selectedCategory = _normalizeCategory(widget.item?.category) ?? 'Uncategorized';
 
-    // Clamp initial & seed qtyController text once
     _clampQuantity();
     qtyController = TextEditingController(text: _qtyNumberString());
     qtyFocusNode = FocusNode();
 
-    // Keep preview reactive without rebuilding controller
     qtyController.addListener(() {
       if (_programmaticQtyUpdate) return;
       final txt = qtyController.text.trim();
@@ -89,7 +87,6 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
     super.dispose();
   }
 
-  // ---------------- Helpers ----------------
   String? _normalizeCategory(String? category) {
     if (category == null) return null;
     final match = _categories.firstWhere(
@@ -102,9 +99,9 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
   void _setUnit(String u) {
     setState(() {
       _unit = u;
-      unitController.text = u; // keep compatibility
+      unitController.text = u; 
       _clampQuantity();
-      _syncQtyTextFromQuantity(); // update field without losing cursor
+      _syncQtyTextFromQuantity(); 
     });
   }
 
@@ -177,12 +174,10 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
     return '$quantity $_unit';
   }
 
-  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Adaptive palette; all text uses textColour(context)
     final border   = isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.10);
     final fill     = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04);
     final accent   = isDark ? const Color(0xFF5AB2FF) : const Color(0xFF0E7AE6);
@@ -192,7 +187,6 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
         ? "Quantity (count)"
         : _unit == 'g' ? "Quantity (g)" : "Quantity (ml)";
 
-    // Formatters per unit
     final List<TextInputFormatter> qtyFormatters =
         (_unit == 'count')
             ? [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)]
@@ -205,12 +199,11 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 28.h),
       child: MediaQuery.removeViewInsets(
-        removeBottom: true, // ← keep dialog size; ignore keyboard insets here
+        removeBottom: true, 
         context: context,
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.only(
-            // ← give the content room to scroll above the keyboard
             bottom: MediaQuery.of(context).viewInsets.bottom + 24.h,
           ),
           child: ConstrainedBox(
@@ -380,7 +373,7 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
 
                   SizedBox(height: 25.h),
 
-                  // Category dropdown (revamped)
+                  // Category dropdown
                   DropdownButtonFormField<String>(
                     value: _selectedCategory,
                     onChanged: (val) => setState(() => _selectedCategory = val),
@@ -451,7 +444,6 @@ class _EditOrAddItemDialogState extends State<EditOrAddItemDialog> {
                         ),
                       ),
                       SizedBox(width: 10.w),
-                      // Make the action button reactive to name typing
                       ValueListenableBuilder<TextEditingValue>(
                         valueListenable: nameController,
                         builder: (_, value, __) {

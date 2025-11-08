@@ -1,4 +1,3 @@
-// lib/utils/connectivity_provider.dart
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -25,7 +24,6 @@ class ConnectivityService {
     _lastResults = results;
     _isOnline = results.any((r) => r != ConnectivityResult.none);
     _controller.add(_isOnline);
-    blueDebugPrint('init -> $_lastResults | isOnline=$_isOnline');
 
     _subscription = _connectivity.onConnectivityChanged.listen((results) {
       _lastResults = results;
@@ -33,7 +31,6 @@ class ConnectivityService {
       if (online != _isOnline) {
         _isOnline = online;
         _controller.add(_isOnline);
-        blueDebugPrint('change -> $_lastResults | isOnline=$_isOnline');
       }
     });
   }

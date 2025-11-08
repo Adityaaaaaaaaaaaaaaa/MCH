@@ -71,7 +71,7 @@ class RecipeDetailModal extends StatelessWidget {
                   Center(child: RecipeTitle(title: recipe.title)),
                   SizedBox(height: 15.h),
 
-                  // DISH TYPE (one line)
+                  // DISH TYPE 
                   if (recipe.dishTypes.isNotEmpty)
                     Center(
                       child: InfoChip(
@@ -85,7 +85,7 @@ class RecipeDetailModal extends StatelessWidget {
                     ),
                   SizedBox(height: 7.h),
 
-                  // SERVINGS (separate line)
+                  // SERVINGS
                   if (recipe.servings > 0)
                     Center(
                       child: InfoChip(
@@ -96,7 +96,7 @@ class RecipeDetailModal extends StatelessWidget {
                     ),
                   SizedBox(height: 10.h),
 
-                  // TIMES: prep/cook/total (horizontal row, centered, with separators)
+                  // TIMES: prep/cook/total
                   TimeRow(
                     recipe: recipe, 
                     isDark: isDark, 
@@ -116,7 +116,7 @@ class RecipeDetailModal extends StatelessWidget {
                     SizedBox(height: 25.h),
                   ],
 
-                  // INSTRUCTIONS SECTION (as in your style)
+                  // INSTRUCTIONS SECTION 
                   if (recipe.instructions.isNotEmpty) ...[
                     SectionHeader(
                       title: 'Instructions', 

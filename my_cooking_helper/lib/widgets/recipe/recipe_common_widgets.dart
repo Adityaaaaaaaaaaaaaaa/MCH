@@ -472,7 +472,6 @@ class InstructionsList extends StatelessWidget {
           equipment: equipment,
           length: length,
           isDark: isDark,
-          // preserve your existing entrance animation timings
           outerAnimMs: 200 + idx * 70,
         );
       }).toList(),
@@ -480,12 +479,6 @@ class InstructionsList extends StatelessWidget {
   }
 }
 
-///
-/// Private stateful tile that adds:
-///  - tap to toggle completion
-///  - strike-through on text when done
-///  - animated index badge: halo + ring fill + number→check
-///
 class _InstructionTileAnimated extends StatefulWidget {
   const _InstructionTileAnimated({
     required this.index,
@@ -546,7 +539,6 @@ class _InstructionTileAnimatedState extends State<_InstructionTileAnimated>
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
 
-    // keep your card colors/border as close as possible
     final cardBg = isDark
         ? Colors.deepPurple[800]?.withOpacity(0.15)
         : Colors.deepPurple.withOpacity(0.07);
@@ -557,7 +549,6 @@ class _InstructionTileAnimatedState extends State<_InstructionTileAnimated>
       width: 1.2,
     );
 
-    // adaptive text colors similar to your previous logic
     final textColor = theme.textTheme.bodyLarge?.color?.withOpacity(done ? 0.75 : 0.95);
 
     // progress ring track
@@ -582,11 +573,10 @@ class _InstructionTileAnimatedState extends State<_InstructionTileAnimated>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Row: animated badge + body
+              // Row
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // —— Animated index badge (halo + ring + number→check) ——
                   SizedBox(
                     width: 36,
                     height: 36,
@@ -632,7 +622,7 @@ class _InstructionTileAnimatedState extends State<_InstructionTileAnimated>
                           ),
                         ),
 
-                        // Core circle (number → check)
+                        // Core circle 
                         Container(
                           margin: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
@@ -671,7 +661,6 @@ class _InstructionTileAnimatedState extends State<_InstructionTileAnimated>
 
                   const SizedBox(width: 14),
 
-                  // —— Body text with strike-through when done ——
                   Expanded(
                     child: AnimatedDefaultTextStyle(
                       duration: const Duration(milliseconds: 220),
@@ -694,7 +683,7 @@ class _InstructionTileAnimatedState extends State<_InstructionTileAnimated>
                 ],
               ),
 
-              // —— Chips and time (unchanged) ——
+              // Chips and time 
               if (widget.ingredients.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Center(
@@ -764,7 +753,7 @@ class _InstructionTileAnimatedState extends State<_InstructionTileAnimated>
                   child: Padding(
                     padding: const EdgeInsets.only(top: 15),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min, // keeps icon+text centered together
+                      mainAxisSize: MainAxisSize.min, 
                       children: [
                         Icon(
                           Icons.timer_rounded,
@@ -792,7 +781,7 @@ class _InstructionTileAnimatedState extends State<_InstructionTileAnimated>
   }
 }
 
-/// Equipment Chips Widget
+// Equipment Chips Widget
 class EquipmentChips extends StatelessWidget {
   final List<String> equipment;
   final bool isDark;
@@ -824,7 +813,7 @@ class EquipmentChips extends StatelessWidget {
   }
 }
 
-// Nutrition Section (reuse your previous NutritionSection)
+// Nutrition Section 
 class NutritionSection extends StatefulWidget {
   final Map<String, dynamic> nutrition;
 
@@ -973,7 +962,7 @@ class _NutritionSectionState extends State<NutritionSection> {
 
 
 
-/// -- Website Link Card Widget -- ///
+// Website Link Card Widget
 class WebsiteLinkCard extends StatelessWidget {
   final String url;
   final bool isDark;
@@ -995,12 +984,6 @@ class WebsiteLinkCard extends StatelessWidget {
       builder: (context, snap) {
         final result = snap.data;
         final resolvedUrl = result?.resolvedUrl ?? url;
-
-        // Blue debug prints (your convention)
-        // 34m => blue; 0m => reset
-        print('\x1B[34m[WEBCHK] url="$url" -> resolved="$resolvedUrl" '
-              'wasHttp=${result?.wasHttp} httpsOk=${result?.httpsAvailable} '
-              'mobileFriendly=${result?.mobileFriendly}\x1B[0m');
 
         return GestureDetector(
           onTap: () => onTap(resolvedUrl),
@@ -1049,7 +1032,7 @@ class WebsiteLinkCard extends StatelessWidget {
 
                 SizedBox(height: 10.h),
 
-                // Status/warning row (sexy + minimal)
+                // Status/warning row
                 if (snap.connectionState == ConnectionState.waiting) ...[
                   _StatusShimmer(isDark: isDark),
                 ] else ...[
@@ -1163,9 +1146,7 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999.r),
         border: Border.all(color: fg.withOpacity(0.25)),
       ),
-      // Cap max width defensively to avoid rare overflows on very long labels
       constraints: BoxConstraints(
-        // Use the available screen width; Wrap will still break lines as needed
         maxWidth: MediaQuery.of(context).size.width - 48.w,
       ),
       child: Row(
@@ -1199,7 +1180,6 @@ class _StatusShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // very lightweight placeholder without extra deps
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(2, (i) => Container(

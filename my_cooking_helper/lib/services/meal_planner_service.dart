@@ -12,22 +12,6 @@ class MealPlannerService {
   MealPlannerService({FirebaseFirestore? firestore})
       : firestore = firestore ?? FirebaseFirestore.instance;
 
-  // ------------------------- Utilities -------------------------
-
-  void blueDebugPrint(Object msg) {
-    dynamic enc(dynamic v) {
-      if (v is Set) return v.map(enc).toList();
-      if (v is List) return v.map(enc).toList();
-      if (v is Map) return v.map((k, w) => MapEntry(k, enc(w)));
-      return v;
-    }
-    final e = enc(msg);
-    final s = (e is String) ? e : const JsonEncoder.withIndent('  ').convert(e);
-    for (final line in s.split('\n')) {
-      print('\x1B[34m[DEBUG] $line\x1B[0m');
-    }
-  }
-
   /// Compute the ISO-Monday planId the backend uses (YYYY-MM-DD).
   String currentWeekPlanId([DateTime? now]) {
     final dt = now?.toUtc() ?? DateTime.now().toUtc();
@@ -45,7 +29,7 @@ class MealPlannerService {
     return '${fmt.format(mon)} – ${fmt.format(sun)}';
   }
 
-  // -------------------- User prefs (diet/allergies) --------------------
+  //  User prefs (diet/allergies) 
 
   Future<Map<String, dynamic>> fetchUserMealPrefs(String userId) async {
     final doc = await firestore.collection('users').doc(userId).get();
@@ -57,7 +41,6 @@ class MealPlannerService {
     };
   }
 
-  // ----------------------- Backend calls -----------------------
 
   /// POST /mealPlanner/weekPlanner (creates & saves plan in Firestore)
   Future<Map<String, dynamic>> generateWeeklyPlan({
@@ -86,8 +69,6 @@ class MealPlannerService {
     };
 
     final url = Uri.parse(spoonacularMealplanner);
-    blueDebugPrint('Generating Weekly Meal Plan (POST $url)');
-    blueDebugPrint('Payload -> $payload');
 
     final response = await http.post(
       url,
@@ -95,19 +76,13 @@ class MealPlannerService {
       body: jsonEncode(payload),
     );
 
-    blueDebugPrint('Backend status: ${response.statusCode}');
-    final preview = response.body.length > 400
-        ? '${response.body.substring(0, 400)}...[trimmed]'
-        : response.body;
-    blueDebugPrint('Backend response preview: $preview');
-
     if (response.statusCode != 200) {
       throw Exception('Backend error: ${response.body}');
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  // ----------------------- Firestore streams -----------------------
+  //  Firestore streams 
 
   /// Stream the 7 day docs for a given user + planId (defaults to current week).
   Stream<MealPlanWeek> streamWeek({
@@ -115,7 +90,6 @@ class MealPlannerService {
     String? planId,
   }) {
     final pid = (planId?.trim().isNotEmpty ?? false) ? planId!.trim() : currentWeekPlanId();
-    blueDebugPrint('[MealPlannerService] streamWeek -> uid=$userId, planId=$pid');
 
     final col = firestore
         .collection('users').doc(userId)
@@ -128,9 +102,6 @@ class MealPlannerService {
         return MealPlanDay.fromFirestore(data);
       }).toList();
 
-      if (days.length != 7) {
-        blueDebugPrint('[MealPlannerService] days fetched: ${days.length} (expected 7)');
-      }
       return MealPlanWeek(planId: pid, days: days);
     });
   }
@@ -159,7 +130,7 @@ class MealPlannerService {
     });
   }
 
-  // -------------------------- Mutations --------------------------
+  //  Mutations 
 
   /// Delete the whole plan (plan doc + subcollection/7 day docs).
   Future<void> deletePlan({required String userId, required String planId}) async {
@@ -185,13 +156,13 @@ class MealPlannerService {
   /// Temporary stub for swapping a day – replace with backend call later.
   Future<void> swapDay({
     required String userId,
-    required String planId, // you can still pass currentWeekPlanId() if needed
+    required String planId, 
     required int dayIndex,  // 1..7
     String? diet,
     String? excludeCsv,
     int? targetCalories,
   }) async {
-    final url = Uri.parse(spoonacularChangeDay); // <- adjust base
+    final url = Uri.parse(spoonacularChangeDay);
     final payload = <String, dynamic>{
       'userId': userId,
       'planId': planId,
@@ -208,13 +179,10 @@ class MealPlannerService {
     if (res.statusCode != 200) {
       throw Exception('swapDay failed: ${res.body}');
     }
-    // Firestore stream will refresh automatically.
   }
 
-  // ---------------------- Fetch single recipe ----------------------
+  //  Fetch single recipe 
 
-  /// Fetch a **single** meal’s full details from Firestore day doc.
-  /// [mealKey] must be 'breakfast' | 'lunch' | 'dinner'
   Future<RecipeDetail?> fetchRecipeForDayMeal({
     required String userId,
     required String planId,
@@ -244,7 +212,6 @@ class MealPlannerService {
       final map = Map<String, dynamic>.from(mealJson as Map);
       return RecipeDetail.fromJson(map);
     } catch (e) {
-      blueDebugPrint('Failed to parse RecipeDetail for $mealKey on $docId: $e');
       return null;
     }
   }
@@ -279,7 +246,6 @@ class MealPlannerService {
     }
   }
 
-  // in meal_planner_service.dart
   Future<void> pingBackend({required String userId}) async {
     final url = Uri.parse(spoonacularPing);
     final body = jsonEncode(<String, dynamic>{
@@ -291,10 +257,10 @@ class MealPlannerService {
       body: body,
     );
     if (resp.statusCode != 200) {
-      blueDebugPrint('Ping failed: ${resp.statusCode} ${resp.body}');
+      print('Ping failed: ${resp.statusCode} ${resp.body}');
       // Not throwing: we want it to be silent.
     } else {
-      blueDebugPrint('Ping ok: ${resp.body}');
+      print('Ping ok: ${resp.body}');
     }
   }
 }

@@ -106,14 +106,11 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
         await _cameraController!.initialize();
         if (!mounted) return;
         setState(() => _isCameraReady = true);
-        print('\x1B[34m[DEBUG] Camera initialized and ready\x1B[0m');
       } catch (e) {
-        print('\x1B[34m[DEBUG] Failed to initialize camera: $e\x1B[0m');
         _hasPermission = false;
       }
     } else {
       _hasPermission = false;
-      print('\x1B[34m[DEBUG] Camera permission denied\x1B[0m');
     }
     setState(() => _isLoading = false);
   }
@@ -132,7 +129,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
         _isAutoFocus ? FocusMode.auto : FocusMode.locked,
       );
       setState(() {});
-      print('\x1B[34m[DEBUG] Focus mode toggled: ${_isAutoFocus ? "Auto" : "Locked"}\x1B[0m');
     } catch (e) {
       print('\x1B[34m[DEBUG] Toggling focus mode: $e\x1B[0m');
     }
@@ -146,7 +142,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
     );
     try {
       await _cameraController!.setFocusPoint(offset);
-      print('\x1B[34m[DEBUG] Focus set at: $offset\x1B[0m');
     } catch (e) {
       print('\x1B[34m[DEBUG] Failed to set focus point: $e\x1B[0m');
     }
@@ -158,7 +153,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
       _imageSizeForDrawing = null;
       _geminiResult = null;
     });
-    print('\x1B[34m[DEBUG] Resetting to live camera preview\x1B[0m');
   }
 
   Future<void> _resetStateForNewImage() async {
@@ -171,7 +165,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
 
   Future<void> _takePicture() async {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      print('\x1B[34m[DEBUG] Camera not ready to take picture\x1B[0m');
       return;
     }
     await _resetStateForNewImage();
@@ -180,14 +173,12 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
     try {
       final XFile image = await _cameraController!.takePicture();
       _pickedImage = File(image.path);
-      print('\x1B[34m[DEBUG] Photo captured: ${image.path}\x1B[0m');
       // After taking picture
       await _cameraController?.dispose();
-      // Then, when ready to scan again, re-initialize
+      // when ready to scan again, re-initialize
       await _initCamera();
       await _analyzeWithGemini(_pickedImage!);
     } catch (e) {
-      print('\x1B[34m[DEBUG] Error taking photo: $e\x1B[0m');
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
@@ -201,16 +192,13 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
       if (pickedFile == null) {
-        print('\x1B[34m[DEBUG] No gallery image picked\x1B[0m');
         if (!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
       _pickedImage = File(pickedFile.path);
-      print('\x1B[34m[DEBUG] Image picked from gallery: ${pickedFile.path}\x1B[0m');
       await _analyzeWithGemini(_pickedImage!);
     } catch (e) {
-      print('\x1B[34m[DEBUG] Error picking gallery image: $e\x1B[0m');
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
@@ -236,7 +224,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
     setState(() {
       _isLoading = false;
       if (result.error != null) {
-        _geminiError = "Error: ${result.error}"; // Could also display error code if desired
+        _geminiError = "Error: ${result.error}";
         _geminiResult = null;
       } else if (result.items.isEmpty) {
         _geminiError = "No ingredients detected.";
@@ -247,16 +235,15 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
       }
     });
 
-    print('\x1B[34m[DEBUG] Gemini result: $result\x1B[0m');
     lottieController.hide();
   }
 
   List<Widget> _buildGroupedGeminiResults(
     List<Map<String, dynamic>> items,
     ThemeData theme, {
-    bool showCount = true,      // show a small count badge next to the title
+    bool showCount = true,      // show small count badge next to the title
   }) {
-    // 1) Normalise category labels
+    //Normalise category labels
     const strictCategories = {
       "fruits": "Fruits",
       "vegetables": "Vegetables",
@@ -266,7 +253,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
       "uncategorized": "Uncategorized",
     };
 
-    // 2) Group items by category
+    // Group items by category
     final Map<String, List<Map<String, dynamic>>> grouped = {};
     for (final it in items) {
       final raw = (it['category'] ?? 'Uncategorized').toString().toLowerCase();
@@ -274,14 +261,14 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
       (grouped[cat] ??= <Map<String, dynamic>>[]).add(it);
     }
 
-    // 3) Fixed order; exclude empty groups
+    // Fixed order; exclude empty groups
     const order = ["Fruits", "Vegetables", "Grains", "Dairy", "Protein", "Uncategorized"];
     final cats = <String>[
       for (final c in order)
         if (grouped[c]?.isNotEmpty == true) c,
     ];
 
-    // 4) Helper: quantity → label
+    // Helper: quantity → label
     String _qtyLabel(Map<String, dynamic> it) {
       final String unit = (it['unit'] ?? 'count').toString().toLowerCase();
       final dynamic q = it['quantity'];
@@ -292,7 +279,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
       return '$numStr $unit';
     }
 
-    // 5) Build UI
+    // Build UI
     final widgets = <Widget>[];
     for (final cat in cats) {
       final list = [...grouped[cat]!];
@@ -302,7 +289,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
         return an.toLowerCase().compareTo(bn.toLowerCase());
       });
 
-      // --- Category title row (group header)
+      // Category title row (group header)
       widgets.add(
         Padding(
           padding: EdgeInsets.only(top: 12.h, bottom: 6.h),
@@ -338,7 +325,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
         ),
       );
 
-      // --- Items under the category
+      // Items under the category
       widgets.addAll(list.map((item) {
         final String name = (item['itemName'] ?? item['item'] ?? '').toString();
         return Padding(
@@ -350,7 +337,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
         );
       }));
 
-      // Optional subtle divider between groups
       widgets.add(Divider(
         height: 14.h,
         thickness: 0.6,
@@ -358,7 +344,6 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
       ));
     }
 
-    // Remove trailing divider for the last group
     if (widgets.isNotEmpty && widgets.last is Divider) widgets.removeLast();
 
     return widgets;
@@ -445,7 +430,7 @@ class _ScanFoodState extends ConsumerState<ScanFood> with TickerProviderStateMix
                         ),
                       SizedBox(height: 22.h),
 
-                      // --- ACTION BUTTONS LOGIC ---
+                      //ACTION BUTTONS
                       if (_isLoading)
                         // While loading, only show "Try Manual Input"
                         FilledButton.icon(

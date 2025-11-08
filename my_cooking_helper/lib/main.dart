@@ -122,24 +122,6 @@ final GoRouter _router = GoRouter(
       path: '/searchRecipe',
       builder: (context, state) => const SearchRecipeScreen()
     ),
-    // GoRoute(
-    //   path: '/recipePage',
-    //   builder: (context, state) {
-    //     final extra = state.extra;
-    //     if (extra is RecipeDetail) {
-    //       // fallback for older navigation
-    //       return RecipePage(recipe: extra, fromHistory: false);
-    //     } else if (extra is Map<String, dynamic>) {
-    //       return RecipePage(
-    //         recipe: extra['recipe'] as RecipeDetail,
-    //         fromHistory: extra['fromHistory'] == true,
-    //       );
-    //     } else {
-    //       // error fallback
-    //       return Scaffold(body: Center(child: Text('Invalid data')));
-    //     }
-    //   },
-    // ),
     GoRoute(
       path: '/recipePage',
       builder: (context, state) {
@@ -163,7 +145,7 @@ final GoRouter _router = GoRouter(
           );
         } 
         else {
-          // 🚑 Instead of error page → snackbar + safe fallback with delay
+          //Instead of error page → snackbar + safe fallback with delay
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             SnackbarUtils.show(
               context, 
@@ -183,11 +165,6 @@ final GoRouter _router = GoRouter(
 
             // small delay so snackbar is noticeable before going back
             await Future.delayed(const Duration(milliseconds: 500));
-
-            // removed 
-            // if (Navigator.of(context).canPop()) {
-            //   Navigator.of(context).pop();
-            // }
 
             if (context.mounted && Navigator.of(context).canPop()) {
               Navigator.of(context).pop();
@@ -240,7 +217,7 @@ final GoRouter _router = GoRouter(
           );
         }
 
-        // 🚑 Safe fallback instead of throw
+        //Safe fallback instead of throw
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           SnackbarUtils.show(
             context,
@@ -258,10 +235,6 @@ final GoRouter _router = GoRouter(
 
           // delay so snackbar shows before going back
           await Future.delayed(const Duration(milliseconds: 500));
-
-          // if (Navigator.of(context).canPop()) {
-          //   Navigator.of(context).pop();
-          // }
 
           if (context.mounted && Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
@@ -282,19 +255,16 @@ final GoRouter _router = GoRouter(
 // Safe, version-agnostic way to read the current path without poking notifiers.
 String _readLocation() {
   try {
-    // Newer go_router: RouteMatchList has a `uri` (Uri)
     final cfg = _router.routerDelegate.currentConfiguration;
     final Uri? uri = (cfg as dynamic).uri as Uri?;
     if (uri != null) return uri.path;
 
-    // Some versions expose a `location` (String) instead
     final String? loc = (cfg as dynamic).location as String?;
     if (loc != null) return Uri.parse(loc).path;
   } catch (_) {
     // fall through
   }
   try {
-    // Last resort (may notify) — used only if the above fails
     return _router.routeInformationProvider.value.uri.path;
   } catch (_) {
     return '/';
@@ -322,12 +292,6 @@ class MyApp extends ConsumerWidget {
           themeMode: themeMode,
           routerConfig: _router,
           builder: (context, child) {
-            // ✅ Use the global _router; do NOT use GoRouter.of(context) here
-            // Replace these two lines:
-            // final routeInfo = _router.routeInformationProvider.value;
-            // final location  = routeInfo.uri.path;
-
-            // With this single line:
             final location = _readLocation();   // read-only and safe
 
             final weight = kRouteWeights[location] ?? PageWeight.light;
@@ -342,7 +306,7 @@ class MyApp extends ConsumerWidget {
                   switchInCurve: spec.curveIn,
                   switchOutCurve: spec.curveOut,
 
-                  // ✅ Keep only the current child (prevents two Navigators with same GlobalKey)
+                  // Keep only the current child (prevents two Navigators with same GlobalKey)
                   layoutBuilder: (current, previous) => current ?? const SizedBox.shrink(),
 
                   // 'widget' is non-null here; no '!' needed

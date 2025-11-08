@@ -29,9 +29,6 @@ class _RecipeWebViewDialogState extends State<RecipeWebViewDialog> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (u) {
-            // BLUE debug logs
-            // ignore: avoid_print
-            print('\x1B[34m[WEBVIEW] start: $u\x1B[0m');
             _currentUrl = u;
             setState(() {
               _progress = 10;
@@ -40,8 +37,6 @@ class _RecipeWebViewDialogState extends State<RecipeWebViewDialog> {
           },
           onProgress: (p) => setState(() => _progress = p.clamp(0, 100)),
           onPageFinished: (u) {
-            // ignore: avoid_print
-            print('\x1B[34m[WEBVIEW] finished: $u\x1B[0m');
             _currentUrl = u;
             setState(() => _progress = 100);
           },
@@ -133,8 +128,6 @@ class _RecipeWebViewDialogState extends State<RecipeWebViewDialog> {
     );
     if (ok == true) {
       await _controller.loadRequest(Uri.parse(httpUrl));
-      // ignore: avoid_print
-      print('\x1B[34m[WEBVIEW] fallback to HTTP: $httpUrl\x1B[0m');
     }
   }
 

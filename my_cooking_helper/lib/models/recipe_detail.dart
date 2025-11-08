@@ -39,10 +39,9 @@ class RecipeDetail {
   final String? spoonacularSourceUrl;
   final Nutrition? nutrition;
   final String? aiSummary; 
-  final Map<String, dynamic>? geminiSummary; // or aiSummaryRaw
+  final Map<String, dynamic>? geminiSummary;
   final List<RecipeVideo>? videos; 
 
-  // For future extensibility: any additional fields from backend
   final Map<String, dynamic> extra;
 
   Map<String, dynamic> toJson() {
@@ -232,7 +231,6 @@ class RecipeDetail {
   });
 
   factory RecipeDetail.fromJson(Map<String, dynamic> json) {
-    // For extensibility: collect unknown fields
     final knownKeys = {
       'id',
       'title',
@@ -356,8 +354,7 @@ double? _parseDouble(dynamic value) {
   return null;
 }
 
-// ---- Nested Classes ----
-
+// Nested Classes
 class ExtendedIngredient {
   final int? id;
   final String? aisle;

@@ -1,7 +1,4 @@
-// lib/services/cravings_recipe_service.dart
-// Firestore writes for AI "Cravings" recipes (favourite + cooked) with stable keys.
-// [DEBUG] logs in blue. No images stored in Firestore documents.
-import 'dart:async';                              // ADD
+import 'dart:async';
 import 'dart:convert';
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,7 +15,7 @@ const String _RESET = "\x1B[0m";
 class CravingsRecipeService {
   CravingsRecipeService._();
 
-  // ===== Stable key (ai:<hash>) =============================================
+  // Stable key (ai:<hash>)
   static String computeRecipeKey(CravingRecipeModel r) {
     final title = _normStr(r.title);
 
@@ -48,7 +45,7 @@ class CravingsRecipeService {
     return (sessionId: fullId.substring(0, i), trackerId: fullId);
   }
 
-  // ===== Favourite toggle (real-time) =======================================
+  // Favourite toggle (real-time)
   // Mirrors to session tracker and user canonical tracker.
   static Future<void> updateFavouriteStatus({
     required String uid,
@@ -90,11 +87,9 @@ class CravingsRecipeService {
     }, SetOptions(merge: true));
 
     await batch.commit();
-    // ignore: avoid_print
-    print('$_BLUE[DEBUG] Cravings.updateFavouriteStatus: uid=$uid key=$recipeKey fav=$isFavourite$_RESET');
   }
 
-  // ===== Mark as cooked (batched, writes both session + user timelines) =====
+  // Mark as cooked (batched, writes both session + user timelines)
   static Future<void> markAsCooked({
     required String uid,
     required CravingRecipeModel recipe,
@@ -103,10 +98,6 @@ class CravingsRecipeService {
     final db = FirebaseFirestore.instance;
     final ids = splitIds(recipe.id);
     final recipeKey = computeRecipeKey(recipe);
-
-    // Debug IDs
-    // ignore: avoid_print
-    print('$_BLUE[DEBUG] Cravings.markAsCooked ids: fullId="${recipe.id}", sessionId="${ids.sessionId}", trackerId="${ids.trackerId}"$_RESET');
 
     final userTrackerRef = db
         .collection('users').doc(uid)
@@ -129,8 +120,6 @@ class CravingsRecipeService {
         'cookedAt': FieldValue.serverTimestamp(),
       });
       await fb.commit();
-      // ignore: avoid_print
-      print('$_BLUE[DEBUG] Cravings.markAsCooked (fallback userTrackers only + event): uid=$uid key=$recipeKey +1 cooked$_RESET');
 
       // --- Non-blocking inventory deduction (AI fallback path) --------------------
       try {
@@ -150,11 +139,6 @@ class CravingsRecipeService {
             ingredients: items,
             apply: true,
           ));
-          // ignore: avoid_print
-          print('$_BLUE[DEBUG] Cravings.markAsCooked: triggered inventory deduction for ${items.length} items (fallback)$_RESET');
-        } else {
-          // ignore: avoid_print
-          print('$_BLUE[DEBUG] Cravings.markAsCooked: no ingredients to deduct (fallback)$_RESET');
         }
       } catch (e) {
         // ignore: avoid_print
@@ -206,7 +190,7 @@ class CravingsRecipeService {
     // ignore: avoid_print
     print('$_BLUE[DEBUG] Cravings.markAsCooked: uid=$uid key=$recipeKey +1 cooked (session+user events)$_RESET');
 
-    // --- Non-blocking inventory deduction (AI normal path) ----------------------
+    // Non-blocking inventory deduction (AI normal path)
     try {
       final items = <CookedIngredientPayload>[];
       final all = [...recipe.requiredIngredients, ...recipe.optionalIngredients];
@@ -225,20 +209,14 @@ class CravingsRecipeService {
           ingredients: items,
           apply: true,
         ));
-        // ignore: avoid_print
-        print('$_BLUE[DEBUG] Cravings.markAsCooked: triggered inventory deduction for ${items.length} items (normal)$_RESET');
-      } else {
-        // ignore: avoid_print
-        print('$_BLUE[DEBUG] Cravings.markAsCooked: no ingredients to deduct (normal)$_RESET');
       }
     } catch (e) {
       // ignore: avoid_print
       print('$_BLUE[DEBUG] Cravings.markAsCooked: deduction call failed (normal) -> $e$_RESET');
     }
-    // ---------------------------------------------------------------------------
   }
 
-  // ===== Helpers =============================================================
+  // Helpers
   static String _normStr(String? s) {
     if (s == null) return '';
     return s.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
@@ -258,7 +236,6 @@ class CravingsRecipeService {
     return _normStr(e.toString());
   }
 
-  // ===== Lightweight helpers for history screen ==============================
 
   /// Toggle favourite directly by recipeKey (used from History card).
   static Future<void> updateFavouriteStatusByKey({
@@ -304,8 +281,6 @@ class CravingsRecipeService {
     return CravingRecipeModel.fromFirestore(snap.data()!);
   }
 
-  // Try pointers in userTrackers; if missing, scan THIS user's sessions.
-  // NOTE: no collectionGroup is used -> compliant with your rules.
   static Future<({String sessionId, String trackerId})?> resolvePointersForKey({
     required String uid,
     required String recipeKey,

@@ -25,11 +25,10 @@ class _SmartScanState extends ConsumerState<SmartScan> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Listen for side-effects safely during build
     ref.listen<AsyncValue<bool>>(isOnlineProvider, (prev, next) {
       next.whenOrNull(data: (curr) {
         final prevVal = prev?.value;
-        if (prevVal == curr) return; // avoid duplicates on rebuilds
+        if (prevVal == curr) return; 
         if (!mounted) return;
         SnackbarUtils.alert(
           context,

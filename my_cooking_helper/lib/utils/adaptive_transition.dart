@@ -1,4 +1,3 @@
-// lib/utils/adaptive_transition.dart
 import 'package:flutter/material.dart';
 
 enum PageWeight { light, medium, heavy }

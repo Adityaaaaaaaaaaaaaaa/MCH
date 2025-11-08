@@ -1,4 +1,3 @@
-// lib/services/gemini_scanFood.dart
 // ignore_for_file: file_names
 
 import 'dart:io';
@@ -27,9 +26,6 @@ class GeminiService {
 
       final resp = await req.send();
       final body = await resp.stream.bytesToString();
-
-      print('\x1B[34m[DEBUG] Backend API status: ${resp.statusCode}\x1B[0m');
-      print('\x1B[34m[DEBUG] Backend API response: $body\x1B[0m');
 
       final jsonResp = jsonDecode(body);
       if (resp.statusCode == 200) {

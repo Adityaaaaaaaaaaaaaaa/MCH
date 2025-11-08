@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
-/// The main overlay widget for displaying a Lottie animation as a fullscreen modal.
 class LottieOverlay extends StatelessWidget {
   final String assetPath;
   final double? width;
@@ -36,7 +35,6 @@ class LottieOverlay extends StatelessWidget {
           repeat: repeat,
           onLoaded: (composition) {
             if (!repeat && onCompleted != null) {
-              // Auto-close after animation duration
               Future.delayed(composition.duration, onCompleted!);
             }
           },
@@ -46,7 +44,6 @@ class LottieOverlay extends StatelessWidget {
   }
 }
 
-/// The controller class to show and hide the LottieOverlay anywhere in the app.
 class LottieAnimationController {
   BuildContext? _context;
   bool _isShown = false;

@@ -5,8 +5,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Requests camera permission and initializes the controller.
-/// Returns a tuple: (CameraController?, bool isCameraReady, bool hasPermission)
 Future<Map<String, dynamic>> requestPermissionAndInitCamera({
   required Function(bool isLoading) setLoading,
   required Function(bool isCameraReady) setCameraReady,
@@ -43,14 +41,11 @@ Future<Map<String, dynamic>> requestPermissionAndInitCamera({
       await controller.initialize();
       setCameraController(controller);
       isReady = true;
-      print('\x1B[34m[DEBUG] Camera initialized and ready\x1B[0m');
     } catch (e) {
-      print('\x1B[34m[DEBUG] Failed to initialize camera: $e\x1B[0m');
       setHasPermission(false);
     }
   } else {
     setHasPermission(false);
-    print('\x1B[34m[DEBUG] Camera permission denied\x1B[0m');
   }
   setCameraReady(isReady);
   setLoading(false);
@@ -69,7 +64,6 @@ Future<void> toggleFlash({
   try {
     await controller.setFlashMode(isFlashOn ? FlashMode.torch : FlashMode.off);
     setFlashState(isFlashOn);
-    print('\x1B[34m[DEBUG] Flash toggled: $isFlashOn\x1B[0m');
   } catch (e) {
     print('\x1B[34m[DEBUG] Toggling flash: $e\x1B[0m');
   }
@@ -85,7 +79,6 @@ Future<void> toggleFocusMode({
         isAutoFocus ? FocusMode.auto : FocusMode.locked,
     );
     setFocusState(isAutoFocus);
-    print('\x1B[34m[DEBUG] Focus mode toggled: ${isAutoFocus ? "Auto" : "Locked"}\x1B[0m');
   } catch (e) {
     print('\x1B[34m[DEBUG] Toggling focus mode: $e\x1B[0m');
   }
@@ -103,7 +96,6 @@ Future<void> tapToFocus({
   );
   try {
     await controller.setFocusPoint(offset);
-    print('\x1B[34m[DEBUG] Focus set at: $offset\x1B[0m');
   } catch (e) {
     print('\x1B[34m[DEBUG] Failed to set focus point: $e\x1B[0m');
   }
@@ -117,7 +109,6 @@ void retakeOrNewScan({
   setPickedImage(null);
   setImageSizeForDrawing(null);
   setGeminiResult(null);
-  print('\x1B[34m[DEBUG] Resetting to live camera preview\x1B[0m');
 }
 
 void resetStateForNewImage({
@@ -130,7 +121,7 @@ void resetStateForNewImage({
   setGeminiResult(null);
 }
 
-/// Generic widget for tips banner
+// widget for tips banner
 Widget buildTipBanner(BuildContext context, String tip, {double borderRadius = 20.0}) {
   return Container(
     margin: EdgeInsets.only(bottom: 20.h, top: 20.h),
@@ -285,13 +276,12 @@ Widget buildImageWithPreview({
   );
 }
 
-/// Generic no-permission UI
+// no-permission UI
 Widget buildNoPermissionUI(
   BuildContext context,
   String featureName,
   Future<void> Function() onTryAgain,
 ) {
-  print('\x1B[34m[DEBUG] No camera permission, showing dialog\x1B[0m');
   return Center(
     child: AlertDialog(
       title: const Text('Camera Permission Needed'),
