@@ -349,10 +349,10 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                                     Text(
                                       page["desc"]!,
                                       style: TextStyle(
-                                        fontSize: 14.sp,
+                                        fontSize: 12.sp,
                                         color: Colors.white,
                                         height: 1.5,
-                                        fontWeight: FontWeight.w400,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                       textAlign: TextAlign.center,
                                       maxLines: 3,
