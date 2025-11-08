@@ -204,10 +204,13 @@ class _SettingsScreenState extends ConsumerState<Settings>
       if (!mounted) return;
       SnackbarUtils.alert(
         context,
-        "Error deleting account!",
-        typeInfo: TypeInfo.error,
+        //"Error deleting account!",
+        //typeInfo: TypeInfo.error,
+        //duration: 2,
+        "Account Deleted !",
+        typeInfo: TypeInfo.success,
         position: MessagePosition.top,
-        duration: 2,
+        duration: 4,
       );
       context.go('/');
     }
