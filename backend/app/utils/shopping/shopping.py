@@ -1,4 +1,3 @@
-# app/utils/shopping/shopping.py
 from __future__ import annotations
 from typing import Dict, List, Any, Optional, Tuple
 
@@ -72,7 +71,6 @@ def _index_inventory(inv: List[Dict[str, Any]]) -> Dict[str, Dict[str, float]]:
         if not nname:
             continue
 
-        # debug: show normalization for inventory once per name
         if nname not in idx:
             _blue(f"[Shopping][normalize] inv '{raw_name}' → '{nname}'")
 

@@ -1,4 +1,3 @@
-# app/api/cravings/ai_recipe_generator.py
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
@@ -27,7 +26,7 @@ def _pp(obj: Any, max_len: int = 1500) -> str:
     except Exception:
         return str(obj)
 
-# ---------- Request models (mirror Flutter payload) ----------
+#  Request models 
 class InventoryItem(BaseModel):
     name: str
     quantity: float = 0.0
@@ -54,7 +53,7 @@ class AiRecipeRequest(BaseModel):
     preferences: Preferences
     inventory: List[InventoryItem] = []
 
-# ---------- Response models (UI-friendly) ----------
+#  Response models 
 class ShoppingItem(BaseModel):
     name: str
     need: float
@@ -75,7 +74,7 @@ class AiRecipeResponse(BaseModel):
     message: str
     items: List[Candidate]
 
-# ---------- Helpers for verbose previews ----------
+#  Helpers for verbose previews 
 def _preview_candidates_short(cands: List[Dict[str, Any]]) -> None:
     _blue(f"[AI-RECIPES] Candidates received: {len(cands)}")
     for i, c in enumerate(cands, start=1):
@@ -101,7 +100,7 @@ def _preview_shopping_lists(cands_with_shopping: List[Dict[str, Any]]) -> None:
             tag  = s.get("tag")
             _blue(f"       - {name}: need {need} {unit} (have {have}) [{tag}]")
 
-# ---------- Endpoint ----------
+# = Endpoint 
 @router.post("/aiRecipe", response_model=AiRecipeResponse)
 async def ai_recipe(req: AiRecipeRequest):
     try:
@@ -211,7 +210,6 @@ async def ai_recipe(req: AiRecipeRequest):
         _blue("[AI-RECIPES] Step 7/7: Saving session to Firestore …")
         session_id = base_id  # e.g., "240825_1830"
 
-        # IMPORTANT: build from cands_with_shopping (full recipe dicts), not the trimmed `items`
         recipe_docs: List[Dict[str, Any]] = []
         for i, raw in enumerate(cands_with_shopping, start=1):
             rid = f"{session_id}_{i:02d}"
@@ -221,8 +219,6 @@ async def ai_recipe(req: AiRecipeRequest):
             d["id"] = rid
             d["hasImage"] = bool(images[i - 1])  # we don't store base64
             d.pop("image", None)                 # ensure no huge blobs
-            # keep all of: required_ingredients, optional_ingredients, instructions,
-            # cuisines, diets, vegetarian/vegan/glutenFree/dairyFree, summary, nutrition, shopping, reasons, readyInMinutes, title
 
             recipe_docs.append(d)
 

@@ -51,7 +51,6 @@ class SpoonacularProvider:
             
             print(f"{BLUE}[DEBUG] RapidAPI Response Code: {response.status_code}{RESET}")
 
-            # Print RapidAPI rate limits in yellow
             self._print_rate_limits(response.headers)
 
             if response.status_code != 200:

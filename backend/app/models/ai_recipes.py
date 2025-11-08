@@ -13,7 +13,7 @@ class NutritionLite(BaseModel):
     carbs_g: Optional[float] = None
 
 class RecipeCandidate(BaseModel):
-    id: str                       # prompt requires an id; make it required
+    id: str                       
     title: str
     readyInMinutes: int = Field(..., gt=0)
     servings: Optional[int] = Field(default=None, gt=0)
@@ -30,7 +30,7 @@ class RecipeCandidate(BaseModel):
     required_ingredients: List[IngredientReq] = Field(default_factory=list)
     optional_ingredients: List[IngredientReq] = Field(default_factory=list)
 
-    # 🔁 IMPORTANT: strings, not objects — matches your prompt
+    # IMPORTANT: strings, not objects — matches your prompt
     instructions: List[str] = Field(default_factory=list)
 
     summary: Optional[str] = None

@@ -1,5 +1,3 @@
-# app/api/meal_planner_change_day.py
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List, Tuple
@@ -21,7 +19,6 @@ RESET = "\x1B[0m"
 
 _DAY_NAMES = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
-# ---------- Helpers ----------
 
 def _parse_items_day(items: List[Dict[str, Any]]) -> Tuple[Dict[int, Dict[str, Any]], List[int]]:
     """
@@ -37,7 +34,6 @@ def _parse_items_day(items: List[Dict[str, Any]]) -> Tuple[Dict[int, Dict[str, A
         if slot not in (1, 2, 3):
             continue
         val_raw = it.get("value")
-        # 'value' can be JSON string with { id, title, ... }
         v = None
         if isinstance(val_raw, str):
             try:
@@ -70,7 +66,7 @@ def _parse_meals_day(meals: List[Dict[str, Any]]) -> Tuple[Dict[int, Dict[str, A
     ids: List[int] = []
     seen = set()
 
-    for idx, m in enumerate(meals[:3]):  # only care about first three
+    for idx, m in enumerate(meals[:3]):  
         rid = m.get("id")
         if not isinstance(rid, int):
             continue
@@ -87,7 +83,7 @@ def _slot_to_key(slot: int) -> str:
     return {1: "breakfast", 2: "lunch", 3: "dinner"}.get(slot, "unknown")
 
 
-# ---------- Request model ----------
+# Request model 
 
 class ChangeDayRequest(BaseModel):
     userId: str
@@ -98,7 +94,7 @@ class ChangeDayRequest(BaseModel):
     targetCalories: Optional[int] = None
 
 
-# ---------- Endpoint ----------
+# Endpoint 
 
 @router.post("/changeDay")
 def change_day(req: ChangeDayRequest):

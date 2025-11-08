@@ -1,4 +1,3 @@
-# app/utils/ai_prompt.py
 from typing import List, Optional
 from textwrap import dedent
 

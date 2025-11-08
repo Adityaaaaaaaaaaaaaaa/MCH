@@ -1,4 +1,3 @@
-# app/providers/gemini/gemini_recipe_generator.py
 import os, json
 from typing import List, Dict, Any, Optional, Literal
 from typing import List as _TList
@@ -20,20 +19,19 @@ def _pretty(obj: Any, max_chars: int = 50000) -> str:
         s = str(obj)
     return s if len(s) <= max_chars else s[:max_chars] + "\n... [truncated]"
 
-# NEW: bubble 503 up to the router so the UI can show a proper error
 class ProviderUnavailable(Exception):
     def __init__(self, status_code: int = 503, message: str = "Service unavailable"):
         super().__init__(message)
         self.status_code = status_code
 
 
-# --- Lite, local validation models (no JSON schema sent to Gemini) ---
+#  Lite, local validation models (no JSON schema sent to Gemini) 
 class _IngredientReq(BaseModel):
     name: str
     quantity: float = 0.0
     unit: Literal["g", "ml", "count"] = "count"
-    canonical: Optional[str] = None      # e.g., "apple", "bell pepper", "yogurt"
-    pantryLikely: Optional[bool] = None  # model’s hint: common pantry item?
+    canonical: Optional[str] = None      
+    pantryLikely: Optional[bool] = None  
 
 class _NutritionLite(BaseModel):
     calories: Optional[float] = None
@@ -75,7 +73,6 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     _blue("[Gemini][recipes] WARNING: GOOGLE_API_KEY not set — will fall back to stub if called")
 
-# ... keep your existing classes & GOOGLE_API_KEY ...
 
 def _strip_code_fences(s: str) -> str:
     s = s.strip()
@@ -419,10 +416,8 @@ async def generate_recipes(
         if ("503" in msg) or ("UNAVAILABLE" in msg) or ("overloaded" in msg):
             _blue(f"[Gemini][recipes] UNAVAILABLE/503: {msg}")
             raise ProviderUnavailable(503, "The model is overloaded. Please try again later.")
-        # Otherwise keep your current behavior
 
         _blue(f"[Gemini][recipes] ERROR {e} — returning stub")
-        # … keep your existing stub exactly …
         return {
             "candidates": [
                 {
