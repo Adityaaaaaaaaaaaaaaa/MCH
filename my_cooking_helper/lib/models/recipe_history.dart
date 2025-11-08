@@ -34,7 +34,6 @@ class RecipeHistoryEntry {
     );
   }
 
-  // Update fromJson and toJson:
   factory RecipeHistoryEntry.fromJson(Map<String, dynamic> json) => RecipeHistoryEntry(
     recipeId: json['recipeId'] as String,
     recipeTitle: json['recipeTitle'] as String,
@@ -65,8 +64,8 @@ class UnifiedHistoryItem {
   final bool isFavourite;
   final int timesCooked;
   final DateTime? lastCookedAt;
-  final String? imageUrl;          // Normal may have; AI may be null (uses placeholder)
-  // Optional pointers for AI navigation
+  final String? imageUrl;          // Normal may have; AI may be null
+
   final String? lastSeenSessionId;
   final String? lastSeenTrackerId;
 

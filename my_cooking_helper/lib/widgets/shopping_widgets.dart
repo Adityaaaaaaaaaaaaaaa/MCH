@@ -1,4 +1,3 @@
-// lib/features/shopping/shopping_widgets.dart
 // ignore_for_file: deprecated_member_use
 
 import 'dart:math';
@@ -12,9 +11,7 @@ import '/models/cravings.dart';
 typedef OnItemChanged = void Function(ShoppingItemModel updated);
 typedef OnItemRemove = void Function();
 
-/// --------------------------
-/// AddItemBar (Plus Button + Modal)
-/// --------------------------
+// AddItemBar
 class AddItemBar extends StatefulWidget {
   const AddItemBar({super.key, required this.onSubmit});
 
@@ -123,9 +120,7 @@ class _AddItemBarState extends State<AddItemBar> with TickerProviderStateMixin {
   }
 }
 
-/// --------------------------
-/// AddItemModal (Beautiful Modal)
-/// --------------------------
+// AddItemModal 
 class AddItemModal extends StatefulWidget {
   const AddItemModal({super.key, required this.onSubmit});
 
@@ -205,7 +200,6 @@ class _AddItemModalState extends State<AddItemModal>
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
 
-    // parse from controller to be extra sure + clamp + enforce min 1
     var v = _parseNum(_qtyCtrl.text);
     v = clampByUnit(v <= 0 ? 1 : v, _unit);
 
@@ -584,9 +578,7 @@ class _AddItemModalState extends State<AddItemModal>
   }
 }
 
-/// --------------------------
-/// ShoppingListTile (Receipt Item Style)
-/// --------------------------
+// ShoppingListTile 
 class ShoppingListTile extends StatefulWidget {
   const ShoppingListTile({
     super.key,
@@ -644,7 +636,6 @@ class _ShoppingListTileState extends State<ShoppingListTile>
   @override
   void didUpdateWidget(covariant ShoppingListTile oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Re-sync local qty whenever the backing model changes (need/unit/name)
     if (oldWidget.item.need != widget.item.need ||
         oldWidget.item.unit != widget.item.unit ||
         oldWidget.item.name != widget.item.name) {
@@ -660,7 +651,6 @@ class _ShoppingListTileState extends State<ShoppingListTile>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Initialize color animation here where Theme.of(context) is safe to use
     final primary = Theme.of(context).colorScheme.primary;
     _borderAnimation = ColorTween(
       begin: Colors.transparent,
@@ -733,7 +723,7 @@ class _ShoppingListTileState extends State<ShoppingListTile>
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(8.r),
-                boxShadow: _pressed   // <-- use press state for shadow
+                boxShadow: _pressed
                     ? [
                         BoxShadow(
                           color: isDark
@@ -748,7 +738,6 @@ class _ShoppingListTileState extends State<ShoppingListTile>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- your existing main Row (with full name, no ellipsis) ---
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -793,7 +782,7 @@ class _ShoppingListTileState extends State<ShoppingListTile>
 
                   SizedBox(height: 8.h),
 
-                  // Dotted divider under the row (keeps receipt vibe)
+                  // Dotted divider under the row
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final int count = (constraints.maxWidth / (3.w + 2.w))
@@ -813,7 +802,6 @@ class _ShoppingListTileState extends State<ShoppingListTile>
                     },
                   ),
 
-                  // --- your existing expandable controls block (unchanged) ---
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
@@ -864,7 +852,6 @@ class _ShoppingListTileState extends State<ShoppingListTile>
 
                                           SizedBox(width: 10.w),
 
-                                          // replace the center Text(...) with:
                                           SizedBox(
                                             width: 50.w,
                                             child: TextField(
@@ -889,7 +876,7 @@ class _ShoppingListTileState extends State<ShoppingListTile>
                                               onEditingComplete: () {
                                                 final parsed = double.tryParse(_qtyCtrl.text) ?? qty;
                                                 final clamped = _clampTile(parsed);
-                                                _apply(clamped); // commits & re-normalizes the text
+                                                _apply(clamped);
                                                 FocusScope.of(context).unfocus();
                                               },
                                               onSubmitted: (_) {
@@ -978,7 +965,7 @@ class _ShoppingListTileState extends State<ShoppingListTile>
   }
 }
 
-/// Keep your model immutable style
+// Keep model immutable style
 extension ShoppingModelCopy on ShoppingItemModel {
   ShoppingItemModel copyWith({
     String? name,
@@ -997,17 +984,13 @@ extension ShoppingModelCopy on ShoppingItemModel {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Utility formatting                                                         */
-/* -------------------------------------------------------------------------- */
+// Utility formatting  
 
 String _trimZeros(String s) => s.contains('.') ? s.replaceFirst(RegExp(r'\.?0+$'), '') : s;
 
-/// Smart visual formatting only. Stored values/units remain unchanged.
 String formatQty(double qty, String unitRaw) {
   final unit = unitRaw.trim().toLowerCase();
 
-  // helper: choose decimals for small floats
   String asTight(double v) => _trimZeros(
         (v % 1 == 0) ? v.toStringAsFixed(0) : v.toStringAsFixed(2),
       );
@@ -1023,13 +1006,10 @@ String formatQty(double qty, String unitRaw) {
   if (unit.isEmpty || unit == 'count') {
     return '${asTight(qty)}x';
   }
-  // fallback for any other unit
   return '${asTight(qty)} $unit';
 }
 
-/* -------------------------------------------------------------------------- */
-/* Qty rules                                                                  */
-/* -------------------------------------------------------------------------- */
+//Qty rules  
 
 // max: 999 count, 99 kg (→ 99,000 g), 99 L (→ 99,000 ml)
 double clampByUnit(double v, String unitRaw) {
@@ -1055,7 +1035,6 @@ String normalizedQtyTextForField(String unitRaw, double v) {
   return _trimZeros(v.toStringAsFixed(dec));
 }
 
-// dynamic input formatters (length guard + decimals allowed)
 List<TextInputFormatter> formattersForUnit(String unitRaw) {
   final u = unitRaw.trim().toLowerCase();
   if (u.isEmpty || u == 'count') {
@@ -1084,9 +1063,7 @@ String generateReceiptId() {
   return '${now.millisecondsSinceEpoch.toString().substring(6)}-$rand';
 }
 
-/* -------------------------------------------------------------------------- */
-/* Receipt Shell: Header / Footer                                             */
-/* -------------------------------------------------------------------------- */
+// Receipt Shell: Header / Footer   
 
 class ReceiptHeader extends StatelessWidget {
   const ReceiptHeader({super.key});
@@ -1132,7 +1109,7 @@ class ReceiptHeader extends StatelessWidget {
           perforation(25),
           SizedBox(height: 16.h),
 
-          // LOGO (asset)
+          // LOGO 
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -1376,7 +1353,6 @@ class ReceiptFooter extends StatelessWidget {
           ),
 
           SizedBox(height: 12.h),
-          // Bottom perforation
           Row(
             children: List.generate(
               25,
@@ -1398,9 +1374,7 @@ class ReceiptFooter extends StatelessWidget {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Add Item chip to show under the list                                       */
-/* -------------------------------------------------------------------------- */
+// Add Item chip to show under the list 
 
 class AddItemInline extends StatelessWidget {
   const AddItemInline({super.key, required this.onTap});
@@ -1458,9 +1432,7 @@ class AddItemInline extends StatelessWidget {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* The Receipt container (Header → Scrollable list → Footer)                  */
-/* -------------------------------------------------------------------------- */
+// The Receipt container 
 
 class ShoppingReceipt extends StatefulWidget {
   const ShoppingReceipt({
@@ -1664,9 +1636,7 @@ class _ShoppingReceiptState extends State<ShoppingReceipt>
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Empty state (kept compact)                                                 */
-/* -------------------------------------------------------------------------- */
+//Empty state 
 class _EmptyReceipt extends StatelessWidget {
   const _EmptyReceipt({required this.onAdd});
   final VoidCallback onAdd;
@@ -1712,7 +1682,6 @@ class _EmptyReceipt extends StatelessWidget {
               ),
             ),
             SizedBox(height: 18.h),
-            //AddItemInline(onTap: onAdd),
           ],
         ),
       ),
@@ -1720,9 +1689,6 @@ class _EmptyReceipt extends StatelessWidget {
   }
 }
 
-// --------------------------
-// ClearListButton (reusable)
-// --------------------------
 class ClearListButton extends StatelessWidget {
   const ClearListButton({
     super.key,
@@ -1816,10 +1782,6 @@ class ClearListButton extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Nice reminder sheet (date + time + pre-alert chips) with past-prevention.
-// Call: final result = await showReminderSheet(context);
-// ---------------------------------------------------------------------------
 
 class ReminderPick {
   final DateTime when;
@@ -2002,7 +1964,6 @@ Future<ReminderPick?> showReminderSheet(BuildContext context) {
   );
 }
 
-// helper: round minutes to next 5-min step
 TimeOfDay _roundUpTo5(TimeOfDay t) {
   final m = ((t.minute + 4) ~/ 5) * 5;
   final extraHour = m >= 60 ? 1 : 0;

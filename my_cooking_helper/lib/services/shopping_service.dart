@@ -1,4 +1,3 @@
-// lib/services/shopping_service.dart
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,12 +23,11 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _snapSub;
   CollectionReference<Map<String, dynamic>>? _col;
 
-  String? _activeListId; // optional "created" marker for your CTA
+  String? _activeListId;
   String? get activeListId => _activeListId;
   bool get hasActiveList => _activeListId != null;
 
   Future<void> _init() async {
-    // Enable Firestore offline cache (safe to call repeatedly)
     try {
       _db.settings = const Settings(persistenceEnabled: true);
     } catch (_) {}
@@ -37,7 +35,6 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
     _bindForUser(_auth.currentUser);
   }
 
-  // robust number parse (also handles "1,5" keyboards)
   static double _numParse(dynamic v, {double fallback = 0}) {
     if (v is num) return v.toDouble();
     if (v is String) return double.tryParse(v.replaceAll(',', '.')) ?? fallback;
@@ -58,8 +55,7 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
     _col = null;
 
     if (user == null) {
-      state = const []; // ← clear local state when signed out
-      print('\x1B[34m[SHOP SVC] user=null → local-only mode\x1B[0m');
+      state = const []; // clear local state when signed out
       return;
     }
 
@@ -80,13 +76,10 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
           );
         }).toList();
         state = items;
-        print('\x1B[34m[SHOP SVC] snapshot → ${items.length} item(s)\x1B[0m');
       }, onError: (e, _) {
         print('\x1B[31m[SHOP SVC] snapshot error: $e\x1B[0m');
       });
   }
-
-  // =================== PUBLIC API used by your pages ===================
 
   /// Add or update an item (optimistic + write-through).
   /// `unit` is constrained by UI (g/ml/count); we still default to 'count'.
@@ -128,21 +121,11 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
         finalUnit = existing.unit;
         if (finalTag.isEmpty) finalTag = existing.tag;
 
-        // BLUE debug
-        // ignore: avoid_print
-        print('\x1B[34m[SVC] MERGE  $name | +$incomingNeed $normalizedUnit → $finalNeed $finalUnit | tag=${finalTag.isEmpty ? existing.tag : finalTag}\x1B[0m');
       } else {
         // Different unit → treat as an override (same as previous behavior)
         // keep incoming values; optionally keep existing tag if none provided
         if (finalTag.isEmpty) finalTag = existing.tag;
-        // BLUE debug
-        // ignore: avoid_print
-        print('\x1B[34m[SVC] OVERRIDE  $name | unit change ${existing.unit} → $normalizedUnit | set=$finalNeed $finalUnit | tag=$finalTag\x1B[0m');
       }
-    } else {
-      // New item
-      // ignore: avoid_print
-      print('\x1B[34m[SVC] ADD  $name | $finalNeed $finalUnit | tag=$finalTag\x1B[0m');
     }
 
     // Local optimistic update
@@ -165,7 +148,6 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
     // Remote write (queued offline as needed)
     if (_col != null) {
       final id = _docIdFromName(name);
-      print('\x1B[34m[SHOP SVC] → FS write "${_docIdFromName(name)}"\x1B[0m');
       await _col!.doc(id).set({
         'name': name,
         'need': finalNeed,
@@ -183,8 +165,6 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
     state = state
         .where((e) => e.name.trim().toLowerCase() != name.trim().toLowerCase())
         .toList();
-    // ignore: avoid_print
-    print('\x1B[34m[SVC] REMOVE  $name\x1B[0m');
 
     if (_col != null) {
       final id = _docIdFromName(name);
@@ -196,8 +176,6 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
   Future<void> clearAll() async {
     state = const [];
     _activeListId = null;
-    // ignore: avoid_print
-    print('\x1B[34m[SVC] CLEAR ALL\x1B[0m');
 
     if (_col != null) {
       final snapshot = await _col!.get();
@@ -217,8 +195,6 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
     _activeListId = DateTime.now().millisecondsSinceEpoch.toString();
     return _activeListId!;
   }
-
-  // =================== BACK-COMPAT wrappers (tiles still call these) ===================
 
   Future<void> setItem({
     required String name,
@@ -272,8 +248,6 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
       final invUnit  = unit.trim().toLowerCase();
 
       if (shopUnit != invUnit) {
-        // ignore: avoid_print
-        print('\x1B[34m[SHOP SVC] skip deduct (unit mismatch) "$shopUnit" vs "$invUnit" for "$name"\x1B[0m');
         return;
       }
 
@@ -284,23 +258,18 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
       const eps = 1e-9;
       if (remaining <= eps) {
         tx.delete(ref);
-        print('\x1B[34m[SHOP SVC] quota met → removed "$name" from shopping list\x1B[0m');
         return;
       }
 
-      // keep it clamped/clean
       final newNeed = _clampByUnit(remaining, shopUnit);
       tx.set(ref, {
         'need': newNeed,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-
-      print('\x1B[34m[SHOP SVC] deduct $delta $shopUnit from "$name" → need=$newNeed\x1B[0m');
     });
   }
 }
 
-// Provider
 final shoppingServiceProvider =
     StateNotifierProvider<ShoppingService, List<ShoppingItemModel>>((ref) {
   return ShoppingService();

@@ -37,32 +37,7 @@ class RecipeSearchService {
     };
   }
 
-  //remove apres tresting //////////////////////////////////////////////////////////////
-  void blueDebugPrint(Object msg) {
-    dynamic makeEncodable(dynamic value) {
-      if (value is Set) {
-        return value.map(makeEncodable).toList();
-      } else if (value is List) {
-        return value.map(makeEncodable).toList();
-      } else if (value is Map) {
-        return value.map((k, v) => MapEntry(k, makeEncodable(v)));
-      } else {
-        return value;
-      }
-    }
-
-    final encodable = makeEncodable(msg);
-    final str = (encodable is String)
-        ? encodable
-        : const JsonEncoder.withIndent('  ').convert(encodable);
-
-    for (final line in str.split('\n')) {
-      print('\x1B[34m[DEBUG] $line\x1B[0m');
-    }
-  }
-  /////////////////////////////////////////////////////////////////////////////////////////////
-
-  /// Main search function: fetches all data, prints debug, sends to backend
+  /// Main search function: fetches all data, sends to backend
   Future<RecipeSearchResults> searchRecipesWithUserPrefs({
     required String userId,
     required int maxTime,
@@ -71,13 +46,6 @@ class RecipeSearchService {
 
     final prefs = await fetchUserPreferences(userId);
     final ingredients = overrideIngredients ?? await fetchUserIngredients(userId);
-
-    blueDebugPrint('Sending Search Request:');
-    blueDebugPrint('Allergies: ${prefs['allergies']}');
-    blueDebugPrint('Diets: ${prefs['diets']}');
-    blueDebugPrint('Cuisines: ${prefs['cuisines']}');
-    blueDebugPrint('SpiceLevel: ${prefs['spiceLevel']}');
-    blueDebugPrint('MaxTime: $maxTime');
 
     final url = Uri.parse(spoonacularRecipeSearch); 
     final payload = {

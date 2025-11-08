@@ -38,7 +38,7 @@ class SmartPreferenceEmojiRow extends StatelessWidget {
             name: e["name"],
             size: (e["size"] ?? size).toDouble(),
             repeat: e["repeat"] ?? true,
-            key: e["key"], // nullable is fine
+            key: e["key"],
           );
         } else if (e is String) {
           return Text(e, style: TextStyle(fontSize: size));

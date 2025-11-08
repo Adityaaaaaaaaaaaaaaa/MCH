@@ -24,7 +24,6 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
   late Animation<double> _borderAnimation;
 
   bool _isGooglePressed = false;
-  //bool _isApplePressed = false;
 
   @override
   void initState() {
@@ -40,7 +39,6 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    // ⬇️ Smoother, seamless loop (linear curve + longer period)
     _borderController = AnimationController(
       duration: const Duration(milliseconds: 6000),
       vsync: this,
@@ -62,7 +60,6 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
       curve: Curves.easeInOut,
     ));
 
-    // ⬇️ Linear progress avoids the abrupt “stop & restart” at the seam
     _borderAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -118,7 +115,7 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
 
   Color _getPrimaryColor(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return isDark ? const Color(0xFF8B5CF6) : const Color(0xFF7C3AED); // Premium purple
+    return isDark ? const Color(0xFF8B5CF6) : const Color(0xFF7C3AED);
   }
 
   List<Color> _getBackgroundGradient(BuildContext context) {
@@ -148,7 +145,6 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
     return isDark ? Colors.white.withOpacity(0.7) : const Color(0xFF64748B);
   }
 
-  // ⬇️ Renamed (no other behavior changes)
   Widget _buildAuthButton({
     required String text,
     required String iconPath,
@@ -341,7 +337,7 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
                             child: Text(
                               'Cookgenix',
                               style: TextStyle(
-                                fontFamily: 'Poppins', // Premium font
+                                fontFamily: 'Poppins',
                                 fontSize: 22.sp,
                                 fontWeight: FontWeight.w700,
                                 color: textColor,
@@ -462,34 +458,7 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
                                       },
                                       accentColor: const Color(0xFF4285F4),
                                     ),
-                                    
-                                    /*_buildAuthButton(
-                                      text: 'Continue with Apple',
-                                      iconPath: "assets/images/loginSignup/apple_logo.png",
-                                      onPressed: () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              '<<< Apple Sign-In not yet implemented. >>>',
-                                              textAlign: TextAlign.center,
-                                            ),
-                                            behavior: SnackBarBehavior.floating,
-                                            backgroundColor: _getPrimaryColor(context).withOpacity(0.9),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12.r),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      isPressed: _isApplePressed,
-                                      onPressedChanged: (pressed) {
-                                        setState(() {
-                                          _isApplePressed = pressed;
-                                        });
-                                      },
-                                      accentColor: isDark ? Colors.white : const Color(0xFF1D1D1F),
-                                    ),*/
-                                    
+                                                                        
                                     SizedBox(height: 16.h),
                                     
                                     Container(

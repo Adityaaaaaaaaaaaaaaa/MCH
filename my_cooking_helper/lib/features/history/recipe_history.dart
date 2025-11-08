@@ -16,13 +16,11 @@ import '/widgets/navigation/drawer.dart';
 import '/utils/colors.dart';
 import '/widgets/recipe/recipe_tracker_widgets.dart';
 
-// Rebuilds on sign-in, sign-out, and user switches
 final authUserProvider = StreamProvider<User?>(
   (ref) => FirebaseAuth.instance.userChanges(),
 );
 
 
-// ===== Existing normal stream (unchanged) =====================================
 final cookedRecipesProvider = StreamProvider<List<RecipeHistoryEntry>>((ref) {
   final user = ref.watch(authUserProvider).value;
   final uid = user?.uid;
@@ -30,7 +28,6 @@ final cookedRecipesProvider = StreamProvider<List<RecipeHistoryEntry>>((ref) {
   return RecipeTrackerService.cookedRecipesStream(uid);
 });
 
-// ===== AI cooked stream (client-side filter; resilient to missing fields) =====
 final cookedAiRawProvider = StreamProvider<List<UnifiedHistoryItem>>((ref) {
   final uid = ref.watch(authUserProvider).value?.uid;
   if (uid == null) return const Stream.empty();
@@ -45,7 +42,7 @@ final cookedAiRawProvider = StreamProvider<List<UnifiedHistoryItem>>((ref) {
     for (final d in snap.docs) {
       final m = d.data();
       final tc = (m['timesCooked'] as int?) ?? 0;
-      final lc = m['lastCookedAt']; // Timestamp? may be null
+      final lc = m['lastCookedAt'];
       if (tc > 0 || lc != null) {
         out.add(UnifiedHistoryItem.fromAi(d.id, m));
       }
@@ -54,7 +51,6 @@ final cookedAiRawProvider = StreamProvider<List<UnifiedHistoryItem>>((ref) {
   });
 });
 
-// ===== Page ===================================================================
 class RecipeHistoryPage extends ConsumerWidget {
   const RecipeHistoryPage({Key? key}) : super(key: key);
 
@@ -125,7 +121,6 @@ class RecipeHistoryPage extends ConsumerWidget {
                             ))
                         .toList();
 
-                // AI already Unified
                 final ai = aiAsync.value ?? const <UnifiedHistoryItem>[];
 
                 // Merge & sort by lastCookedAt desc (nulls last)
@@ -169,7 +164,7 @@ class RecipeHistoryPage extends ConsumerWidget {
 
                           final isAi = it.source == RecipeSource.ai;
 
-                          // ✅ Live favourite for AI items (falls back to list value while loading)
+                          // Live favourite for AI items (falls back to list value while loading)
                           bool fav = it.isFavourite;
                           if (isAi) {
                             final favAsync = ref.watch(cravingFavouriteStatusProvider(it.id));
@@ -179,11 +174,10 @@ class RecipeHistoryPage extends ConsumerWidget {
                             );
                           }
 
-                          // 🔁 Adapt UnifiedHistoryItem -> RecipeHistoryEntry for the shared card
                           final entry = RecipeHistoryEntry(
                             recipeId: it.id,
                             recipeTitle: it.title,
-                            isFavourite: fav,                 // 👈 use the live flag
+                            isFavourite: fav,
                             lastCookedAt: it.lastCookedAt,
                             timesCooked: it.timesCooked,
                             imageUrl: it.imageUrl,
@@ -191,14 +185,13 @@ class RecipeHistoryPage extends ConsumerWidget {
                           );
 
                           return CookedRecipeCard(
-                            key: ValueKey('${isAi ? "ai" : "n"}-${it.id}-${fav ? 1 : 0}'), // 👈 force rebuild when fav changes
+                            key: ValueKey('${isAi ? "ai" : "n"}-${it.id}-${fav ? 1 : 0}'), 
                             recipe: entry,
                             imageUrl: it.imageUrl,
                             isAi: isAi,
                             onTap: () async {
                               if (uid == null) return;
 
-                              // loader
                               showDialog(
                                 context: context,
                                 barrierDismissible: false,
@@ -212,7 +205,6 @@ class RecipeHistoryPage extends ConsumerWidget {
                                 ),
                               );
 
-                              // ===== normal recipe (unchanged) =====
                               if (it.source == RecipeSource.normal) {
                                 final detail = await RecipeTrackerService.fetchFullRecipeDetail(it.id);
                                 Navigator.of(context, rootNavigator: true).pop();
@@ -229,7 +221,7 @@ class RecipeHistoryPage extends ConsumerWidget {
                                 return;
                               }
 
-                              // --- AI recipe open (safe, no collectionGroup) ---
+                              // AI recipe open
                               final found = await CravingsRecipeService.fetchCravingByRecipeKey(
                                 uid: uid,
                                 recipeKey: it.id, // this is the ai:<hash>
@@ -237,17 +229,16 @@ class RecipeHistoryPage extends ConsumerWidget {
 
                               Navigator.of(context, rootNavigator: true).pop();
 
-                              // ✅ Guard before navigation
                               if (found == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('AI recipe not available yet, please try again.')),
                                 );
-                                return; // 🚫 do not navigate at all
+                                return; 
                               }
 
-                              // ✅ Only navigate AFTER Firestore returns valid data
+                              // Only navigate AFTER Firestore returns valid data
                               context.push('/cravingRecipe', extra: {
-                                'recipe': found.recipe,   // now guaranteed non-null
+                                'recipe': found.recipe,
                                 'fromHistory': true,
                                 'recipeKey': it.id,
                                 'sessionId': found.sessionId,
@@ -268,7 +259,6 @@ class RecipeHistoryPage extends ConsumerWidget {
     );
   }
 
-  // ==== grouping helpers (Today, Yesterday, Week, Earlier, Unknown) ===========
   List<_Group> _groupByRecency(List<UnifiedHistoryItem> items) {
     final now = DateTime.now();
     final today = <UnifiedHistoryItem>[];

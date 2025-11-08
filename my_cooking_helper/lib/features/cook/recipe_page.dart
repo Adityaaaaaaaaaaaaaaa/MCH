@@ -15,7 +15,6 @@ import '/services/recipe_search_service.dart';
 import '/widgets/recipe/recipe_page_widgets.dart';
 import '/widgets/shimmer/recipe_page_skeleton.dart';
 
-// Rebuilds on sign-in, sign-out, and user switches
 final authUserProvider = StreamProvider<User?>(
   (ref) => FirebaseAuth.instance.userChanges(),
 );
@@ -24,9 +23,8 @@ final recipeSearchServiceProvider = Provider<RecipeSearchService>((ref) {
   return RecipeSearchService();
 });
 
-// AFTER (auto-updates on userChanges)
 final favouriteStatusProvider = StreamProvider.autoDispose.family<bool, String>((ref, recipeId) {
-  final user = ref.watch(authUserProvider).value;   // 👈 watch, not read
+  final user = ref.watch(authUserProvider).value;
   final uid = user?.uid;
   if (uid == null) return Stream<bool>.value(false);
 
@@ -65,16 +63,13 @@ List<RecipeYoutubeVideo> normalizeVideoList(dynamic videosRaw) {
       if (e is RecipeYoutubeVideo) return e;
       if (e is Map<String, dynamic>) return RecipeYoutubeVideo.fromJson(e);
       if (e is RecipeVideo) {
-        // Convert RecipeVideo to Map and then to RecipeYoutubeVideo if possible
         try {
-          // Assumes RecipeVideo has a toJson() method compatible with RecipeYoutubeVideo.fromJson
           return RecipeYoutubeVideo.fromJson(e.toJson());
         } catch (_) {
-          // fallback or skip
           return null;
         }
       }
-      return null; // skip unconvertible entries
+      return null;
     }).whereType<RecipeYoutubeVideo>().toList();
   }
   return [];
@@ -310,7 +305,7 @@ class RecipePage extends ConsumerWidget {
                             return;
                           }
 
-                          // Toggle favourite, and Firestore will trigger the stream update!
+                          // favourite
                           await RecipeSaveService.updateFavouriteStatus(
                             recipeId: recipeId,
                             userId: userId,
@@ -355,11 +350,9 @@ class RecipePage extends ConsumerWidget {
                                     if (e is RecipeVideo) return e;
                                     if (e is Map<String, dynamic>) return RecipeVideo.fromJson(e);
                                     if (e is Map) {
-                                      // tolerate Map<Object,Object>
                                       final m = e.map((k, v) => MapEntry(k.toString(), v));
                                       return RecipeVideo.fromJson(m);
                                     }
-                                    // If something like RecipeYoutubeVideo sneaks in and has toJson()
                                     try {
                                       final toJson = (e as dynamic).toJson;
                                       if (toJson != null) {
@@ -429,7 +422,6 @@ class RecipePage extends ConsumerWidget {
   }
 }
 
-// --- Helper ---
 String formatTime(int totalMinutes) {
   final hours = totalMinutes ~/ 60;
   final mins = totalMinutes % 60;

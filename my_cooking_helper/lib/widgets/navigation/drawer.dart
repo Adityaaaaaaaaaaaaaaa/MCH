@@ -26,7 +26,6 @@ class _CustomDrawerState extends State<CustomDrawer>
   late AnimationController _emojiTransitionController;
 
   late Animation<double> _headerAnimation;
-  // kept but no longer used to drive entrance
   // ignore: unused_field
   late Animation<double> _itemsAnimation;
   late Animation<double> _emojiRotation;
@@ -235,7 +234,7 @@ class _CustomDrawerState extends State<CustomDrawer>
         ),
         child: Column(
           children: [
-            // Header animates in lightly
+            // Header 
             AnimatedBuilder(
               animation: Listenable.merge([
                 _headerAnimation, _emojiRotation, _emojiScale,
@@ -252,7 +251,7 @@ class _CustomDrawerState extends State<CustomDrawer>
               },
             ),
 
-            // Routes list (no entrance animation)
+            // Routes list
             Expanded(
               child: ListView.separated(
                 cacheExtent: MediaQuery.of(context).size.height,
@@ -426,7 +425,7 @@ class _CustomDrawerState extends State<CustomDrawer>
 
             SizedBox(width: 16.w),
 
-            // Title (no ellipsis): FittedBox scales down to fit width
+            // Title 
             Expanded(
               child: Align(
                 alignment: Alignment.centerLeft,
@@ -436,9 +435,9 @@ class _CustomDrawerState extends State<CustomDrawer>
                   child: Text(
                     'cookgenix',
                     softWrap: false,
-                    overflow: TextOverflow.visible, // no ellipsis
+                    overflow: TextOverflow.visible, 
                     style: TextStyle(
-                      fontSize: 20.sp, // will scale down if needed
+                      fontSize: 20.sp, 
                       fontWeight: FontWeight.w800,
                       color: _getCustomColor(isDark, 'text'),
                       letterSpacing: 0.8,
@@ -561,7 +560,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             Text(
                               route.label,
                               maxLines: 1,
-                              overflow: TextOverflow.ellipsis, // safe for long labels
+                              overflow: TextOverflow.ellipsis, 
                               style: TextStyle(
                                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                                 fontSize: 15.sp,

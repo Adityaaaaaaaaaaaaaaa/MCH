@@ -72,7 +72,7 @@ class HealthScoreCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Heart + Score Column, centered vertically and spaced
+          // Heart + Score Colum
           Expanded(
             flex: 8,
             child: Column(
@@ -110,7 +110,6 @@ class HealthScoreCard extends StatelessWidget {
             ),
           ),
 
-          // Vertical Divider, centered and sized to column
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 8.w),
             child: Container(
@@ -123,7 +122,7 @@ class HealthScoreCard extends StatelessWidget {
             ),
           ),
 
-          // Main Info Column, spaced evenly and vertically centered
+          // Main Info Column
           Expanded(
             flex: 8,
             child: Column(
@@ -192,7 +191,6 @@ class RecipeSummaryText extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (geminiSummary == null) {
-      // Fallback to HTML
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 10),
         padding: const EdgeInsets.all(18),
@@ -223,12 +221,11 @@ class RecipeSummaryText extends StatelessWidget {
       );
     }
 
-    // --- AI Summary Display ---
+    // AI Summary Display
     final highlights = (geminiSummary?['highlights'] as List?)?.cast<String>() ?? [];
     final time = _extractTimeFromSummary(geminiSummary);
     final nutrition = geminiSummary?['nutrition'] as String?;
     final servings = geminiSummary?['servings'] as String?;
-    //final title = geminiSummary?['title'] as String?;
     final shortSummary = geminiSummary?['short_summary'] as String?;
 
     return Container(
@@ -267,7 +264,6 @@ class RecipeSummaryText extends StatelessWidget {
             SizedBox(height: 7.h),
             Text(
               shortSummary,
-              //textAlign: TextAlign.justify,
               style: TextStyle(
                 fontSize: 16.sp,
                 height: 1.5,
@@ -314,7 +310,6 @@ class RecipeSummaryText extends StatelessWidget {
     );
   }
 
-  // Helper to extract time info if available in the short summary or nutrition
   String? _extractTimeFromSummary(Map<String, dynamic>? summary) {
     // Try to find time in the short summary (regex for "XX min" or "XX hr YY min")
     final shortSummary = summary?['short_summary'] as String? ?? '';
@@ -453,7 +448,7 @@ class ExtendedIngredientCard extends StatelessWidget {
   }
 }
 
-// --- Glass Dialog Widget ---
+// Glass Dialog Widget 
 class GlassIngredientDialog extends StatelessWidget {
   final ExtendedIngredient ingredient;
   final bool isDark;
@@ -473,7 +468,7 @@ class GlassIngredientDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
-      child: IntrinsicHeight( // 👈 dialog wraps content
+      child: IntrinsicHeight( 
         child: Container(
           padding: EdgeInsets.all(18.w),
           decoration: BoxDecoration(
@@ -508,7 +503,7 @@ class GlassIngredientDialog extends StatelessWidget {
                     padding: EdgeInsets.all(20.w),
                     child: SingleChildScrollView(
                       child: Column(
-                        mainAxisSize: MainAxisSize.min, // 👈 shrink-wrap
+                        mainAxisSize: MainAxisSize.min, 
                         children: [
                           // Glow image avatar
                           Container(
@@ -663,7 +658,6 @@ class GlassIngredientDialog extends StatelessWidget {
   }
 }
 
-// --- Helper for smart formatting ---
 String formatAmount(double? amount) {
   if (amount == null) return '';
   if (amount == amount.roundToDouble()) {
@@ -793,7 +787,6 @@ class _CaloricBreakdownWidgetState extends State<CaloricBreakdownWidget>
                 borderRadius: BorderRadius.circular(28.r),
                 child: Stack(
                   children: [
-                    // Subtle shimmer effect
                     if (isHovered)
                       AnimatedBuilder(
                         animation: _shimmerAnimation,
@@ -1102,7 +1095,7 @@ class _CaloricBreakdownWidgetState extends State<CaloricBreakdownWidget>
           borderRadius: BorderRadius.circular(20.r),
           splashColor: color.withOpacity(0.2),
           highlightColor: color.withOpacity(0.1),
-          onTap: () {}, // Could open a tooltip or info dialog
+          onTap: () {}, 
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
             decoration: BoxDecoration(
@@ -1273,7 +1266,7 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ===== Card: Main Player =====
+        // Card: Main Player
         Container(
           key: _playerAnchorKey,
           margin: EdgeInsets.only(bottom: 14.h),
@@ -1368,7 +1361,7 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection>
           ),
         ),
 
-        // ===== Show/Hide More Button =====
+        // Show/Hide More Button 
         if (widget.videos.length > 1 && !showAll)
           Align(
             alignment: Alignment.center,
@@ -1546,7 +1539,7 @@ class _InfoChip extends StatelessWidget {
   }
 }
 
-/// -- In-app WebView Dialog Helper -- ///
+//In-app WebView Dialog Helper 
 void showRecipeWebView(BuildContext context, String url) {
   showDialog(
     context: context,

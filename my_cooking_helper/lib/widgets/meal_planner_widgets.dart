@@ -7,7 +7,7 @@ import 'package:glass/glass.dart';
 
 class DayRowCarousel extends StatelessWidget {
   final String dayLabel;            // e.g. "Monday — Aug 18"
-  final bool isToday;               // highlight row if true
+  final bool isToday;               
   final List<MealCellLite> meals;   // 3 items: breakfast, lunch, dinner
   final VoidCallback? onLongPressDay;
 
@@ -24,7 +24,6 @@ class DayRowCarousel extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Enhanced colors with more personality
     final borderColor = isToday
         ? theme.colorScheme.primary.withOpacity(0.6)
         : isDark 
@@ -81,7 +80,7 @@ class DayRowCarousel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Enhanced day label with better typography
+          // Enhanced day label 
           Row(
             children: [
               if (isToday) ...[
@@ -120,9 +119,9 @@ class DayRowCarousel extends StatelessWidget {
           ),
           SizedBox(height: 14.h),
 
-          // Enhanced horizontal carousel with better spacing
+          // horizontal carousel 
           SizedBox(
-            height: math.max(160.h, 150.0), // Updated to match card height
+            height: math.max(160.h, 150.0),
             child: ListView.separated(
               cacheExtent: MediaQuery.of(context).size.height,
               scrollDirection: Axis.horizontal,
@@ -171,7 +170,6 @@ class MealCardLarge extends StatelessWidget {
   final MealCellLite meal;
   const MealCardLarge({super.key, required this.meal});
 
-  // Get color based on meal type
   Color _getMealColor(String label, bool isDark) {
     switch (label.toLowerCase()) {
       case 'breakfast':
@@ -194,9 +192,8 @@ class MealCardLarge extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (_, constraints) {
-        // More responsive card sizing
         final screenW = MediaQuery.of(context).size.width;
-        final cardW = math.min(screenW * 0.75, 260.0).w; // Increased width
+        final cardW = math.min(screenW * 0.75, 260.0).w; 
 
         final card = Material(
           color: Colors.transparent,
@@ -207,7 +204,7 @@ class MealCardLarge extends StatelessWidget {
             highlightColor: mealColor.withOpacity(0.05),
             child: Container(
               width: cardW,
-              height: math.max(160.h, 150.0), // Increased height
+              height: math.max(160.h, 150.0), 
               padding: EdgeInsets.all(12.w),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20.r),
@@ -234,11 +231,11 @@ class MealCardLarge extends StatelessWidget {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min, // Prevent overflow
+                mainAxisSize: MainAxisSize.min, 
                 children: [
-                  // Image with enhanced styling - increased size
+                  // Image 
                   Expanded(
-                    flex: 4, // Increased from 3 to 4 for larger image
+                    flex: 4, 
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16.r),
                       child: Container(
@@ -280,7 +277,7 @@ class MealCardLarge extends StatelessWidget {
                                 alignment: Alignment.center,
                                 child: Icon(
                                   Icons.restaurant_menu_outlined,
-                                  size: 32, // Increased icon size for larger image area 
+                                  size: 32,  
                                   color: mealColor.withOpacity(0.5),
                                 ),
                               ),
@@ -289,7 +286,7 @@ class MealCardLarge extends StatelessWidget {
                   ),
                   SizedBox(height: 8.h),
                   
-                  // Meal type label with better styling
+                  // Meal type label 
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
                     decoration: BoxDecoration(
@@ -308,7 +305,7 @@ class MealCardLarge extends StatelessWidget {
                   ),
                   SizedBox(height: 6.h),
                   
-                  // Title with improved typography - flexible to prevent overflow
+                  // Title 
                   Expanded(
                     flex: 2,
                     child: Column(
@@ -392,7 +389,6 @@ class WeekHeaderCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Gather actions (skip nulls)
     final actions = <Widget>[
       if (secondaryAction != null) secondaryAction!,
       if (primaryAction != null) primaryAction!,
@@ -449,7 +445,7 @@ class WeekHeaderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Enhanced header row
+          // header row
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -528,7 +524,7 @@ class WeekHeaderCard extends StatelessWidget {
             ],
           ),
 
-          // Enhanced actions with better spacing
+          // actions 
           if (actions.isNotEmpty) ...[
             SizedBox(height: 20.h),
             Row(
@@ -540,7 +536,7 @@ class WeekHeaderCard extends StatelessWidget {
                     spacing: 10.w,
                     runSpacing: 10.h,
                     children: actions.map((action) {
-                      // Enhance button styling if it's an ElevatedButton or OutlinedButton
+                      // button styling if it's an ElevatedButton or OutlinedButton
                       if (action is ElevatedButton) {
                         return _enhanceElevatedButton(action, theme);
                       } else if (action is OutlinedButton) {
@@ -569,10 +565,8 @@ class WeekHeaderCard extends StatelessWidget {
   }
 
   Widget _enhanceElevatedButton(ElevatedButton button, ThemeData theme) {
-    // Extract the original properties properly
     final onPressed = button.onPressed;
     
-    // Handle the button content
     Widget buttonContent;
     Icon? buttonIcon;
     
@@ -620,12 +614,11 @@ class WeekHeaderCard extends StatelessWidget {
     // Extract the original properties properly
     final onPressed = button.onPressed;
     
-    // Handle the button content
     Widget buttonContent;
     Icon? buttonIcon;
     
     if (button.child is Row) {
-      // It's an OutlinedButton.icon, extract icon and label
+      // OutlinedButton.icon, extract icon and label
       final row = button.child as Row;
       final children = row.children;
       

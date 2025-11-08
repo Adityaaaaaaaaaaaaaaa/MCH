@@ -1,4 +1,3 @@
-// lib/features/shopping/shopping.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -41,7 +40,7 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> with TickerProvider
 
   Future<void> _onBellPressed() async {
     if (_hasReminder) {
-      // Offer cancel
+      // cancel
       final ok = await showDialog<bool>(
         context: context,
         builder: (c) => AlertDialog(
@@ -81,13 +80,9 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> with TickerProvider
       return;
     }
 
-    // Not set → open sheet to pick future date/time + pre-alert
+    // Not set - open sheet to pick future date/time + pre-alert
     final res = await showReminderSheet(context);
     if (res == null) return;
-
-    // Blue log
-    // ignore: avoid_print
-    print('\x1B[34m[SHOP UI] scheduling reminder for ${res.when} (preAlert=${res.preAlert})\x1B[0m');
 
     try {
       await ReminderService().addCalendarAndNotify(

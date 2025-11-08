@@ -17,7 +17,6 @@ class RecipeSaveService {
     final rid = (recipe.id ?? '').toString().trim();
     final uid = userId.trim();
     if (rid.isEmpty || uid.isEmpty) {
-      print('\x1B[34m[DEBUG] markRecipeAsCooked: missing userId/recipeId (uid="$uid", rid="$rid") → abort\x1B[0m');
       return;
     }
 
@@ -26,8 +25,6 @@ class RecipeSaveService {
     final exists = (await recipeDoc.get()).exists;
     if (!exists) {
       await recipeDoc.set(recipe.toJson());
-      // ignore: avoid_print
-      print('\x1B[34m[DEBUG] markRecipeAsCooked: upserted global recipe recipes/$rid\x1B[0m');
     } else {
       // ignore: avoid_print
       print('\x1B[34m[DEBUG] markRecipeAsCooked: global recipe already exists recipes/$rid\x1B[0m');
@@ -62,18 +59,15 @@ class RecipeSaveService {
             'isFavourite': isFavourite,
             'lastCookedAt': FieldValue.serverTimestamp(),
             'timesCooked': FieldValue.increment(1),
-            'imageUrl': recipe.image, // will overwrite if provided (same as before)
+            'imageUrl': recipe.image, 
             if (needsId) 'recipeId': rid,
             if (needsTitle) 'recipeTitle': (recipe.title ?? 'Untitled'),
             if (needsImage && (recipe.image ?? '').toString().isNotEmpty) 'imageUrl': recipe.image,
           },
           SetOptions(merge: true),
         );
-
-        // ignore: avoid_print
-        print('\x1B[34m[DEBUG] markRecipeAsCooked: updated users/$uid/recipeHistory/$rid (healed missing fields if any)\x1B[0m');
       } else {
-        // First time → write full summary (unchanged from your logic)
+        // First time - write full summary 
         transaction.set(historyRef, {
           'recipeId': rid,
           'recipeTitle': (recipe.title ?? 'Untitled'),
@@ -82,14 +76,12 @@ class RecipeSaveService {
           'timesCooked': 1,
           'imageUrl': recipe.image,
         });
-
-        print('\x1B[34m[DEBUG] markRecipeAsCooked: created users/$uid/recipeHistory/$rid\x1B[0m');
       }
     });
 
     await _healHistoryDoc(userId: uid, recipeId: rid);
 
-    // --- Non-blocking inventory deduction (Spoonacular) -------------------------
+    // Non-blocking inventory deduction (Spoonacular)
     try {
       final items = <CookedIngredientPayload>[];
       if ((recipe.extendedIngredients).isNotEmpty) {
@@ -110,11 +102,6 @@ class RecipeSaveService {
           ingredients: items,
           apply: true,
         ));
-        // ignore: avoid_print
-        print('\x1B[34m[DEBUG] markRecipeAsCooked: triggered inventory deduction for ${items.length} items\x1B[0m');
-      } else {
-        // ignore: avoid_print
-        print('\x1B[34m[DEBUG] markRecipeAsCooked: no ingredients to deduct\x1B[0m');
       }
     } catch (e) {
       // ignore: avoid_print
@@ -133,8 +120,6 @@ class RecipeSaveService {
     final rid = recipeId.toString().trim();
     final uid = userId.trim();
     if (rid.isEmpty || uid.isEmpty) {
-      // ignore: avoid_print
-      print('\x1B[34m[DEBUG] updateFavouriteStatus: missing userId/recipeId (uid="$uid", rid="$rid") → abort\x1B[0m');
       return;
     }
 
@@ -151,8 +136,6 @@ class RecipeSaveService {
         .doc(rid)
         .set(favUpdate, SetOptions(merge: true));
 
-    print('\x1B[34m[DEBUG] updateFavouriteStatus: users/$uid/recipeHistory/$rid -> isFavourite=$isFavourite\x1B[0m');
-
     await _healHistoryDoc(userId: uid, recipeId: rid);
   }
 
@@ -165,14 +148,12 @@ class RecipeSaveService {
     final uid = userId.trim();
     final rid = recipeId.toString().trim();
     if (uid.isEmpty || rid.isEmpty) {
-      print('\x1B[34m[DEBUG] _healHistoryDoc: empty uid/rid, skip\x1B[0m');
       return;
     }
 
     final historyRef = db.collection('users').doc(uid).collection('recipeHistory').doc(rid);
     final snap = await historyRef.get();
     if (!snap.exists) {
-      print('\x1B[34m[DEBUG] _healHistoryDoc: history doc missing users/$uid/recipeHistory/$rid\x1B[0m');
       return;
     }
 
@@ -181,13 +162,11 @@ class RecipeSaveService {
     final hasImage = (data['imageUrl'] as String?)?.trim().isNotEmpty == true;
 
     if (hasTitle && hasImage) {
-      print('\x1B[34m[DEBUG] _healHistoryDoc: nothing to heal for $rid\x1B[0m');
       return;
     }
 
     final rSnap = await db.collection('recipes').doc(rid).get();
     if (!rSnap.exists) {
-      print('\x1B[34m[DEBUG] _healHistoryDoc: recipes/$rid not found\x1B[0m');
       return;
     }
 
@@ -200,8 +179,6 @@ class RecipeSaveService {
       if (!hasImage && img.isNotEmpty) 'imageUrl': img,
       if ((data['recipeId'] as String?)?.trim().isEmpty ?? true) 'recipeId': rid,
     }, SetOptions(merge: true));
-
-    print('\x1B[34m[DEBUG] _healHistoryDoc: healed users/$uid/recipeHistory/$rid\x1B[0m');
   }
 
   /// Full backfill for a user (run once from a debug button)
@@ -209,12 +186,10 @@ class RecipeSaveService {
     final db = FirebaseFirestore.instance;
     final uid = userId.trim();
     if (uid.isEmpty) {
-      print('\x1B[34m[DEBUG] backfill: empty uid, abort\x1B[0m');
       return;
     }
 
     final qs = await db.collection('users').doc(uid).collection('recipeHistory').get();
-    print('\x1B[34m[DEBUG] backfill: scanning ${qs.docs.length} docs for uid=$uid\x1B[0m');
 
     for (final d in qs.docs) {
       final m = d.data();
@@ -224,7 +199,6 @@ class RecipeSaveService {
       if (!hasTitle) {
         final rSnap = await db.collection('recipes').doc(rid).get();
         if (!rSnap.exists) {
-          print('\x1B[34m[DEBUG] backfill: recipes/$rid missing; skip\x1B[0m');
           continue;
         }
         final r = rSnap.data()!;
@@ -235,7 +209,6 @@ class RecipeSaveService {
           'recipeTitle': title,
           if (img.isNotEmpty) 'imageUrl': img,
         }, SetOptions(merge: true));
-        print('\x1B[34m[DEBUG] backfill: users/$uid/recipeHistory/$rid -> title fixed\x1B[0m');
       }
     }
   }

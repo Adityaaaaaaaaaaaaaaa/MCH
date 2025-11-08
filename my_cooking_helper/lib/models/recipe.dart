@@ -51,14 +51,14 @@ class Recipe {
       prepTime: parseTime(json['preparationMinutes']),
       cookTime: parseTime(json['cookingMinutes']),
       servings: parseTime(json['servings']),
-      dishTypes: parsedDishTypes,  // <--- Always a non-null list
+      dishTypes: parsedDishTypes,  //Always a non-null list
       ingredients: (json['extendedIngredients'] as List<dynamic>? ?? [])
           .map((i) => Ingredient.fromJson(i as Map<String, dynamic>))
           .toList(),
       instructions: _parseInstructions(json),
       equipment: _parseEquipment(json),
       website: json['sourceUrl']?.toString() ?? '',
-      videos: [], // Implement if your backend supports it
+      videos: [], 
       nutrition: json['nutrition'] as Map<String, dynamic>?,
     );
   }

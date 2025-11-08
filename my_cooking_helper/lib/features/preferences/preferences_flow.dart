@@ -39,24 +39,13 @@ class _PreferencesFlowState extends State<PreferencesFlow> {
     }
   }
 
-  /*Widget _buildProgressBar() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 0.h),
-      child: LinearProgressIndicator(
-        value: (_currentPage + 1) / totalPages,
-        backgroundColor: Colors.blue[50],
-        valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
-        minHeight: 7.h,
-      ),
-    );
-  }*/
   Widget _buildProgressBar() {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 30.w, vertical: 0.h),
       child: StepProgressIndicator(
         totalSteps: totalPages,
         currentStep: _currentPage + 1, // +1 because steps are 1-indexed
-        size: 6.h, // Thickness of the bar
+        size: 6.h, // Thickness of bar
         direction: Axis.horizontal,
         progressDirection: TextDirection.ltr,
         padding: 3.w,

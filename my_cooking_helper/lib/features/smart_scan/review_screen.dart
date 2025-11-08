@@ -158,7 +158,7 @@ class ReviewScreen extends ConsumerWidget {
                           backgroundColor: isDark ? Colors.blueGrey : Colors.grey.shade400,
                           width: 200.w,
                         );
-                        context.go('/home'); // keeping your original nav behavior
+                        context.go('/home');
                       } catch (e) {
                         SnackbarUtils.show(
                           context,
@@ -182,7 +182,7 @@ class ReviewScreen extends ConsumerWidget {
         ],
       ),
 
-      // Add button as FAB so it doesn't disturb the page layout
+      // Add button
       floatingActionButton: AddItemFAB(
         onPressed: () async {
           final added = await showDialog<ScannedItem>(

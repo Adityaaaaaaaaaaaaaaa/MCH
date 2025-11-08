@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Header skeleton for the planner (matches your WeekHeaderCard proportions)
+/// Header skeleton for the planner
 class WeekHeaderSkeleton extends StatelessWidget {
   const WeekHeaderSkeleton({super.key});
 
@@ -122,7 +122,6 @@ class DayRowCarouselSkeleton extends StatelessWidget {
     final highlightColor = isDark ? Colors.deepPurple[400]! : Colors.deepPurple[50]!;
     final blockColor = isDark ? Colors.deepPurple[700]! : Colors.white;
 
-    // approximate title width from hint length (just for visual variety)
     final titleWidth = (titleHint.length * 8).toDouble().clamp(140, 240);
 
     return Shimmer.fromColors(

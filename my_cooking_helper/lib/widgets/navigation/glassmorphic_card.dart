@@ -74,7 +74,6 @@ class GlassmorphicCard extends StatelessWidget {
             ),
           ),
         ),
-        // Inner subtle border for layered look
         Positioned.fill(
           child: IgnorePointer(
             child: Container(

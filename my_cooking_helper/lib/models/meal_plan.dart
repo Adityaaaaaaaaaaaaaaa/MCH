@@ -1,4 +1,4 @@
-import '/models/recipe_detail.dart'; // fix import path
+import '/models/recipe_detail.dart';
 
 class MealPlanDay {
   final int dayIndex;            // 1..7
@@ -36,7 +36,7 @@ class MealPlanWeek {
   MealPlanWeek({required this.planId, required this.days});
 }
 
-  // ---- Light view model just for the planner row ----
+  // Light view model just for the planner row 
 class MealLite {
   final String id;
   final String title;

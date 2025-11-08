@@ -14,7 +14,6 @@ import '/widgets/navigation/appbar.dart';
 import '/widgets/navigation/drawer.dart';
 import '/utils/colors.dart';
 
-// Rebuilds on sign-in, sign-out, and user switches
 final authUserProvider = StreamProvider<User?>(
   (ref) => FirebaseAuth.instance.userChanges(),
 );
@@ -100,7 +99,7 @@ class RecipeFavouritesPage extends ConsumerWidget {
 
                 final uid = FirebaseAuth.instance.currentUser?.uid;
 
-                // Normal favourites -> Unified
+                // Normal favourites - Unified
                 final normalUnified =
                     (normalAsync.value ?? const <RecipeHistoryEntry>[])
                         .map((r) => UnifiedHistoryItem(
@@ -114,10 +113,10 @@ class RecipeFavouritesPage extends ConsumerWidget {
                             ))
                         .toList();
 
-                // AI favourites (already Unified)
+                // AI favourites
                 final aiUnified = aiAsync.value ?? const <UnifiedHistoryItem>[];
 
-                // Merge and sort (prefer most recently cooked; nulls last; then title)
+                // Merge and sort (most recently cooked; nulls last; then title)
                 int ts(UnifiedHistoryItem x) =>
                     x.lastCookedAt?.millisecondsSinceEpoch ?? 0;
                 final favs = <UnifiedHistoryItem>[...normalUnified, ...aiUnified]
@@ -146,7 +145,6 @@ class RecipeFavouritesPage extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     final it = favs[index];
 
-                    // Re-use the shared card by adapting to RecipeHistoryEntry
                     final entry = RecipeHistoryEntry(
                       recipeId: it.id,                  // normal: numeric/string id; AI: ai:<hash>
                       recipeTitle: it.title,
@@ -164,7 +162,6 @@ class RecipeFavouritesPage extends ConsumerWidget {
                       onTap: () async {
                         if (uid == null) return;
 
-                        // loader
                         showDialog(
                           context: context,
                           barrierDismissible: false,
@@ -214,8 +211,8 @@ class RecipeFavouritesPage extends ConsumerWidget {
                           'recipe': found.recipe,
                           'fromHistory': true,
                           'recipeKey': it.id,
-                          'sessionId': found.sessionId, // optional
-                          'trackerId': found.trackerId, // optional
+                          'sessionId': found.sessionId,
+                          'trackerId': found.trackerId,
                         });
                       },
                     );

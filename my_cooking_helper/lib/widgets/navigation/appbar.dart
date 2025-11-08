@@ -60,7 +60,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       color: theme.colorScheme.primary,
                       tooltip: "Back",
                       onPressed: onMenuTap ?? () {
-                        // Fallback: Try pop, then maybePop, then go home
                         if (Navigator.of(context).canPop()) {
                           Navigator.of(context).pop();
                         } else {

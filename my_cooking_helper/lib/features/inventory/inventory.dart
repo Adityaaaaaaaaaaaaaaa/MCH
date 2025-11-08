@@ -61,7 +61,6 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
     final items = ref.watch(inventoryControllerProvider);
     final sortedItems = sortInventory(List<Map<String, dynamic>>.from(items));
 
-    // Listen for connectivity flips & show snackbar
     ref.listen<AsyncValue<bool>>(isOnlineProvider, (prev, next) {
       next.whenOrNull(data: (online) {
         final prevVal = prev?.value;

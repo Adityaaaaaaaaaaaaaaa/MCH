@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -26,7 +25,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
   }
 
   Future<void> resetLocal() async {
-    blueDebugPrint('resetLocal(): clearing Hive + state');
     await inventoryBox.clear();
     state = [];
   }
@@ -52,40 +50,13 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
     return out;
   }
 
-  //remove apres tresting //////////////////////////////////////////////////////////////
-  void blueDebugPrint(Object msg) {
-    dynamic makeEncodable(dynamic value) {
-      if (value is Set) return value.map(makeEncodable).toList();
-      if (value is List) return value.map(makeEncodable).toList();
-      if (value is Map) return value.map((k, v) => MapEntry(k, makeEncodable(v)));
-      return value;
-    }
-
-    final encodable = makeEncodable(msg);
-    final str = (encodable is String)
-        ? encodable
-        : const JsonEncoder.withIndent('  ').convert(encodable);
-
-    for (final line in str.split('\n')) {
-      // blue
-      // ignore: avoid_print
-      print('\x1B[34m[INV] $line\x1B[0m');
-    }
-  }
-  /////////////////////////////////////////////////////////////////////////////////////////////
-
   Future<void> _init() async {
-    blueDebugPrint('Initializing InventoryController');
     inventoryBox = await Hive.openBox('inventoryBox');
     _loadLocal();
     _listenConnectivity();
 
     // Auth change: clear cache instantly to prevent ghost items, rebind stream.
     authSub = FirebaseAuth.instance.authStateChanges().listen((user) async {
-      blueDebugPrint({
-        'authStateChanges': user == null ? 'SIGNED OUT' : 'SIGNED IN',
-        'uid': user?.uid ?? '-'
-      });
       firestoreSub?.cancel();
       isListeningFirestore = false;
       await inventoryBox.clear();
@@ -103,21 +74,17 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
   void _loadLocal() {
     final local = inventoryBox.values.map((e) => Map<String, dynamic>.from(e)).toList();
     state = local;
-    blueDebugPrint({'_loadLocal count': local.length});
   }
 
   void _listenFirestore() {
     if (isListeningFirestore) {
-      blueDebugPrint('_listenFirestore(): already listening, skip');
       return;
     }
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      blueDebugPrint('_listenFirestore(): no user');
       return;
     }
 
-    blueDebugPrint('Attach Firestore stream: users/${user.uid}/inventory orderBy(dateAdded desc)');
     isListeningFirestore = true;
     firestoreSub?.cancel();
 
@@ -126,7 +93,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
         .orderBy('dateAdded', descending: true);
 
     firestoreSub = q.snapshots().listen((snapshot) async {
-      blueDebugPrint({'Firestore snapshot docs': snapshot.docs.length});
 
       final newState = snapshot.docs.map((doc) {
         final data = doc.data();
@@ -140,8 +106,8 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
 
       state = newState;
 
+      // ignore: unused_local_variable
       final missing = state.where((m) => ((m['imageUrl'] ?? '').toString().isEmpty)).length;
-      blueDebugPrint({'state updated (count)': state.length, 'missing imageUrl': missing});
 
       // OR, if you want the full batched run with throttle:
       unawaited(backfillAllImages(
@@ -156,17 +122,13 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
       }
     }, onDone: () {
       isListeningFirestore = false;
-      blueDebugPrint('Firestore stream closed');
     }, onError: (e) {
       isListeningFirestore = false;
-      blueDebugPrint('Firestore stream error: $e');
     });
   }
 
   void _listenConnectivity() {
-    blueDebugPrint('Listening for connectivity changes');
     connectivitySub = Connectivity().onConnectivityChanged.listen((status) async {
-      blueDebugPrint({'connectivity': status.toString()});
       if (await _isOnline()) {
         _listenFirestore();
         await syncLocalToFirestore();
@@ -181,7 +143,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
   Future<bool> _isOnline() async {
     final result = await Connectivity().checkConnectivity();
     final online = result != ConnectivityResult.none;
-    blueDebugPrint({'_isOnline': online, 'status': result.toString()});
     return online;
   }
 
@@ -189,7 +150,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
   Future<void> addOrUpdateItem(Map<String, dynamic> item, {String? previousId}) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      blueDebugPrint('addOrUpdateItem(): not logged in');
       return;
     }
 
@@ -212,20 +172,14 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
     String _nameForShopping = (item['itemName'] ?? newId).toString();
     String _unitForShopping = ((item['unit'] ?? 'count').toString());
 
-    blueDebugPrint({'addOrUpdateItem': {'newId': newId, 'previousId': previousId, 'qty+': incomingQty}});
 
     if (await _isOnline()) {
-      // Rename handling
-      // ONLINE path
-
-      // Handle rename (delete old doc if name changed)
       if (isEdit && previousId != newId) {
         try {
           await col.doc(previousId).delete();
           await inventoryBox.delete(previousId);
-          blueDebugPrint({'rename': 'deleted old doc', 'oldId': previousId});
+        // ignore: empty_catches
         } catch (e) {
-          blueDebugPrint({'rename error': e.toString()});
         }
       }
 
@@ -265,7 +219,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
             ..['offline'] = false;
 
           await inventoryBox.put(newId, _normalizeForHive(mergedLocal));
-          blueDebugPrint({'tx:update qty': nextQty, 'id': newId});
 
         } else {
           // New doc: set what the user provided (as-is)
@@ -283,7 +236,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
             ..['offline'] = false
             ..['dateAdded'] = DateTime.now().millisecondsSinceEpoch;
           await inventoryBox.put(newId, _normalizeForHive(local));
-          blueDebugPrint({'tx:set new doc': newId});
         }
       });
 
@@ -322,7 +274,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
         m['dateAdded'] = DateTime.now().toIso8601String();
 
         await inventoryBox.put(safeId, _normalizeForHive(m));
-        blueDebugPrint({'offline ${isEdit ? 'set' : 'merge'}': {'id': safeId, 'qty': m['quantity']}});
       } else {
         final m = Map<String, dynamic>.from(item)
           ..['id'] = safeId
@@ -332,7 +283,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
           ..['dateAdded'] = DateTime.now().toIso8601String();
 
         await inventoryBox.put(safeId, _normalizeForHive(m));
-        blueDebugPrint({'offline new': safeId});
       }
     }
 
@@ -342,22 +292,18 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
   Future<void> deleteItems(List<String> ids) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      blueDebugPrint('deleteItems(): not logged in');
       return;
     }
     final ref = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('inventory');
-    blueDebugPrint({'deleteItems count': ids.length});
     if (await _isOnline()) {
       for (var id in ids) {
         await ref.doc(id).delete();
         await inventoryBox.delete(id);
-        blueDebugPrint({'deleted online': id});
       }
     } else {
       // Only delete locally
       for (var id in ids) {
         await inventoryBox.delete(id);
-        blueDebugPrint({'deleted offline': id});
       }
     }
     _loadLocal();
@@ -366,7 +312,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
   Future<void> syncLocalToFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      blueDebugPrint('syncLocalToFirestore(): not logged in');
       return;
     }
     final ref = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('inventory');
@@ -377,7 +322,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
       final m = Map<String, dynamic>.from(item);
       if (m['offline'] == true) offlineItems.add(m);
     }
-    blueDebugPrint({'syncLocalToFirestore offlineCount': offlineItems.length});
 
     for (var m in offlineItems) {
       String safeName = (m['itemName'] ?? '').replaceAll(RegExp(r'[\/\\.#\$\\[\\]]'), '_');
@@ -387,7 +331,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
       await ref.doc(safeName).set(m, SetOptions(merge: true));
       m['id'] = safeName;
       await inventoryBox.put(safeName, m);
-      blueDebugPrint({'synced online': safeName});
     }
     _loadLocal();
   }
@@ -397,7 +340,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
     firestoreSub?.cancel();
     connectivitySub?.cancel();
     authSub?.cancel();
-    blueDebugPrint('InventoryController disposed');
     super.dispose();
   }
 
@@ -409,9 +351,7 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
         .collection('users').doc(user.uid).collection('inventory')
         .orderBy('dateAdded', descending: true);
 
-    blueDebugPrint('refreshFromFirestore()');
     final snapshot = await ref.get();
-    blueDebugPrint({'refreshFromFirestore docs': snapshot.docs.length});
 
     final newState = snapshot.docs.map((doc) {
       final data = doc.data();
@@ -440,18 +380,15 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
   /// Limit each pass to `max` docs to avoid hammering.
   Future<void> backfillImagesForMissing({int max = 8}) async {
     if (_imageBackfillInProgress) {
-      blueDebugPrint('backfillImagesForMissing(): already running, skip');
       return;
     }
     if (!await _isOnline()) {
-      blueDebugPrint('backfillImagesForMissing(): offline, skip');
       return;
     }
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     _imageBackfillInProgress = true;
-    blueDebugPrint('backfillImagesForMissing(): start');
 
     try {
       final missing = state
@@ -462,7 +399,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
           .take(max)
           .toList();
 
-      blueDebugPrint({'backfill: candidates': missing.map((m) => m['itemName']).toList()});
 
       final col = FirebaseFirestore.instance
           .collection('users')
@@ -474,27 +410,21 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
         final name = (m['itemName'] ?? '').toString();
         if (id.isEmpty || name.isEmpty) continue;
 
-        blueDebugPrint({'resolve try': name});
         final url = await IngredientImageService.getOrResolveFromGlobalPool(name);
         if (url == null) {
           // Mark permanent miss
           await col.doc(id).set({'imageStatus': 'none'}, SetOptions(merge: true));
           final updatedMiss = Map<String, dynamic>.from(m)..['imageStatus'] = 'none';
           await inventoryBox.put(id, updatedMiss);
-          blueDebugPrint({'resolve fail → marked none': name});
           continue;
         }
 
-        blueDebugPrint({'resolve ok': {'name': name, 'url': url}});
         await col.doc(id).set({'imageUrl': url}, SetOptions(merge: true));
         final updated = Map<String, dynamic>.from(m)..['imageUrl'] = url;
         await inventoryBox.put(id, updated);
       }
 
       _loadLocal();
-      blueDebugPrint('backfillImagesForMissing(): done');
-    } catch (e) {
-      blueDebugPrint({'backfill error': e.toString()});
     } finally {
       _imageBackfillInProgress = false;
     }
@@ -510,11 +440,9 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
     int hardCap = 0,
   }) async {
     if (_imageBackfillInProgress) {
-      blueDebugPrint('backfillAllImages(): already running, skip');
       return;
     }
     if (!await _isOnline()) {
-      blueDebugPrint('backfillAllImages(): offline, skip');
       return;
     }
     final user = FirebaseAuth.instance.currentUser;
@@ -533,14 +461,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
       final totalToProcess =
           (hardCap > 0) ? math.min(hardCap, queue.length) : queue.length;
 
-      blueDebugPrint({
-        'backfillAllImages queue': {
-          'totalMissingNow': queue.length,
-          'willProcess': totalToProcess,
-          'batchSize': batchSize,
-        }
-      });
-
       final col = FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -550,12 +470,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
       for (int start = 0; start < totalToProcess; start += batchSize) {
         final end = math.min(start + batchSize, totalToProcess);
         final batch = queue.sublist(start, end);
-        blueDebugPrint({
-          'backfillAllImages batch': {
-            'range': '$start..${end - 1}',
-            'size': batch.length,
-          }
-        });
 
         for (final m in batch) {
           final id = (m['id'] ?? '').toString();
@@ -568,9 +482,8 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
               await col.doc(id).set({'imageUrl': url}, SetOptions(merge: true));
               final updated = Map<String, dynamic>.from(m)..['imageUrl'] = url;
               await inventoryBox.put(id, updated);
-              blueDebugPrint({'backfill saved': {'id': id, 'name': name, 'url': url}});
             } catch (e) {
-              blueDebugPrint({'backfill save error': e.toString()});
+              print(e);
             }
           } else {
             // Mark as permanently missing so we never try again
@@ -578,9 +491,8 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
               await col.doc(id).set({'imageStatus': 'none'}, SetOptions(merge: true));
               final updated = Map<String, dynamic>.from(m)..['imageStatus'] = 'none';
               await inventoryBox.put(id, updated);
-              blueDebugPrint({'backfill miss (marked none)': name});
             } catch (e) {
-              blueDebugPrint({'mark none error': e.toString()});
+              print(e);
             }
           }
 
@@ -593,7 +505,6 @@ class InventoryController extends StateNotifier<List<Map<String, dynamic>>> {
         _loadLocal();
       }
 
-      blueDebugPrint({'backfillAllImages done': {'processedTotal': totalToProcess}});
     } finally {
       _imageBackfillInProgress = false;
     }

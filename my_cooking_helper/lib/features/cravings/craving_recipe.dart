@@ -1,4 +1,3 @@
-// lib/features/cravings/craving_recipe_page.dart
 // ignore_for_file: deprecated_member_use
 
 import 'dart:typed_data';
@@ -18,7 +17,6 @@ import '/widgets/cravings/craving_recipe_widgets.dart';
 
 enum _ShopVariant { bag, plus }
 
-// Rebuilds on sign-in, sign-out, and user switches
 final authUserProvider = StreamProvider<User?>(
   (ref) => FirebaseAuth.instance.userChanges(),
 );
@@ -28,14 +26,11 @@ class CravingRecipePage extends ConsumerStatefulWidget {
     super.key,
     required this.recipe,
     this.previewImageBytes,
-    this.openedFromHistory = false, // NEW
+    this.openedFromHistory = false,
     this.recipeKey,                 
   });
 
-  /// Full recipe from Firestore (already hydrated in your flow)
   final CravingRecipeModel recipe;
-
-  /// Optional preview image bytes (from the list card, memory-only)
   final Uint8List? previewImageBytes;
 
   final bool openedFromHistory;
@@ -51,22 +46,17 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
   final ValueNotifier<int> selectionDirtySignal = ValueNotifier<int>(0);
   final ValueNotifier<int> selectedCount = ValueNotifier<int>(0);
   final ValueNotifier<int> clearAllSignal = ValueNotifier<int>(0);
-  // Gate to ignore any selection events that might fire during initial build
   // ignore: unused_field
   bool _suppressInitSelectionEvents = true;
 
-  // Add near your ValueNotifiers:
   bool _primingDone = false;
   void _markUserInteraction() {
     if (!_primingDone) {
       _primingDone = true;
-      // BLUE
-      // ignore: avoid_print
-      print('\x1B[34m[SHOP] priming ended by user touch\x1B[0m');
     }
   }
 
-  // Convert a data URL -> bytes (when you only have imageDataUrl on the model)
+  // Convert a data URL -> bytes (when have imageDataUrl on the model)
   Uint8List? _bytesFromDataUrl(String? dataUrl) {
     if (dataUrl == null || dataUrl.isEmpty) return null;
     try {
@@ -79,7 +69,6 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
     }
   }
 
-  /// minutes → “xh ym”
   String formatHm(int totalMinutes) {
     final h = totalMinutes ~/ 60;
     final m = totalMinutes % 60;
@@ -107,13 +96,10 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _suppressInitSelectionEvents = false;
-      print('\x1B[34m[SHOP] selection gate OFF (user interactions will be processed)\x1B[0m');
     });
   }
 
   void _onClearAll() {
-    // ignore: avoid_print
-    print('\x1B[34m[SHOP] clearAllSignal received – ignored by design (list not cleared)\x1B[0m');
   }
 
   @override
@@ -127,7 +113,6 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
 
   // ignore: unused_element
   _ShopVariant _variantFor(dynamic e) {
-    // mirror tile logic: bag if in shopping('buy'), else plus
     String name = "";
 
     if (e is String) {
@@ -184,7 +169,6 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
       ),
       body: Stack(
         children: [
-          // Soft gradient backdrop
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -196,7 +180,6 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
               ),
             ),
           ),
-          // Subtle image texture
           if (bytes != null)
             Positioned.fill(
               child: Opacity(
@@ -355,7 +338,6 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
                                 onSelectionChanged: (ev) {
                                   final stillPriming = !_primingDone;
                                   if (stillPriming) {
-                                    print('\x1B[34m[SHOP] (init) ignoring event for ${ev.name}\x1B[0m');
                                     return;
                                   }
 
@@ -370,7 +352,6 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
                                   } else {
                                     svc.removeItem(ev.name);
                                   }
-                                  print('\x1B[34m[SHOP] ${ev.active ? "ADD" : "REMOVE"} $tag -> ${ev.name}\x1B[0m');
                                 },
                               ),
                             ),
@@ -393,7 +374,6 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
                                 onSelectionChanged: (ev) {
                                   final stillPriming = !_primingDone;
                                   if (stillPriming) {
-                                    print('\x1B[34m[SHOP] (init) ignoring event for ${ev.name}\x1B[0m');
                                     return;
                                   }
 
@@ -408,7 +388,6 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
                                   } else {
                                     svc.removeItem(ev.name);
                                   }
-                                  print('\x1B[34m[SHOP] ${ev.active ? "ADD" : "REMOVE"} $tag -> ${ev.name}\x1B[0m');
                                 },
                               ),
                             ),
@@ -417,12 +396,10 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
                             ModernCreateShoppingListButton(
                               selectAllSignal: selectAllSignal,
                               selectionDirtySignal: selectionDirtySignal,
-                              selectedCount: selectedCount, // NEW
-                              eligibleCount: eligible, // NEW
+                              selectedCount: selectedCount,
+                              eligibleCount: eligible,
                               onCreate: () {
                                 _markUserInteraction();
-                                // Persist current selection snapshot (bagSelected/plusSelected) as you prefer.
-                                // (No duplicates; tiles are idempotent and you can de-dupe server-side too.)
                               },
                               clearAllSignal: clearAllSignal,
                             ),
@@ -480,7 +457,6 @@ class _CravingRecipePageState extends ConsumerState<CravingRecipePage> {
             ),
           ),
 
-          // === Real-time action bar (favourite + cooked), driven by providers ===
           Consumer(
             builder: (context, ref, _) {
               final favAsync = ref.watch(cravingFavouriteStatusProvider(recipeKey));

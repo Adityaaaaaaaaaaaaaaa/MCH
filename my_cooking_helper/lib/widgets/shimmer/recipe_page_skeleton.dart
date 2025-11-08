@@ -9,7 +9,6 @@ class RecipePageSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Use neutral greys and adaptive purples for shimmer
     final baseColor = isDark ? Colors.deepPurple[800]! : Colors.deepPurple[100]!;
     final highlightColor = isDark ? Colors.deepPurple[400]! : Colors.deepPurple[50]!;
 
