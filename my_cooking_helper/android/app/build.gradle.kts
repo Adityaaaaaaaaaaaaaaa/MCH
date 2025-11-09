@@ -36,9 +36,21 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            isMinifyEnabled = true                // Enables R8 (shrinks & optimizes code)
+            isShrinkResources = true              // Removes unused resources (images, xmls)
+            isDebuggable = false                  // Ensures release is not debuggable
             signingConfig = signingConfigs.getByName("debug")
+
+            // Use optimized ProGuard rules
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+
+        debug {
+            // Debug build remains unchanged
+            isDebuggable = true
         }
     }
 }
