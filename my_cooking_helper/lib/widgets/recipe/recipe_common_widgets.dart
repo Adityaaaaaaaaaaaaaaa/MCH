@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '/utils/web_check.dart';
 import '/models/recipe.dart';
+import '/models/recipe_detail.dart';
 import '/utils/colors.dart';
 
 // Recipe Image Card
@@ -449,13 +450,14 @@ class InstructionsList extends StatelessWidget {
           ingredients = step['ingredients'] ?? [];
           equipment = step['equipment'] ?? [];
           length = step['length'] is Map ? step['length'] : null;
-        } else if (step.runtimeType.toString().contains('InstructionStep')) {
+        //} else if (step.runtimeType.toString().contains('InstructionStep')) {
+        } else if (step is InstructionStep) {
           try {
             stepText = step.step ?? '';
             number = step.number;
-            ingredients = step.ingredients ?? [];
-            equipment = step.equipment ?? [];
-            length = step.length as Map<String, dynamic>?;
+            ingredients = step.ingredients;
+            equipment = step.equipment;
+            length = step.length;
           } catch (_) {
             stepText = step.toString();
           }
