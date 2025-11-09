@@ -135,10 +135,10 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                   _overrideTime        = (tempMinutes == _defaultTime) ? null : tempMinutes;
                 });
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Filters set • '
-                      'spice=${tempRandom ? "RANDOM" : tempFixed}, time=${tempMinutes}m')),
-                );
+                // ScaffoldMessenger.of(context).showSnackBar(
+                //   SnackBar(content: Text('Filters set • '
+                //       'spice=${tempRandom ? "RANDOM" : tempFixed}, time=${tempMinutes}m')),
+                // );
               },
             );
           },
