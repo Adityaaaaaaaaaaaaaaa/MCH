@@ -97,6 +97,7 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
     String? unit,
     double have = 0,
     String tag = '',
+    bool accumulate = true,
   }) async {
     final normalizedUnit = (unit ?? 'count').trim().toLowerCase();
     final rawNeed = _numParse(need ?? 1, fallback: 1);
@@ -121,7 +122,10 @@ class ShoppingService extends StateNotifier<List<ShoppingItemModel>> {
 
       // If unit matches, ACCUMULATE the 'need'
       if ((existing.unit.trim().toLowerCase()) == normalizedUnit) {
-        finalNeed = _clampByUnit(existing.need + incomingNeed, normalizedUnit);
+        // Accumulate only when explicitly allowed
+        finalNeed = accumulate
+            ? _clampByUnit(existing.need + incomingNeed, normalizedUnit)
+            : incomingNeed; // just set directly if accumulate=false
         // keep the larger 'have' (or just keep existing)
         finalHave = _clampByUnit(existing.have, normalizedUnit);
         // keep existing unit and tag unless caller explicitly provides tag
