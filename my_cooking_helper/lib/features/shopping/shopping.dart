@@ -156,6 +156,7 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> with TickerProvider
               unit: updated.unit,
               have: updated.have,
               tag: updated.tag,
+              accumulate: false,
             ),
             onDelete: (name) => svc.remove(name),
             trailing: ClearListButton(
