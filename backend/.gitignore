@@ -5,3 +5,4 @@ __pycache__/
 *.env
 
 my-cooking-helper-*.json
+google-services.json
