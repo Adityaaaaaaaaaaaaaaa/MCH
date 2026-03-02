@@ -15,22 +15,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Lifespan context for startup/shutdown
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # --- STARTUP ---
-    ensure_off_aliases_loaded()   # your alias loader
-    # yield control to app
+    ensure_off_aliases_loaded()   
     yield
-    # --- SHUTDOWN ---
-    # (nothing for now, but could close db connections etc.)
     pass
 
 app = FastAPI(
-    title="My Cooking Helper API",
+    title="Cookgenix: From Pantry to Plate",
     version="0.1.0",
-    description="Backend for My Cooking Helper app",
-    lifespan=lifespan,  # <-- instead of @app.on_event
+    description="Backend for Cookgenix App",
+    lifespan=lifespan, 
 )
 
 # Routers
@@ -48,3 +43,13 @@ app.include_router(recipe_inv_router, prefix="/recipes/gemini")
 @app.get("/")
 async def root():
     return {"message": "API is running"}
+
+@app.head("/")
+async def root_head():
+    """Handle HEAD requests from uptime checkers (Render, UptimeRobot)."""
+    return {"status": "ok"}
+
+@app.get("/ping")
+async def ping():
+    """Simple keep-alive endpoint to verify uptime."""
+    return {"pong": True}

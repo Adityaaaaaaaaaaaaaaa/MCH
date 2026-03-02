@@ -1,4 +1,3 @@
-// lib/services/reminder_service.dart
 import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -53,7 +52,7 @@ class ReminderService {
     }
   }
 
-  // ---------------- status helpers (for green bell) ----------------
+  //  status helpers (for green bell) 
   Future<void> _saveScheduled(int id, DateTime scheduledAt, DateTime targetWhen) async {
     final p = await SharedPreferences.getInstance();
     await p.setInt(_kId, id);
@@ -106,10 +105,8 @@ class ReminderService {
     await _clearSaved();
   }
 
-  // ---------------- scheduling ----------------
+  //  scheduling 
 
-  /// Schedules a local notification.
-  /// [preAlert] = how much earlier than [when] to alert (e.g. 5 minutes).
   Future<void> scheduleLocalNotification({
     required DateTime when,
     Duration preAlert = Duration.zero,
@@ -117,12 +114,12 @@ class ReminderService {
     String body = 'Time to check your shopping list.',
     String payload = 'open_shopping',
   }) async {
-    // Compute schedule moment (inexact OK)
+    // Compute schedule moment (inexact)
     var scheduled = when.subtract(preAlert);
     final floor = DateTime.now().add(const Duration(minutes: 1));
     if (scheduled.isBefore(floor)) scheduled = floor;
 
-    // a stable-ish id that differs for different scheduled times
+    // a stable id that differs for different scheduled times
     final id = scheduled.millisecondsSinceEpoch % 100000000;
     final tzWhen = tz.TZDateTime.from(scheduled, tz.local);
 
@@ -136,8 +133,6 @@ class ReminderService {
     const ios = DarwinNotificationDetails();
     const details = NotificationDetails(android: android, iOS: ios);
 
-    print('\x1B[34m[REMINDER] scheduling (INEXACT) local notification @ $scheduled (id=$id)\x1B[0m');
-
     await _notifs.zonedSchedule(
       id,
       title,
@@ -149,11 +144,10 @@ class ReminderService {
     );
 
     await _saveScheduled(id, scheduled, when);
-    print('\x1B[34m[REMINDER] inexact schedule requested\x1B[0m');
   }
 
   /// Opens native add-to-calendar sheet.
-  /// We create a 1-minute event so it behaves like a one-time reminder.
+  /// create a 1-minute event so it behaves like a one-time reminder.
   Future<void> openCalendarSheet({
     required DateTime start,
     Duration preAlert = Duration.zero, // iOS supports this via iosParams
@@ -170,7 +164,6 @@ class ReminderService {
       iosParams: IOSParams(reminder: preAlert == Duration.zero ? null : preAlert),
       androidParams: const AndroidParams(), // Android reminders depend on the calendar app
     );
-    print('\x1B[34m[REMINDER] opening calendar sheet for $start → ${start.add(const Duration(minutes: 1))}\x1B[0m');
     await Add2Calendar.addEvent2Cal(event);
   }
 
@@ -181,7 +174,6 @@ class ReminderService {
     String title = 'Buy groceries',
     String description = 'Check your Shopping List',
   }) async {
-    print('\x1B[34m[REMINDER] addCalendarAndNotify @ $when, preAlert=$preAlert\x1B[0m');
     await openCalendarSheet(
       start: when,
       preAlert: preAlert,

@@ -26,7 +26,6 @@ class _CustomDrawerState extends State<CustomDrawer>
   late AnimationController _emojiTransitionController;
 
   late Animation<double> _headerAnimation;
-  // kept but no longer used to drive entrance
   // ignore: unused_field
   late Animation<double> _itemsAnimation;
   late Animation<double> _emojiRotation;
@@ -99,7 +98,6 @@ class _CustomDrawerState extends State<CustomDrawer>
       curve: Curves.easeOutCubic,
     );
 
-    // kept for compatibility; not used to animate list anymore
     _itemsAnimation = CurvedAnimation(
       parent: _itemsController,
       curve: Curves.easeOut,
@@ -133,8 +131,6 @@ class _CustomDrawerState extends State<CustomDrawer>
       _currentEmojiIndex = Random().nextInt(foodEmojis.length);
       _headerController.forward();
       _emojiController.forward();
-      // NOTE: we intentionally don't animate list entrance anymore
-      // _itemsController.forward();
     });
   }
 
@@ -215,7 +211,7 @@ class _CustomDrawerState extends State<CustomDrawer>
       _DrawerRoute(icon: Icons.history_rounded, label: 'History', path: '/history', color: const Color(0xFF795548)),
       _DrawerRoute(icon: Icons.favorite_rounded, label: 'Favourites', path: '/favourites', color: const Color(0xFFF44336)),
       _DrawerRoute(icon: Icons.calendar_month_rounded, label: 'Meal Planner', path: '/planner', color: const Color(0xFF009688)),
-      _DrawerRoute(icon: Icons.fastfood_rounded, label: 'My Cravings', path: '/cravings', color: const Color(0xFFFF5722)),
+      _DrawerRoute(icon: Icons.auto_awesome, label: 'My Cravings', path: '/cravings', color: const Color(0xFFFF5722)),
       _DrawerRoute(icon: Icons.shopping_cart_rounded, label: 'Shopping List', path: '/shopping', color: const Color(0xFF3F51B5)),
     ];
 
@@ -238,7 +234,7 @@ class _CustomDrawerState extends State<CustomDrawer>
         ),
         child: Column(
           children: [
-            // Header animates in lightly
+            // Header 
             AnimatedBuilder(
               animation: Listenable.merge([
                 _headerAnimation, _emojiRotation, _emojiScale,
@@ -255,7 +251,7 @@ class _CustomDrawerState extends State<CustomDrawer>
               },
             ),
 
-            // Routes list (no entrance animation)
+            // Routes list
             Expanded(
               child: ListView.separated(
                 cacheExtent: MediaQuery.of(context).size.height,
@@ -429,7 +425,7 @@ class _CustomDrawerState extends State<CustomDrawer>
 
             SizedBox(width: 16.w),
 
-            // Title (no ellipsis): FittedBox scales down to fit width
+            // Title 
             Expanded(
               child: Align(
                 alignment: Alignment.centerLeft,
@@ -437,11 +433,11 @@ class _CustomDrawerState extends State<CustomDrawer>
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'My Cooking Helper',
+                    'cookgenix',
                     softWrap: false,
-                    overflow: TextOverflow.visible, // no ellipsis
+                    overflow: TextOverflow.visible, 
                     style: TextStyle(
-                      fontSize: 20.sp, // will scale down if needed
+                      fontSize: 20.sp, 
                       fontWeight: FontWeight.w800,
                       color: _getCustomColor(isDark, 'text'),
                       letterSpacing: 0.8,
@@ -564,7 +560,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             Text(
                               route.label,
                               maxLines: 1,
-                              overflow: TextOverflow.ellipsis, // safe for long labels
+                              overflow: TextOverflow.ellipsis, 
                               style: TextStyle(
                                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                                 fontSize: 15.sp,

@@ -55,7 +55,6 @@ class SpoonacularRecipeDetailsProvider:
         
         print(f"{BLUE}[DEBUG] RapidAPI bulk info Response: {response.status_code}{RESET}")
 
-        # Print rate limit info
         self._print_rate_limits(response.headers)
 
         if response.status_code != 200:

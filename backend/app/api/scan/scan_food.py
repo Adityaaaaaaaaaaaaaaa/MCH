@@ -1,4 +1,3 @@
-# app/api/scan/scan_food.py
 from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import JSONResponse
 import base64

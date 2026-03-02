@@ -1,9 +1,8 @@
-# app/providers/gemini_image_generator.py
 import os
 import base64
 from typing import Optional
 from io import BytesIO
-from PIL import Image  # <-- make sure pillow is installed
+from PIL import Image  
 from google import genai
 from google.genai import types
 from app.utils.cravings.ai_prompt import recipe_image_prompt
@@ -17,7 +16,7 @@ if not GEMINI_API_KEY:
     _blue("[Gemini][recipes] WARNING: GEMINI_API_KEY not set in environment")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-THUMB_MAX = (512, 512)  # ~phone card size
+THUMB_MAX = (512, 512)  
 
 def _to_png_data_url(raw_bytes: bytes) -> str:
     """
@@ -49,6 +48,7 @@ async def generate_image_for_title(*, title: str) -> Optional[str]:
 
         resp = client.models.generate_content(
             model="gemini-2.0-flash-preview-image-generation",
+            #model="gemini-2.5-flash-image",
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_modalities=["TEXT", "IMAGE"]

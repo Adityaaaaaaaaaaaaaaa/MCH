@@ -1,4 +1,3 @@
-# app/api/scan/scan_receipt.py   (same filename)
 from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import JSONResponse
 

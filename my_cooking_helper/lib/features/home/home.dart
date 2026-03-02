@@ -25,12 +25,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   late AnimationController _controller;
 
   final List<_FeatureCardData> features = [
-    _FeatureCardData('Scan and Cook', Icons.camera_alt_rounded, Colors.red, '/scan'),
+    _FeatureCardData('Smart Scan', Icons.camera_alt_rounded, Colors.red, '/scan'),
     _FeatureCardData('Meal Planner', Icons.calendar_month_rounded, Colors.indigo, '/planner'),
     _FeatureCardData('My Inventory', Icons.kitchen_rounded, Colors.teal, '/inventory'),
-    _FeatureCardData('My Cravings', Icons.fastfood_rounded, Colors.purple, '/cravings'),
+    _FeatureCardData('AI Recipe Generator', Icons.auto_awesome, Colors.purple, '/cravings'),
     _FeatureCardData('Cook Something', Icons.history_rounded, Colors.brown, '/cook'),
-    _FeatureCardData('My Shopping List', Icons.shopping_cart_rounded, Colors.blueGrey, '/shopping'),
+    _FeatureCardData('My Shopping List', Icons.shopping_cart_outlined, Colors.blueGrey, '/shopping'),
   ];
 
   @override
@@ -77,7 +77,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     //width/height of all feature cards!
     double cardWidth = 150.w;
     double cardHeight = 140.h;
-    double imgOpacity = 0.7;
 
     return Scaffold(
       backgroundColor: bgColor(context),
@@ -86,7 +85,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       drawer: CustomDrawer(),
       bottomNavigationBar: CustomNavBar(currentIndex: 2),
       appBar: CustomAppBar(
-        title: "My Cooking Helper",
+        title: "Cookgenix",
         themeToggleWidget: ThemeToggleButton(),
         trailingWidget: EmojiAnimation(name: 'gear'),
         onTrailingIconTap: () => _openSettings(context),
@@ -96,86 +95,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
       body: Stack(
         children: [
-          Positioned(
-            top: 120,
-            left: -150,
-            child: Transform.rotate(
-              angle: -0.8, // radians
-              child: Opacity(
-                opacity: imgOpacity,
-                child: Image.asset(
-                  'assets/images/home/food_plate_1.png',
-                  width: 300,
-                  height: 300,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 90,
-            right: -50,
-            child: Transform.rotate(
-              angle: -0.8, // radians
-              child: Opacity(
-                opacity: imgOpacity,
-                child: Image.asset(
-                  'assets/images/home/food_plate_5.png',
-                  width: 150,
-                  height: 150,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 240,
-            left: 80,
-            child: Transform.rotate(
-              angle: 0.9,
-              child: Opacity(
-                opacity: imgOpacity,
-                child: Image.asset(
-                  'assets/images/home/food_plate_3.png',
-                  width: 250,
-                  height: 250,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 40,
-            right: -90,
-            child: Transform.rotate(
-              angle: 0.1,
-              child: Opacity(
-                opacity: imgOpacity,
-                child: Image.asset(
-                  'assets/images/home/food_plate_2.png',
-                  width: 200,
-                  height: 200,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 20,
-            left: 0,
-            child: Transform.rotate(
-              angle: -0.4,
-              child: Opacity(
-                opacity: imgOpacity,
-                child: Image.asset(
-                  'assets/images/home/food_plate_4.png',
-                  width: 150,
-                  height: 150,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 20.0.w, vertical: 20.0.h),
             child: Center(
@@ -299,7 +218,7 @@ class _FeatureCardState extends State<FeatureCard> with SingleTickerProviderStat
                 borderRadius: BorderRadius.circular(22.r),
                 boxShadow: [
                   BoxShadow(
-                    color: widget.color.withOpacity(0.23),
+                    color: widget.color.withOpacity(0.3),
                     blurRadius: 30,
                     offset: Offset(0, 10),
                   ),
@@ -335,9 +254,9 @@ class _FeatureCardState extends State<FeatureCard> with SingleTickerProviderStat
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: widget.color.withOpacity(0.23),
-                                blurRadius: 10,
-                                offset: Offset(0, 4),
+                                color: widget.color.withOpacity(0.9),
+                                blurRadius: 7,
+                                offset: Offset(1, 4),
                               ),
                             ],
                           ),
@@ -350,7 +269,7 @@ class _FeatureCardState extends State<FeatureCard> with SingleTickerProviderStat
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.10,
-                            fontSize: 15.sp,
+                            fontSize: 14.sp,
                             color: textColor(context),
                           ),
                           textAlign: TextAlign.center,
@@ -368,7 +287,6 @@ class _FeatureCardState extends State<FeatureCard> with SingleTickerProviderStat
   }
 }
 
-// Helper class for feature card metadata
 class _FeatureCardData {
   final String title;
   final IconData icon;

@@ -1,4 +1,3 @@
-# app/providers/gemini/gemini_scan_receipt.py
 from __future__ import annotations
 
 import json
@@ -13,7 +12,6 @@ BLUE = "\033[94m"
 RESET = "\033[0m"
 def _blue(msg: str): print(f"{BLUE}{msg}{RESET}")
 
-# ---- Structured schema -------------------------------------------------------
 class IngredientItem(BaseModel):
     itemName: str
     quantity: float

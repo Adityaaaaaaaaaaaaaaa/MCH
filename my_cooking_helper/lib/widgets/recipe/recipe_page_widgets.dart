@@ -72,7 +72,7 @@ class HealthScoreCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Heart + Score Column, centered vertically and spaced
+          // Heart + Score Colum
           Expanded(
             flex: 8,
             child: Column(
@@ -110,7 +110,6 @@ class HealthScoreCard extends StatelessWidget {
             ),
           ),
 
-          // Vertical Divider, centered and sized to column
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 8.w),
             child: Container(
@@ -123,7 +122,7 @@ class HealthScoreCard extends StatelessWidget {
             ),
           ),
 
-          // Main Info Column, spaced evenly and vertically centered
+          // Main Info Column
           Expanded(
             flex: 8,
             child: Column(
@@ -192,7 +191,6 @@ class RecipeSummaryText extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (geminiSummary == null) {
-      // Fallback to HTML
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 10),
         padding: const EdgeInsets.all(18),
@@ -223,12 +221,11 @@ class RecipeSummaryText extends StatelessWidget {
       );
     }
 
-    // --- AI Summary Display ---
+    // AI Summary Display
     final highlights = (geminiSummary?['highlights'] as List?)?.cast<String>() ?? [];
     final time = _extractTimeFromSummary(geminiSummary);
     final nutrition = geminiSummary?['nutrition'] as String?;
     final servings = geminiSummary?['servings'] as String?;
-    //final title = geminiSummary?['title'] as String?;
     final shortSummary = geminiSummary?['short_summary'] as String?;
 
     return Container(
@@ -267,7 +264,6 @@ class RecipeSummaryText extends StatelessWidget {
             SizedBox(height: 7.h),
             Text(
               shortSummary,
-              //textAlign: TextAlign.justify,
               style: TextStyle(
                 fontSize: 16.sp,
                 height: 1.5,
@@ -314,7 +310,6 @@ class RecipeSummaryText extends StatelessWidget {
     );
   }
 
-  // Helper to extract time info if available in the short summary or nutrition
   String? _extractTimeFromSummary(Map<String, dynamic>? summary) {
     // Try to find time in the short summary (regex for "XX min" or "XX hr YY min")
     final shortSummary = summary?['short_summary'] as String? ?? '';
@@ -343,163 +338,276 @@ class RecipeSummaryText extends StatelessWidget {
 class ExtendedIngredientCard extends StatelessWidget {
   final ExtendedIngredient ingredient;
   final bool isDark;
-  const ExtendedIngredientCard({super.key, required this.ingredient, required this.isDark});
+
+  const ExtendedIngredientCard({
+    super.key,
+    required this.ingredient,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: isDark ? Colors.deepPurple[900]?.withOpacity(0.08) : Colors.deepPurple.withOpacity(0.03),
-      child: ListTile(
-        leading: ingredient.image != null
-            ? Image.network(
-                'https://spoonacular.com/cdn/ingredients_100x100/${ingredient.image}',
-                width: 40, errorBuilder: (_, __, ___) => const SizedBox.shrink())
-            : null,
-        title: Text(ingredient.original ?? ingredient.name ?? ""),
-        subtitle: Text(_subtitle(ingredient)),
-        onTap: () {
-          showDialog(
-            context: context,
-            builder: (_) => GlassIngredientDialog(ingredient: ingredient, isDark: isDark),
-          );
-        },
+    final bg = isDark
+        ? Colors.deepPurple[900]!.withOpacity(0.10)
+        : Colors.white.withOpacity(0.85);
+    final textCol = isDark ? Colors.white : Colors.black87;
+
+    return GestureDetector(
+      onTap: () => showDialog(
+        context: context,
+        builder: (_) =>
+            GlassIngredientDialog(ingredient: ingredient, isDark: isDark),
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+        margin: EdgeInsets.symmetric(vertical: 6.h, horizontal: 4.w),
+        padding: EdgeInsets.all(12.w),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(18.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 6,
+              offset: const Offset(2, 4),
+            )
+          ],
+        ),
+        child: Row(
+          children: [
+            // Radiating avatar
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 54.r,
+                  height: 54.r,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        Colors.deepPurple.withOpacity(0.25),
+                        Colors.transparent,
+                      ],
+                      radius: 0.9,
+                    ),
+                  ),
+                ),
+                ClipOval(
+                  child: ingredient.image != null
+                      ? Image.network(
+                          'https://spoonacular.com/cdn/ingredients_100x100/${ingredient.image}',
+                          width: 50.r,
+                          height: 50.r,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) =>
+                              Icon(Icons.fastfood, size: 30, color: textCol),
+                        )
+                      : Icon(Icons.fastfood, size: 30, color: textCol),
+                ),
+              ],
+            ),
+            SizedBox(width: 14.w),
+
+            // Ingredient Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    ingredient.nameClean ?? ingredient.name ?? '',
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w600,
+                      color: textCol,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    _subtitle(ingredient),
+                    style: TextStyle(
+                        fontSize: 13.sp, color: textCol.withOpacity(0.7)),
+                  ),
+                ],
+              ),
+            ),
+
+            Icon(Icons.info_outline,
+                size: 20.sp, color: textCol.withOpacity(0.7)),
+          ],
+        ),
       ),
     );
   }
 
   String _subtitle(ExtendedIngredient i) {
-    final a = i.amount != null ? i.amount!.toStringAsFixed(2) : "";
+    final a = formatAmount(i.amount);
     final u = i.unit ?? "";
-    return (a.isNotEmpty || u.isNotEmpty) ? "$a $u" : "";
+    return (a.isNotEmpty || u.isNotEmpty) ? "$a $u" : "View details";
   }
 }
 
-// --- Glass Dialog Widget ---
+// Glass Dialog Widget 
 class GlassIngredientDialog extends StatelessWidget {
   final ExtendedIngredient ingredient;
   final bool isDark;
 
   const GlassIngredientDialog({
-    Key? key,
+    super.key,
     required this.ingredient,
     required this.isDark,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    final textCol = isDark ? Colors.white : Colors.grey[900];
-    final titleCol = isDark ? Colors.deepPurple[100] : Colors.deepPurple[800];
+    final textCol = isDark ? Colors.white : Colors.black87;
+    final chipBg =
+        isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05);
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      child: Container(
-        width: 330.w,
-        constraints: BoxConstraints(maxHeight: 340.h),
-        padding: EdgeInsets.all(18.w),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26.r),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24.r),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24.r),
-              border: Border.all(color: Colors.deepPurple.withOpacity(0.12), width: 1.3),
-            ),
-            child: Stack(
-              children: [
-                // Glass background
-                Container(
-                  width: double.infinity,
-                  height: double.infinity,
-                  color: Colors.deepPurple[200]?.withOpacity(isDark ? 0.14 : 0.22),
-                ).asGlass(
-                  blurX: 18,
-                  blurY: 18,
-                  tintColor: isDark ? Colors.deepPurple[900]! : Colors.white,
-                  frosted: true,
-                  clipBorderRadius: BorderRadius.circular(24.r),
-                ),
-                // Foreground content
-                Padding(
-                  padding: EdgeInsets.all(15.0.w),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Ingredient image
-                        ingredient.image != null
-                          ? ClipOval(
-                              child: Image.network(
-                              'https://spoonacular.com/cdn/ingredients_100x100/${ingredient.image}',
-                              fit: BoxFit.contain,
-                              width: 70.r,
-                              height: 70.r,
+      insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
+      child: IntrinsicHeight( 
+        child: Container(
+          padding: EdgeInsets.all(18.w),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26.r),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24.r),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24.r),
+                border: Border.all(
+                    color: Colors.deepPurple.withOpacity(0.15), width: 1.2),
+              ),
+              child: Stack(
+                children: [
+                  // Glass background
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.deepPurple[900]!.withOpacity(0.25)
+                          : Colors.white.withOpacity(0.4),
+                    ),
+                  ).asGlass(
+                    blurX: 22,
+                    blurY: 22,
+                    frosted: true,
+                    clipBorderRadius: BorderRadius.circular(24.r),
+                  ),
+
+                  // Foreground content
+                  Padding(
+                    padding: EdgeInsets.all(20.w),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min, 
+                        children: [
+                          // Glow image avatar
+                          Container(
+                            padding: EdgeInsets.all(4.w),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.deepPurple.withOpacity(0.6),
+                                  blurRadius: 18,
+                                  spreadRadius: 2,
+                                )
+                              ],
                             ),
-                          )
-                          : Icon(Icons.restaurant, color: titleCol, size: 32.sp),
-                        SizedBox(height: 15.h),
-
-                        Text(
-                          ingredient.nameClean ?? ingredient.name ?? '',
-                          style: TextStyle(
-                            fontSize: 23.sp,
-                            fontWeight: FontWeight.w700,
-                            color: textColor(context),
+                            child: ClipOval(
+                              child: ingredient.image != null
+                                  ? Image.network(
+                                      'https://spoonacular.com/cdn/ingredients_100x100/${ingredient.image}',
+                                      fit: BoxFit.contain,
+                                      width: 90.r,
+                                      height: 90.r,
+                                    )
+                                  : Icon(Icons.restaurant,
+                                      color: Colors.deepPurple, size: 48.sp),
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 10.h),
 
-                        if ((ingredient.original ?? '').isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 3, bottom: 8),
-                            child: Text(
-                              'Quantity: ${ingredient.original}',
-                              textAlign: TextAlign.center,
+                          SizedBox(height: 14.h),
+
+                          // Title
+                          Text(
+                            ingredient.nameClean ?? ingredient.name ?? '',
+                            style: TextStyle(
+                              fontSize: 22.sp,
+                              fontWeight: FontWeight.bold,
+                              color: textCol,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+
+                          SizedBox(height: 12.h),
+
+                          // Original quantity text
+                          if ((ingredient.original ?? '').isNotEmpty)
+                            Text(
+                              ingredient.original!,
                               style: TextStyle(
-                                fontSize: 15,
-                                color: textCol?.withOpacity(0.75),
+                                fontSize: 15.sp,
+                                color: textCol.withOpacity(0.7),
                               ),
+                              textAlign: TextAlign.center,
                             ),
+
+                          SizedBox(height: 18.h),
+                          Divider(
+                              thickness: 1,
+                              color: Colors.cyan.withOpacity(0.5)),
+
+                          // Measures in two columns
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _measureCard("US",
+                                  ingredient.measures?.us?.amount,
+                                  ingredient.measures?.us?.unitShort, textCol),
+                              _measureCard("Metric",
+                                  ingredient.measures?.metric?.amount,
+                                  ingredient.measures?.metric?.unitShort,
+                                  textCol),
+                            ],
                           ),
-                        Divider(height: 30, thickness: 4, color: Colors.cyan.withOpacity(0.50)),
 
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _amountCol("US", ingredient.measures?.us?.amount, ingredient.measures?.us?.unitShort, textCol),
-                            _amountCol("Metric", ingredient.measures?.metric?.amount, ingredient.measures?.metric?.unitShort, textCol),
-                          ],
-                        ),
-                        Divider(height: 30, thickness: 4, color: Colors.cyan.withOpacity(0.50)),
+                          SizedBox(height: 18.h),
+                          Divider(
+                              thickness: 1,
+                              color: Colors.cyan.withOpacity(0.5)),
 
-                        Wrap(
-                          spacing: 7,
-                          runSpacing: 4,
-                          children: [
-                            // if (ingredient.aisle != null && ingredient.aisle!.isNotEmpty)
-                            //   _infoChip(Icons.store_mall_directory, ingredient.aisle!, textCol),
-                            // if (ingredient.consistency != null)
-                            //   _infoChip(Icons.layers, ingredient.consistency!.toLowerCase(), textCol),
-                            if (ingredient.meta.isNotEmpty)
-                              for (final m in ingredient.meta)
-                                _infoChip(Icons.label_important_rounded, m, textCol),
-                          ],
-                        ),
-                      ],
+                          // Meta tags
+                          if (ingredient.meta.isNotEmpty)
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              alignment: WrapAlignment.center,
+                              children: ingredient.meta
+                                  .map((m) => _infoChip(
+                                      Icons.label_important, m, textCol, chipBg))
+                                  .toList(),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                // Close button
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: IconButton(
-                    icon: Icon(Icons.close_rounded, color: isDark ? Colors.white70 : Colors.black),
-                    onPressed: () => Navigator.of(context).pop(),
+
+                  // Close button
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: IconButton(
+                      icon: Icon(Icons.close_rounded, color: textCol),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
                   ),
-                )
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -507,28 +615,55 @@ class GlassIngredientDialog extends StatelessWidget {
     );
   }
 
-  Widget _amountCol(String label, double? amount, String? unit, Color? textCol) {
-    return Column(
-      children: [
-        Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.white)),
-        Text(
-          '${amount != null ? amount.toStringAsFixed(2) : '-'} ${unit ?? ''}',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
-        ),
-      ],
+  Widget _measureCard(
+      String label, double? amount, String? unit, Color textCol) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: Colors.deepPurple.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(14.r),
+      ),
+      child: Column(
+        children: [
+          Text(label,
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w700,
+                color: textCol,
+              )),
+          SizedBox(height: 4.h),
+          Text(
+            '${formatAmount(amount)} ${unit ?? ''}',
+            style: TextStyle(
+              fontSize: 15.sp,
+              fontWeight: FontWeight.w600,
+              color: textCol,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _infoChip(IconData icon, String label, Color? color) {
+  Widget _infoChip(
+      IconData icon, String label, Color textCol, Color chipBg) {
     return Chip(
-      avatar: Icon(icon, size: 16, color: color?.withOpacity(0.68)),
-      label: Text(label, style: TextStyle(fontSize: 13, color: color)),
-      backgroundColor: color?.withOpacity(0.08) ?? Colors.deepPurple.withOpacity(0.09),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+      avatar: Icon(icon, size: 16, color: textCol.withOpacity(0.7)),
+      label: Text(label, style: TextStyle(fontSize: 13, color: textCol)),
+      backgroundColor: chipBg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
     );
   }
+}
+
+String formatAmount(double? amount) {
+  if (amount == null) return '';
+  if (amount == amount.roundToDouble()) {
+    return amount.toInt().toString(); // no decimals for whole numbers
+  }
+  return amount.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
 }
 
 class CaloricBreakdownWidget extends StatefulWidget {
@@ -652,7 +787,6 @@ class _CaloricBreakdownWidgetState extends State<CaloricBreakdownWidget>
                 borderRadius: BorderRadius.circular(28.r),
                 child: Stack(
                   children: [
-                    // Subtle shimmer effect
                     if (isHovered)
                       AnimatedBuilder(
                         animation: _shimmerAnimation,
@@ -961,7 +1095,7 @@ class _CaloricBreakdownWidgetState extends State<CaloricBreakdownWidget>
           borderRadius: BorderRadius.circular(20.r),
           splashColor: color.withOpacity(0.2),
           highlightColor: color.withOpacity(0.1),
-          onTap: () {}, // Could open a tooltip or info dialog
+          onTap: () {}, 
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
             decoration: BoxDecoration(
@@ -1132,7 +1266,7 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ===== Card: Main Player =====
+        // Card: Main Player
         Container(
           key: _playerAnchorKey,
           margin: EdgeInsets.only(bottom: 14.h),
@@ -1227,7 +1361,7 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection>
           ),
         ),
 
-        // ===== Show/Hide More Button =====
+        // Show/Hide More Button 
         if (widget.videos.length > 1 && !showAll)
           Align(
             alignment: Alignment.center,
@@ -1238,7 +1372,7 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection>
             ),
           ),
 
-        if (showAll && widget.videos.length > 1)
+        if (showAll && widget.videos.length > 1) ...[
           ListView.builder(
             cacheExtent: MediaQuery.of(context).size.height,
             shrinkWrap: true,
@@ -1281,6 +1415,14 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection>
                               height: (min(120.w, 160.w) * 9 / 16),
                               color: isDark ? Colors.white10 : Colors.black12,
                               child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            );
+                          },
+                          errorBuilder: (ctx, err, stack) {
+                            return Container(
+                              width: min(120.w, 160.w),
+                              height: (min(120.w, 160.w) * 9 / 16),
+                              color: isDark ? Colors.white12 : Colors.black12,
+                              child: Icon(Icons.broken_image, color: isDark ? Colors.white54 : Colors.black54),
                             );
                           },
                         ),
@@ -1334,6 +1476,15 @@ class _RecipeVideosSectionState extends State<RecipeVideosSection>
               );
             },
           ),
+          Align(
+            alignment: Alignment.center,
+            child: TextButton.icon(
+              onPressed: () => setState(() => showAll = false),
+              icon: const Icon(Icons.expand_less_rounded),
+              label: const Text('Show Less'),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -1388,7 +1539,7 @@ class _InfoChip extends StatelessWidget {
   }
 }
 
-/// -- In-app WebView Dialog Helper -- ///
+//In-app WebView Dialog Helper 
 void showRecipeWebView(BuildContext context, String url) {
   showDialog(
     context: context,

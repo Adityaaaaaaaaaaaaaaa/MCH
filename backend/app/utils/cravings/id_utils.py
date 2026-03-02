@@ -1,16 +1,14 @@
-# app/utils/id_utils.py
 from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 try:
-    from zoneinfo import ZoneInfo  # stdlib 3.9+
-except ImportError:  # very old Python
-    ZoneInfo = None  # type: ignore
+    from zoneinfo import ZoneInfo 
+except ImportError:  
+    ZoneInfo = None  
 
 BLUE = "\x1B[34m"; RESET = "\x1B[0m"
 def _blue(msg: str) -> None:
     print(f"{BLUE}{msg}{RESET}")
 
-# Try to load IANA zone; if tzdata is missing (common on Windows), fall back to UTC+4.
 def _get_mauritius_tz():
     if ZoneInfo is not None:
         try:

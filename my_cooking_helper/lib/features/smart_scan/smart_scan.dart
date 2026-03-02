@@ -25,11 +25,10 @@ class _SmartScanState extends ConsumerState<SmartScan> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Listen for side-effects safely during build
     ref.listen<AsyncValue<bool>>(isOnlineProvider, (prev, next) {
       next.whenOrNull(data: (curr) {
         final prevVal = prev?.value;
-        if (prevVal == curr) return; // avoid duplicates on rebuilds
+        if (prevVal == curr) return; 
         if (!mounted) return;
         SnackbarUtils.alert(
           context,
@@ -63,10 +62,10 @@ class _SmartScanState extends ConsumerState<SmartScan> {
         children: [
           // BACKGROUND IMAGES 
           Positioned(
-            top: 110,
-            left: 30,
+            top: 100,
+            left: 20,
             child: Transform.rotate(
-              angle: -0.15, //radians
+              angle: -0.25, //radians
               child: Image.asset(
                 'assets/images/smartScan/scanFood.png',
                 width: 210,
@@ -76,27 +75,27 @@ class _SmartScanState extends ConsumerState<SmartScan> {
             ),
           ),
           Positioned(
-            bottom: 80,
-            left: 150,
+            bottom: 100,
+            right: -30,
             child: Transform.rotate(
               angle: 0.3, 
               child: Image.asset(
                 'assets/images/smartScan/manualScan.png',
-                width: 300,
-                height: 300,
+                width: 250,
+                height: 250,
                 fit: BoxFit.contain,
               ),
             ),
           ),
           Positioned(
-            bottom: 65,
-            right: 200,
+            bottom: 90,
+            left: 0,
             child: Transform.rotate(
-              angle: -0.15, 
+              angle: -0.16, 
               child: Image.asset(
                 'assets/images/smartScan/scanReceipt.png',
-                width: 200,
-                height: 200,
+                width: 150,
+                height: 150,
                 fit: BoxFit.contain,
               ),
             ),

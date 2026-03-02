@@ -1,4 +1,3 @@
-// /services/ingredient_image_service.dart
 import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -67,7 +66,7 @@ class IngredientImageService {
     return url;
   }
 
-  // ---------------------- Resolver ----------------------
+  // Resolver
 
   static Future<String?> _resolveViaMealDB(String rawName) async {
     final variants = _buildNameVariants(rawName);
@@ -217,12 +216,9 @@ class IngredientImageService {
   }
 
   static void _d(Object o) {
-    // Blue-ish tag in your logcat style
     try {
       final pretty = (o is String) ? o : const JsonEncoder.withIndent('  ').convert(o);
       for (final line in pretty.split('\n')) {
-        // Keep [INV] to match your controller’s filter
-        // (change tag to [IMG] if you prefer to separate)
         // ignore: avoid_print
         print('[INV] $line');
       }

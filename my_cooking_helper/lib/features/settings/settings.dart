@@ -1,4 +1,3 @@
-// settings.dart:
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,25 +33,12 @@ class _SettingsScreenState extends ConsumerState<Settings>
   String? gender, cookingTime, spiceLevel;
   List<String> allergies = [], diets = [], cuisines = [], barriers = [];
 
-  // --------------------------
-  // Background performance helpers
-  // --------------------------
   double imgOpacity = 0.80;
 
   @override
   void initState() {
     super.initState();
     _loadPrefs();
-
-    // Precache decorative images to avoid first-scroll jank
-    WidgetsBinding.instance.addPostFrameCallback((_) => _precacheBackgroundImages(context));
-  }
-
-  Future<void> _precacheBackgroundImages(BuildContext context) async {
-    // This does not change UI; it just warms up the image cache
-    await precacheImage(const AssetImage('assets/images/settings/settings1.png'), context);
-    await precacheImage(const AssetImage('assets/images/settings/settings2.png'), context);
-    await precacheImage(const AssetImage('assets/images/settings/settings3.png'), context);
   }
 
   Future<void> _loadPrefs() async {
@@ -204,10 +190,10 @@ class _SettingsScreenState extends ConsumerState<Settings>
       if (!mounted) return;
       SnackbarUtils.alert(
         context,
-        "Error deleting account!",
-        typeInfo: TypeInfo.error,
+        "Account Deleted !",
+        typeInfo: TypeInfo.success,
         position: MessagePosition.top,
-        duration: 2,
+        duration: 4,
       );
       context.go('/');
     }
@@ -222,8 +208,6 @@ class _SettingsScreenState extends ConsumerState<Settings>
       if (GoogleSignIn.instance.supportsAuthenticate()) {
         account = await GoogleSignIn.instance.authenticate();
       } else {
-        // On platforms that do not support .authenticate(), 
-        // you need to provide a platform-specific sign-in flow (e.g., use web button)
         throw Exception("Google Sign-In not supported on this platform.");
       }
 
@@ -363,25 +347,38 @@ class _SettingsScreenState extends ConsumerState<Settings>
     );
   }
 
-  // --------------------------
-  // Lightweight decorative background (single repaint boundary)
-  // --------------------------
   Widget _decorBackground() {
     return IgnorePointer(
       ignoring: true,
       child: RepaintBoundary(
         child: Stack(
           children: [
-            //BACKGROUND IMAGES
             Positioned(
-              top: 0,
-              right: -40,
+              top: 10,
+              left: -150,
               child: Transform.rotate(
-                angle: -1.7, //radians
+                angle: -0.8, // radians
                 child: Opacity(
                   opacity: imgOpacity,
                   child: Image.asset(
-                    'assets/images/settings/settings1.png',
+                    'assets/images/home/food_plate_1.png',
+                    width: 300,
+                    height: 300,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.low,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 90,
+              right: -50,
+              child: Transform.rotate(
+                angle: -0.8, // radians
+                child: Opacity(
+                  opacity: imgOpacity,
+                  child: Image.asset(
+                    'assets/images/home/food_plate_5.png',
                     width: 150,
                     height: 150,
                     fit: BoxFit.contain,
@@ -391,14 +388,14 @@ class _SettingsScreenState extends ConsumerState<Settings>
               ),
             ),
             Positioned(
-              top: 200,
-              left:-60,
+              bottom: 240,
+              left: 80,
               child: Transform.rotate(
-                angle: 0.4, 
+                angle: 0.9,
                 child: Opacity(
                   opacity: imgOpacity,
                   child: Image.asset(
-                    'assets/images/settings/settings3.png',
+                    'assets/images/home/food_plate_4.png',
                     width: 250,
                     height: 250,
                     fit: BoxFit.contain,
@@ -408,16 +405,33 @@ class _SettingsScreenState extends ConsumerState<Settings>
               ),
             ),
             Positioned(
-              bottom: -20,
-              right: -50,
+              bottom: 40,
+              right: -90,
               child: Transform.rotate(
-                angle: 0.1, 
+                angle: 0.1,
                 child: Opacity(
                   opacity: imgOpacity,
                   child: Image.asset(
-                    'assets/images/settings/settings2.png',
-                    width: 350,
-                    height: 350,
+                    'assets/images/home/food_plate_2.png',
+                    width: 200,
+                    height: 200,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.low,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 20,
+              left: 0,
+              child: Transform.rotate(
+                angle: -0.4,
+                child: Opacity(
+                  opacity: imgOpacity,
+                  child: Image.asset(
+                    'assets/images/home/food_plate_3.png',
+                    width: 150,
+                    height: 150,
                     fit: BoxFit.contain,
                     filterQuality: FilterQuality.low,
                   ),

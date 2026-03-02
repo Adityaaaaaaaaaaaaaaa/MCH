@@ -25,7 +25,6 @@ async def summarize_with_gemini(html_summary: str) -> RecipeSummary:
         },
     )
     
-    print("[GEMINI RAW RESPONSE]", response.text)  # <-- Print the raw text (the JSON as string)
+    print("[GEMINI RAW RESPONSE]", response.text)  
     print("[GEMINI PARSED OBJECT]", response.parsed)
-    # .parsed gives you an instance of RecipeSummary
     return response.parsed

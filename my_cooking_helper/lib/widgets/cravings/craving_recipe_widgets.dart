@@ -8,12 +8,6 @@ import 'package:glass/glass.dart';
 import '/models/cravings.dart';
 import '/utils/colors.dart';
 
-/// ------------------------------------------------------------
-/// MODERN CARD WITH ANIMATED GRADIENT BORDERS (+ glass blur)
-/// - subtle gradient border in both light/dark
-/// - optional sweep animated border
-/// - lightweight tap pulse + scale (no shader masks, smooth perf)
-/// ------------------------------------------------------------
 class ModernCard extends StatefulWidget {
   const ModernCard({
     super.key,
@@ -324,9 +318,7 @@ class _AnimatedBorderPainter extends CustomPainter {
       old.animation != animation || old.isDark != isDark || old.borderWidth != borderWidth;
 }
 
-/// ------------------------------------------------------------
-/// HERO IMAGE WITH SHIMMER
-/// ------------------------------------------------------------
+// HERO IMAGE WITH SHIMMER
 class ModernHeroImage extends StatefulWidget {
   const ModernHeroImage({super.key, required this.bytes});
   final Uint8List bytes;
@@ -406,10 +398,7 @@ class _ModernHeroImageState extends State<ModernHeroImage>
   }
 }
 
-/// ------------------------------------------------------------
-/// ANIMATED TIME BADGE (same animated border language)
-/// Usage: ModernTimeBadge(minutes: model.readyInMinutes)
-/// ------------------------------------------------------------
+// ANIMATED TIME BADGE
 class ModernTimeBadge extends StatelessWidget {
   const ModernTimeBadge({super.key, required this.minutes});
   final int? minutes;
@@ -456,9 +445,7 @@ class ModernTimeBadge extends StatelessWidget {
   }
 }
 
-/// ------------------------------------------------------------
-/// SECTION CONTAINER
-/// ------------------------------------------------------------
+// SECTION CONTAINER
 class ModernSection extends StatelessWidget {
   const ModernSection({
     super.key,
@@ -541,9 +528,7 @@ class ModernSection extends StatelessWidget {
   }
 }
 
-/// ------------------------------------------------------------
-/// SUBHEADER / BULLET
-/// ------------------------------------------------------------
+//SUBHEADER / BULLET
 class ModernSubHeader extends StatelessWidget {
   const ModernSubHeader(this.text, {super.key});
   final String text;
@@ -617,9 +602,7 @@ class ModernBulletPoint extends StatelessWidget {
   }
 }
 
-/// ------------------------------------------------------------
-/// PREMIUM CHIPS / TAGS
-/// ------------------------------------------------------------
+// CHIPS / TAGS
 class PremiumChip extends StatelessWidget {
   const PremiumChip({
     super.key,
@@ -748,9 +731,7 @@ class ModernFlagTag extends StatelessWidget {
 }
 
 
-/// ------------------------------------------------------------
-/// INSTRUCTION STEP TILE (justified text)
-/// ------------------------------------------------------------
+//INSTRUCTION 
 class ModernInstructionTile extends StatefulWidget {
   const ModernInstructionTile({
     super.key,
@@ -774,12 +755,12 @@ class _ModernInstructionTileState extends State<ModernInstructionTile>
   late final Animation<double> _progress; // ring 0→1
   late final Animation<double> _glow;     // halo intensity
 
-  // Heuristic: when to show “More”
+  //show “More”
   bool get _isExpandable {
     // Show “More” for long text or if manual newlines present
     final len = widget.text.runes.length;
     if (widget.text.contains('\n')) return true;
-    return len > 160; // tweak threshold as you like
+    return len > 160;
   }
 
   @override
@@ -838,7 +819,6 @@ class _ModernInstructionTileState extends State<ModernInstructionTile>
       child: ModernCard(
         radius: 14,
         padding: EdgeInsets.all(16.w),
-        // stronger border via ModernCard’s default + an inner outline
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -848,12 +828,11 @@ class _ModernInstructionTileState extends State<ModernInstructionTile>
         ),
         onTap: _toggleDone,
         child: Container(
-          // inner outline to make the border pop in both themes
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
               color: done
-                  ? primary.withOpacity(isDark ? 0.45 : 0.35) // subtle success outline when completed
+                  ? primary.withOpacity(isDark ? 0.45 : 0.35)
                   : borderCol,
               width: 1.0,
             ),
@@ -862,11 +841,11 @@ class _ModernInstructionTileState extends State<ModernInstructionTile>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Row: badge + text (animated)
+              // Row badge + text
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // —— Step badge with animated halo + ring ——
+                  // Step badge with animated halo + ring 
                   SizedBox(
                     width: 36.w,
                     height: 36.w,
@@ -911,7 +890,7 @@ class _ModernInstructionTileState extends State<ModernInstructionTile>
                           ),
                         ),
 
-                        // Core circle (number → check)
+                        // Core circle (number - check)
                         Container(
                           margin: EdgeInsets.all(4.w),
                           decoration: BoxDecoration(
@@ -952,7 +931,7 @@ class _ModernInstructionTileState extends State<ModernInstructionTile>
 
                   SizedBox(width: 14.w),
 
-                  // —— Body text —— (strike-through when done, expand when needed)
+                  // Body text strike-through when done, expand when needed
                   Expanded(
                     child: AnimatedDefaultTextStyle(
                       duration: const Duration(milliseconds: 220),
@@ -986,7 +965,7 @@ class _ModernInstructionTileState extends State<ModernInstructionTile>
 
               SizedBox(height: 12.h),
 
-              // —— Actions: Copy (always) + More/Less (only if long) ——
+              // Copy
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -1057,7 +1036,7 @@ class _ModernInstructionTileState extends State<ModernInstructionTile>
 }
 
 
-// ---- Nutrition chips (unchanged API, adds subtle bounce on tap) ----
+// Nutrition chips
 class ModernNutritionChips extends StatelessWidget {
   const ModernNutritionChips({super.key, required this.nutrition});
   final Map<String, dynamic> nutrition;
@@ -1099,20 +1078,20 @@ class ModernNutritionChips extends StatelessWidget {
   }
 }
 
-// ---- Caloric breakdown (unchanged API). Percentages come from props. ----
+// Caloric breakdown
 class ModernCaloricBreakdown extends StatelessWidget {
   const ModernCaloricBreakdown({
     super.key,
     required this.percentProtein,
     required this.percentFat,
     required this.percentCarbs,
-    required this.percentEnergy, // not used, but could be
+    required this.percentEnergy, 
   });
 
   final double? percentProtein;
   final double? percentFat;
   final double? percentCarbs;
-  final double? percentEnergy; // not used, but could be
+  final double? percentEnergy;
 
   @override
   Widget build(BuildContext context) {
@@ -1145,10 +1124,6 @@ class ModernCaloricBreakdown extends StatelessWidget {
   }
 }
 
-// ---- NEW: Convenience wrapper that derives percentages from nutrition map ----
-// Note: Daily Values (DV) assumed for reference intake (RI): 
-// Energy 2000 kcal, Protein 50 g, Fat 70 g, Carbs 260 g.
-// These are generic guideline values; we clamp to [0,100] and show a small note.
 class ModernCaloricBreakdownFromNutrition extends StatelessWidget {
   const ModernCaloricBreakdownFromNutrition({
     super.key,
@@ -1215,7 +1190,7 @@ class ModernCaloricBreakdownFromNutrition extends StatelessWidget {
   }
 }
 
-// ---- Ring with glow + tap-to-play fill animation (same API as before) ----
+// Ring with glow 
 class _Ring extends StatefulWidget {
   const _Ring({required this.label, required this.value, required this.color});
   final String label;
@@ -1375,7 +1350,7 @@ class _GlowRingPainter extends CustomPainter {
       old.progress != progress || old.color != color || old.trackColor != trackColor;
 }
 
-// ---- tiny helper: tactile bounce for chips (visual only) ----
+// tiny helper: tactile bounce for chips
 class _TapBounce extends StatefulWidget {
   const _TapBounce({required this.child});
   final Widget child;
@@ -1420,9 +1395,7 @@ class _TapBounceState extends State<_TapBounce> with SingleTickerProviderStateMi
 }
 
 
-/// ------------------------------------------------------------
-/// ENHANCED CAUTION BAR - Clean, informative design (ModernCard)
-/// ------------------------------------------------------------
+// ENHANCED CAUTION BAR
 class AiCautionBarFancy extends StatefulWidget {
   const AiCautionBarFancy({super.key});
 
@@ -1503,7 +1476,6 @@ class _AiCautionBarFancyState extends State<AiCautionBarFancy>
                         ? [const Color(0xFF232323), const Color(0xFF1B1B1B)]
                         : [Colors.white, const Color(0xFFFAFAFA)],
                   ),
-                  // subtle static border (serious look)
                   borderWidth: 1.5,
                   child: Row(
                     children: [
@@ -1731,9 +1703,7 @@ class _SafetyPoint extends StatelessWidget {
 }
 
 
-/// ------------------------------------------------------------
-/// CUISINE FLAG EMOJI MAPPER (UNCHANGED, do not edit list)
-/// ------------------------------------------------------------
+// CUISINE FLAG EMOJI MAPPER
 String cuisineFlagEmoji(String name) {
   final key = name.trim().toLowerCase();
   const map = {
@@ -1765,7 +1735,7 @@ String cuisineFlagEmoji(String name) {
   return map[key] ?? '🌍';
 }
 
-// ================== DualActionButton (Favourite + Mark Cooked) ==================
+// DualActionButton (Favourite + Mark Cooked)
 class DualActionButton extends StatelessWidget {
   final bool isFavourited;
   final bool cookedSuccess;
@@ -1905,7 +1875,7 @@ class DualActionButton extends StatelessWidget {
   }
 }
 
-// ================== CravingActionBar (Positioned wrapper for pages) ==================
+// CravingActionBar 
 class CravingActionBar extends StatelessWidget {
   final bool isFavourited;
   final bool cookedSuccess;
@@ -1939,49 +1909,38 @@ class CravingActionBar extends StatelessWidget {
   }
 }
 
-/// ------------------------------------------------------------
-/// ENHANCED INGREDIENT TILE
-/// - supports: String | Map | ShoppingItemModel
-/// - only shows shopping toggle when tag == 'buy'
-/// - tag == 'optional' -> shows Optional badge
-/// - shows need/unit/have and delta
-/// - no "count" word (empty unit for count)
-/// ------------------------------------------------------------
-// -------------------- ModernIngredientTile (revamped layout) --------------------
-// ===== enums (keep these at the very top of the file) =====
 enum _ShopVariant { bag, plus }
 enum _CtaMode { idle, createdSubset, createdAll }
 
-// Replace the old event with this
 class IngredientSelectionEvent {
   IngredientSelectionEvent({
     required this.name,
-    required this.isBag,   // ✅ bool, no cross-file enum coupling
+    required this.isBag,   
     required this.active,
     this.need,
     this.unit,
   });
 
   final String name;
-  final bool isBag;          // true => bag("buy"), false => plus("add")
+  final bool isBag; // true => bag("buy"), false => plus("add")
   final bool active;
   final double? need;
   final String? unit;
 }
 
 
-// ================== ModernIngredientTile ==================
+// ModernIngredientTile 
 class ModernIngredientTile extends StatefulWidget {
   const ModernIngredientTile({
     super.key,
     required this.data,
-    this.initiallyInShopping = false,     // kept but NOT used to auto-activate
+    this.initiallyInShopping = false,     
     this.onToggleShopping,
-    this.shopping,                        // List<ShoppingItemModel>
-    this.optionalIngredients,             // List<dynamic>
-    this.selectAllSignal,                 // broadcast: CTA → tiles
-    this.selectionDirtySignal,            // tiles → CTA when a control is turned OFF
-    this.selectionCount,                  // tiles increment/decrement this
+    this.shopping, // List<ShoppingItemModel>
+    this.optionalIngredients, // List<dynamic>
+    this.selectAllSignal,                 
+    this.selectionDirtySignal,            
+    this.selectionCount,                
     this.forcePlusOnly = false,
     this.clearAllSignal,
     this.onSelectionChanged,
@@ -2005,7 +1964,6 @@ class ModernIngredientTile extends StatefulWidget {
 
 class _ModernIngredientTileState extends State<ModernIngredientTile>
     with SingleTickerProviderStateMixin {
-  // independent internal states (both start INACTIVE)
   bool bagSelected = false;
   bool plusSelected = false;
 
@@ -2022,28 +1980,16 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
       CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut),
     );
 
-    // Listen to CTA broadcast: set the visible control ACTIVE (never toggle)
     if (widget.selectAllSignal != null) {
-      // _selectAllListener = () {
-      //   final v = _computeVariant();
-      //   if (v == _ShopVariant.bag && !bagSelected) {
-      //     setState(() => bagSelected = true);
-      //     widget.selectionCount?.value = (widget.selectionCount?.value ?? 0) + 1;
-      //   } else if (v == _ShopVariant.plus && !plusSelected) {
-      //     setState(() => plusSelected = true);
-      //     widget.selectionCount?.value = (widget.selectionCount?.value ?? 0) + 1;
-      //   }
-      // };
       _selectAllListener = () {
-        _setActive(true); // idempotent: does nothing if already ON
+        _setActive(true); // does nothing if already ON
       };
       widget.selectAllSignal!.addListener(_selectAllListener!);
     }
 
-    // CLEAR-ALL (NEW)
+    // CLEAR-ALL
     if (widget.clearAllSignal != null) {
       _clearAllListener = () {
-        // Use the same helper so counters/dirty-ticks remain correct
         if (bagSelected || plusSelected) {
           _setActive(false);
         }
@@ -2053,9 +1999,9 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
   }
 
   void _setActive(bool value) {
-    final v = _computeVariant();                 // bag or plus
+    final v = _computeVariant(); // bag or plus
     final was = (v == _ShopVariant.bag) ? bagSelected : plusSelected;
-    if (was == value) return;                    // idempotent
+    if (was == value) return;                    
 
     setState(() {
       if (v == _ShopVariant.bag) {
@@ -2071,12 +2017,12 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
       widget.selectionCount!.value = (next as num).toInt();
     }
 
-    // only notify “dirty” when something turns OFF (to revert CTA from green)
+    // only notify “dirty” when something turns OFF
     if (!value && widget.selectionDirtySignal != null) {
       widget.selectionDirtySignal!.value = widget.selectionDirtySignal!.value + 1;
     }
 
-    // ===== ADD at the end of _setActive(bool value) =====
+    // ADD at the end of _setActive(bool value)
     String name = "";
     String unit = "";
     double? need;
@@ -2092,14 +2038,10 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
       unit = ((m['unit'] ?? '').toString()).trim().toLowerCase();
     }
 
-    // BLUE: tile toggle
-    // ignore: avoid_print
-    print('\x1B[34m[TILE] ${value ? "ON " : "OFF"} ${( _computeVariant() == _ShopVariant.bag) ? "BAG" : "PLUS"}  | $name  | need=${need ?? 1} ${unit.isEmpty ? "count" : unit}\x1B[0m');
-
     widget.onSelectionChanged?.call(
       IngredientSelectionEvent(
         name: name,
-        isBag: _computeVariant() == _ShopVariant.bag,  // bool
+        isBag: _computeVariant() == _ShopVariant.bag,
         active: value,
         need: need,
         unit: unit.isEmpty ? null : unit,
@@ -2121,7 +2063,6 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
 
   void _pulse() => _bounceController..value = 0..forward();
 
-  // ------ parsing helpers ---------------------------------------------------
   String _norm(String s) => s.trim().toLowerCase();
 
   String _extractName(dynamic e) {
@@ -2159,7 +2100,6 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
   /// bag if in shopping('buy'), otherwise plus (irrespective of pantry).
   _ShopVariant _computeVariant() {
 
-    // 👇 hard override when opened from history
     if (widget.forcePlusOnly == true) return _ShopVariant.plus;
 
     String name = "";
@@ -2177,7 +2117,6 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
     return _ShopVariant.plus;
   }
 
-  // ------ UI helpers --------------------------------------------------------
   Widget _miniChip({required IconData icon, required String text, required Color color}) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
@@ -2258,13 +2197,11 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
     );
   }
 
-  // ------ build -------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
 
-    // parse minimal quantities for chips (no auto-activation)
     String name = "", unit = "";
     double? need, have;
     if (widget.data is String) {
@@ -2321,7 +2258,7 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // centered title
+            // title
             Row(children: [
               SizedBox(width: iconSize + gap),
               Expanded(
@@ -2332,7 +2269,7 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
                     fontWeight: FontWeight.w800, letterSpacing: -0.2, height: 1.2),
                 ),
               ),
-              SizedBox(width: 44.w), // right button space (one control)
+              SizedBox(width: 44.w), // right button space
             ]),
             SizedBox(height: 10.h),
 
@@ -2366,7 +2303,7 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
               ),
             ]),
 
-            // badges line (only for the visible control + optional/missing)
+            // badges line
             SizedBox(height: 10.h),
             Row(children: [
               SizedBox(width: iconSize + gap),
@@ -2406,8 +2343,6 @@ class _ModernIngredientTileState extends State<ModernIngredientTile>
   }
 }
 
-// ================= ModernCreateShoppingListButton =================
-// ================= ModernCreateShoppingListButton =================
 class ModernCreateShoppingListButton extends StatefulWidget {
   const ModernCreateShoppingListButton({
     super.key,
@@ -2416,7 +2351,7 @@ class ModernCreateShoppingListButton extends StatefulWidget {
     required this.selectedCount,
     required this.eligibleCount,
     this.onCreate,
-    required this.clearAllSignal, // NEW
+    required this.clearAllSignal,
   });
 
   final ValueNotifier<int> selectAllSignal;
@@ -2424,17 +2359,17 @@ class ModernCreateShoppingListButton extends StatefulWidget {
   final ValueNotifier<int> selectedCount;
   final int eligibleCount;
   final VoidCallback? onCreate;
-  final ValueNotifier<int> clearAllSignal; // NEW
+  final ValueNotifier<int> clearAllSignal;
 
   @override
   State<ModernCreateShoppingListButton> createState() => _ModernCreateShoppingListButtonState();
 }
 
-enum _BtnState { inactive, armed, ready } // NEW
+enum _BtnState { inactive, armed, ready } 
 
 class _ModernCreateShoppingListButtonState extends State<ModernCreateShoppingListButton> {
-  _BtnState _visual = _BtnState.inactive; // independent 3-state visual
-  _CtaMode _submitted = _CtaMode.idle;    // keep your once-per-mode submit rule
+  _BtnState _visual = _BtnState.inactive; 
+  _CtaMode _submitted = _CtaMode.idle; 
 
   int _lastDirtyTick = 0;
   int _lastSelected = 0;
@@ -2453,7 +2388,6 @@ class _ModernCreateShoppingListButtonState extends State<ModernCreateShoppingLis
     super.dispose();
   }
 
-  // Any tile turning OFF after submission → go back to ARMED if still >0, else INACTIVE
   void _onDirty() {
     final v = widget.selectionDirtySignal.value;
     if (v == _lastDirtyTick) return;
@@ -2504,7 +2438,6 @@ class _ModernCreateShoppingListButtonState extends State<ModernCreateShoppingLis
     // ignore: unused_local_variable
     final bool all  = total > 0 && selected >= total;
 
-    // ---- labels purely reflect coverage; they don’t drive state transitions
     String label;
     IconData icon;
     switch (_visual) {
@@ -2542,7 +2475,7 @@ class _ModernCreateShoppingListButtonState extends State<ModernCreateShoppingLis
     final Color iconCol = _visual == _BtnState.ready ? okCol : primary;
 
     return GestureDetector(
-      // Long-press when INACTIVE → select all and become ARMED (white)
+      // Long-press when INACTIVE - select all and become ARMED (white)
       onLongPress: () {
         if (_visual == _BtnState.inactive && total > 0) {
           widget.selectAllSignal.value = widget.selectAllSignal.value + 1;
@@ -2552,11 +2485,11 @@ class _ModernCreateShoppingListButtonState extends State<ModernCreateShoppingLis
       onTap: () {
         switch (_visual) {
           case _BtnState.inactive:
-            // Tap does nothing (spec)
+            // Tap does nothing
             return;
 
           case _BtnState.armed:
-            // Confirm → green + fire onCreate exactly once per coverage
+            // Confirm - green + fire onCreate exactly once per coverage
             setState(() {
               _visual = _BtnState.ready;
               if (some) {
@@ -2574,7 +2507,7 @@ class _ModernCreateShoppingListButtonState extends State<ModernCreateShoppingLis
             return;
 
           case _BtnState.ready:
-            // Reset EVERYTHING (spec): tiles OFF + button INACTIVE
+            // Reset EVERYTHING  tiles OFF + button INACTIVE
             widget.clearAllSignal.value = widget.clearAllSignal.value + 1;
             setState(() {
               _visual = _BtnState.inactive;

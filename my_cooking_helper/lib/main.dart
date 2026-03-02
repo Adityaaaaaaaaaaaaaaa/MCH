@@ -37,6 +37,7 @@ import 'features/cravings/cravings.dart';
 import 'features/cravings/craving_recipe.dart';
 import 'features/shopping/shopping.dart';
 import 'utils/adaptive_transition.dart';
+import 'utils/snackbar.dart';
 
 
 Future<void> main() async {
@@ -125,17 +126,52 @@ final GoRouter _router = GoRouter(
       path: '/recipePage',
       builder: (context, state) {
         final extra = state.extra;
+
         if (extra is RecipeDetail) {
-          // fallback for older navigation
+          // Directly a RecipeDetail (from search, API, etc.)
           return RecipePage(recipe: extra, fromHistory: false);
-        } else if (extra is Map<String, dynamic>) {
+        } 
+        else if (extra is Map<String, dynamic>) {
+          final recipeRaw = extra['recipe'];
+
+          // Handle both RecipeDetail and Map<String,dynamic>
+          final recipe = recipeRaw is RecipeDetail
+              ? recipeRaw
+              : RecipeDetail.fromJson(Map<String, dynamic>.from(recipeRaw));
+
           return RecipePage(
-            recipe: extra['recipe'] as RecipeDetail,
+            recipe: recipe,
             fromHistory: extra['fromHistory'] == true,
           );
-        } else {
-          // error fallback
-          return Scaffold(body: Center(child: Text('Invalid data')));
+        } 
+        else {
+          //Instead of error page → snackbar + safe fallback with delay
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            SnackbarUtils.show(
+              context, 
+              "Recipe not available, please try again!",
+              duration: 750, 
+              behavior: SnackBarBehavior.floating,
+              icon: Icons.error_outline_rounded,
+              iconColor: Colors.red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.w900
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+              backgroundColor: Colors.grey.withOpacity(0.5),
+              width: 250.w,
+            );
+
+            // small delay so snackbar is noticeable before going back
+            await Future.delayed(const Duration(milliseconds: 500));
+
+            if (context.mounted && Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+          });
+
+          return const SizedBox.shrink(); // temporary widget until pop
         }
       },
     ),
@@ -157,7 +193,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/cravingRecipe',
-      builder: (ctx, state) {
+      builder: (context, state) {
         final extra = state.extra;
 
         // Back-compat: older callers pass the model directly
@@ -181,8 +217,31 @@ final GoRouter _router = GoRouter(
           );
         }
 
-        // Graceful fallback (helps during dev)
-        throw ArgumentError('Invalid /cravingRecipe extra: ${state.extra}');
+        //Safe fallback instead of throw
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          SnackbarUtils.show(
+            context,
+            "AI recipe not available, please try again!",
+            duration: 750,
+            behavior: SnackBarBehavior.floating,
+            icon: Icons.error_outline_rounded,
+            iconColor: Colors.red,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            textStyle: const TextStyle(fontWeight: FontWeight.w900),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            backgroundColor: Colors.grey.withOpacity(0.5),
+            width: 250,
+          );
+
+          // delay so snackbar shows before going back
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          if (context.mounted && Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        });
+
+        return const SizedBox.shrink(); // temp widget until pop
       },
     ),
     GoRoute(
@@ -196,19 +255,16 @@ final GoRouter _router = GoRouter(
 // Safe, version-agnostic way to read the current path without poking notifiers.
 String _readLocation() {
   try {
-    // Newer go_router: RouteMatchList has a `uri` (Uri)
     final cfg = _router.routerDelegate.currentConfiguration;
     final Uri? uri = (cfg as dynamic).uri as Uri?;
     if (uri != null) return uri.path;
 
-    // Some versions expose a `location` (String) instead
     final String? loc = (cfg as dynamic).location as String?;
     if (loc != null) return Uri.parse(loc).path;
   } catch (_) {
     // fall through
   }
   try {
-    // Last resort (may notify) — used only if the above fails
     return _router.routeInformationProvider.value.uri.path;
   } catch (_) {
     return '/';
@@ -230,18 +286,12 @@ class MyApp extends ConsumerWidget {
         return MaterialApp.router(
           scrollBehavior: const TightScrollBehavior(),
           debugShowCheckedModeBanner: false,
-          title: 'My Cooking Helper',
+          title: 'Cookgenix',
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
           themeMode: themeMode,
           routerConfig: _router,
           builder: (context, child) {
-            // ✅ Use the global _router; do NOT use GoRouter.of(context) here
-            // Replace these two lines:
-            // final routeInfo = _router.routeInformationProvider.value;
-            // final location  = routeInfo.uri.path;
-
-            // With this single line:
             final location = _readLocation();   // read-only and safe
 
             final weight = kRouteWeights[location] ?? PageWeight.light;
@@ -256,7 +306,7 @@ class MyApp extends ConsumerWidget {
                   switchInCurve: spec.curveIn,
                   switchOutCurve: spec.curveOut,
 
-                  // ✅ Keep only the current child (prevents two Navigators with same GlobalKey)
+                  // Keep only the current child (prevents two Navigators with same GlobalKey)
                   layoutBuilder: (current, previous) => current ?? const SizedBox.shrink(),
 
                   // 'widget' is non-null here; no '!' needed

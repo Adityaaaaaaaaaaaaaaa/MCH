@@ -101,7 +101,7 @@ Future<int?> pickCookingTime(BuildContext context, {int initial = 30}) {
                 
                 SizedBox(height: 28.h),
 
-                // Enhanced Clock with Glow
+                // Clock with Glow
                 GestureDetector(
                   onTapDown: (_) {
                     setState(() => isPressed = true);
@@ -185,7 +185,7 @@ Future<int?> pickCookingTime(BuildContext context, {int initial = 30}) {
 
                 SizedBox(height: 28.h),
 
-                // Enhanced Slider
+                // Slider
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 12.w),
                   child: Column(
@@ -310,7 +310,7 @@ Future<int?> pickCookingTime(BuildContext context, {int initial = 30}) {
   );
 }
 
-// Enhanced Clock Painter with Smooth Glow
+// Clock Painter Glow
 class EnhancedClockPainter extends CustomPainter {
   final int totalMinutes;
   final bool isDark;
@@ -431,7 +431,7 @@ class EnhancedClockPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
-// Enhanced Ingredient Selector with Minimalist Design
+// Ingredient Selector 
 Future<Set<String>?> selectIngredients(
   BuildContext context,
   List<String> initialIngredients,
@@ -908,7 +908,6 @@ Widget _buildMinimalistActionBar(BuildContext context, Set<String> unwanted, Bui
   );
 }
 
-// Keep all the existing complex painter classes but unused for cleaner UI
 class FancyGlowyMultiHourClockPainter extends CustomPainter {
   final int totalMinutes;
   final bool isDark;
@@ -916,8 +915,6 @@ class FancyGlowyMultiHourClockPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Simplified version - keeping original complex logic commented for reference
-    // Original complex implementation preserved but not used
   }
 
   @override
@@ -955,7 +952,6 @@ class FancyGlassySliderThumb extends SliderComponentShape {
     required double textScaleFactor,
     required Size sizeWithOverflow,
   }) {
-    // Keeping original implementation but using simpler default thumb
   }
 }
 

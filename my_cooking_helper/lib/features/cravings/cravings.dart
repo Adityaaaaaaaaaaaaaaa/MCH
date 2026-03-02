@@ -1,4 +1,3 @@
-// lib/features/cravings/cravings.dart
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
@@ -20,7 +19,6 @@ import '/widgets/navigation/nav.dart';
 import '/widgets/cravings/cravings_widget.dart';
 import '/utils/connectivity_provider.dart';
 
-// Rebuilds on sign-in, sign-out, and user switches
 final authUserProvider = StreamProvider<User?>(
   (ref) => FirebaseAuth.instance.authStateChanges(),
 );
@@ -37,7 +35,7 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
 
   late final ProviderSubscription<AsyncValue<User?>> _authSub;
 
-  // Height of your CustomNavBar so content can scroll behind it elegantly.
+  // Height CustomNavBar so content can scroll behind it
   static const double _bottomNavSpacer = 100;
 
   final TextEditingController _queryCtrl = TextEditingController();
@@ -66,15 +64,13 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
   void initState() {
     super.initState();
 
-    // ✅ Allowed in initState
     _authSub = ref.listenManual<AsyncValue<User?>>(authUserProvider, (prev, next) {
       final prevUid = prev?.asData?.value?.uid;
       final nextUid = next.asData?.value?.uid;
       if (nextUid != null && nextUid != prevUid) {
-        print('\x1B[34m[DEBUG][Cravings] Auth resolved for uid=$nextUid\x1B[0m');
         _primeDefaultsFromFirestore(nextUid);
       }
-    }, fireImmediately: true); // immediately fires once with current value (if any)
+    }, fireImmediately: true);
   }
 
   @override
@@ -86,11 +82,9 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
 
   Future<void> _primeDefaultsFromFirestore(String uid) async {
     try {
-      print('\x1B[34m[DEBUG][Cravings] Loading Firestore defaults...\x1B[0m');
       final map = await _svc.fetchDefaults(uid);
       if (!mounted) return;
       setState(() => _defaults = map);
-      print('\x1B[34m[DEBUG][Cravings] Defaults ready: spice=${map['spiceLevel']}, time=$_defaultTime\x1B[0m');
     } catch (e) {
       print('\x1B[34m[DEBUG][Cravings] Failed to load defaults: $e\x1B[0m');
     }
@@ -135,10 +129,6 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                   _overrideTime        = (tempMinutes == _defaultTime) ? null : tempMinutes;
                 });
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Filters set • '
-                      'spice=${tempRandom ? "RANDOM" : tempFixed}, time=${tempMinutes}m')),
-                );
               },
             );
           },
@@ -179,11 +169,10 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
         randomSpice: useRandom,
         fixedSpiceLevel: useRandom ? null : useFixed,
         timeMinutes: timeMins,
-        timeout: const Duration(seconds: 75),
+        timeout: const Duration(seconds: 180),
       );
     } catch (e) {
       genError = e;
-      print('\x1B[34m[DEBUG][Cravings] generateCravingsAndParse failed: $e\x1B[0m');
     }
 
     if (!mounted) return;
@@ -194,13 +183,7 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
         _loading = false;
         _errorMsg = null;
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Generating with '
-            '${useRandom ? "random spice" : "spice=$useFixed"} • time=$timeMins min')),
-      );
     } else {
-      // Backend didn’t respond or returned no items → show friendly error (no fallback)
       setState(() {
         _loading = false;
         _results = null;
@@ -210,14 +193,12 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
   }
 
   void _resetToLoadingFromClear() {
-    // go to State A (LOADING) with no results
     setState(() {
       _loading = false;
       _results = null;
     });
   }
 
-  // Mask URLs/IPs from raw errors
   String _sanitizeError(String s) {
     var out = s;
     out = out.replaceAll(RegExp(r'uri=\S+', caseSensitive: false), 'uri=<hidden>');
@@ -228,7 +209,6 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
     return out;
   }
 
-  // Glass error card (friendly headline + sanitized details)
   Widget _cravingsErrorGlass(String raw) {
     final theme = Theme.of(context);
     final String lower = raw.toLowerCase();
@@ -258,15 +238,12 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
     final details = _sanitizeError(raw);
 
     return Padding(
-      // keeps it away from screen edges on all devices
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
       child: Align(
         alignment: Alignment.center,
         child: FractionallySizedBox(
-          // % of available width (prevents edge-to-edge)
           widthFactor: 0.88,
           child: ConstrainedBox(
-            // hard cap so it never looks too wide on tablets
             constraints: BoxConstraints(maxWidth: 480.w, minWidth: 260.w),
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
@@ -288,7 +265,6 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                   ),
                   SizedBox(height: 6.h),
 
-                  // Friendly summary
                   Text(
                     friendly,
                     textAlign: TextAlign.center,
@@ -301,7 +277,6 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                   ),
                   SizedBox(height: 10.h),
 
-                  // Collapsible details with a modest height cap
                   Theme(
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
@@ -343,7 +318,7 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                   ),
                   SizedBox(height: 8.h),
 
-                  // Compact retry button
+                  // retry button
                   SizedBox(
                     width: 180.w,
                     child: ElevatedButton.icon(
@@ -384,7 +359,6 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
     final auth = ref.watch(authUserProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // ✅ online state
     final isOnline = ref.watch(isOnlineProvider).maybeWhen(
       data: (v) => v, orElse: () => true,
     );
@@ -408,7 +382,7 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
     return Scaffold(
       backgroundColor: bgColor(context),
       extendBodyBehindAppBar: false,
-      extendBody: true, // scroll under bottom nav
+      extendBody: true,
       drawer: const CustomDrawer(),
       bottomNavigationBar: CustomNavBar(currentIndex: 3),
       appBar: CustomAppBar(
@@ -422,7 +396,6 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background lottie (rendered ONLY when no results)
           if (!hasResults)
             Positioned(
               top: 40.h,
@@ -447,7 +420,7 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // ========= A) NO RESULTS (centered) =========
+              //  A - NO RESULTS (centered)
               if (uid == null)
                 _buildCenteredWithCaution(
                   content: _buildCenterContent(
@@ -455,12 +428,12 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                     showActions: false,
                   ),
                 )
-              // ========= A) NO RESULTS (centered) =========
+              // A) NO RESULTS (centered)
               else if (!_loading && !hasResults)
                 _buildCenteredWithCaution(
                   content: Builder(
                     builder: (context) {
-                      // 1) Offline → keep original UI (no error box)
+                      // 1) Offline - keep original UI 
                       if (!isOnline) {
                         return AbsorbPointer(
                           absorbing: true,
@@ -471,12 +444,12 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                         );
                       }
 
-                      // 2) Online but backend error → error box + disabled search titled "Server error"
+                      // 2) Online but backend error → error box + disabled search 
                       if (_errorMsg != null && _errorMsg!.isNotEmpty) {
                         return Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            _cravingsErrorGlass(_errorMsg!), // friendly/sanitized glass error
+                            _cravingsErrorGlass(_errorMsg!), 
                             SizedBox(height: 14.h),
                             AbsorbPointer(
                               absorbing: false, // keep search disabled in error state
@@ -490,7 +463,7 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                       }
 
 
-                      // 3) Online, no error → original prompt and actions
+                      // 3) Online, no error - original prompt and actions
                       return _buildCenterContent(
                         "What are you craving today?",
                         showActions: true,
@@ -499,7 +472,7 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                   ),
                 )
 
-              // ========= B) LOADING (centered Lottie) =========
+              // B) LOADING (centered Lottie)
               else if (_loading && !hasResults)
                 _buildCenteredWithCaution(
                   content: Center(
@@ -515,16 +488,16 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                   ),
                 )
 
-              // ========= C) RESULTS =========
+              //  C) RESULTS 
               else ...[
-                // Search bar pinned directly under the app bar (no extra top spacer needed)
+                // Search bar under app bar
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: _PinnedSearchHeader(
                     minH: 56.h,
                     maxH: 56.h,
                     padding: EdgeInsets.symmetric(horizontal: 15.w),
-                    child: AbsorbPointer( // ✅ disable search when offline
+                    child: AbsorbPointer( //disable search when offline
                       absorbing: !isOnline,
                       child: GlassSearchBar(
                         controller: _queryCtrl,
@@ -538,7 +511,7 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                 // tiny gap under search
                 SliverToBoxAdapter(child: SizedBox(height: 10.h)),
 
-                // Cards (tight) — no inner scroll, so no weird extra space
+                // Cards
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(20.w, 5.h, 20.w, 5.h),
                   sliver: SliverToBoxAdapter(
@@ -548,11 +521,10 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                         final uid = FirebaseAuth.instance.currentUser?.uid;
                         if (uid == null) return;
 
-                        // m is CravingRecipeModel from the grid (already has imageDataUrl for this session)
                         final detail = await _svc.fetchCravingRecipeDetail(
                           userId: uid,
                           recipeId: m.id,
-                          previewImageDataUrl: m.imageDataUrl, // pass the preview image!
+                          previewImageDataUrl: m.imageDataUrl,
                         );
 
                         if (detail != null && context.mounted) {
@@ -570,7 +542,7 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                   ),
                 ),
 
-                // Caution immediately after cards
+                // Caution card
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(15.w, 10.h, 15.w, 0),
@@ -578,7 +550,7 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
                   ),
                 ),
 
-                // Bottom spacer so content can scroll behind the bottom nav (but never behind the app bar)
+                // Bottom spacer so content can scroll behind the bottom nav
                 SliverToBoxAdapter(child: SizedBox(height: _bottomNavSpacer)),
               ],
             ],
@@ -588,9 +560,7 @@ class _CravingsScreenState extends ConsumerState<CravingsScreen> {
     );
   }
 
-  // ---------- helper slivers (renamed for clarity) ----------
-
-  /// Centered content panel (title + search [+ optional actions]).
+  // helper
   Widget _buildCenterContent(String title, {required bool showActions}) {
     final theme = Theme.of(context);
     return ConstrainedBox(

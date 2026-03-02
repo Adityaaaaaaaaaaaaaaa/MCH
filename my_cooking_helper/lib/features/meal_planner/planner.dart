@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '/utils/snackbar.dart';
 import '/utils/loader.dart';
 import '/widgets/shimmer/meal_planner_skeleton.dart';
 import '/widgets/navigation/nav.dart';
@@ -17,12 +18,10 @@ import '/widgets/navigation/drawer.dart';
 import '/services/meal_planner_service.dart';
 import '/widgets/meal_planner_widgets.dart';
 
-// Rebuilds on sign-in, sign-out, and user switches
 final authUserProvider = StreamProvider<User?>(
   (ref) => FirebaseAuth.instance.userChanges(),
 );
 
-// DI
 final mealPlannerServiceProvider =
     Provider<MealPlannerService>((ref) => MealPlannerService());
 
@@ -51,7 +50,6 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Optional: also try on dependencies to catch route returns
     _pingBackendOnce();
   }
 
@@ -64,9 +62,8 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     final today = DateTime.now();
     final todayKey = '${today.year}-${today.month}-${today.day}';
 
-    if (prefs.getString(key) == todayKey) return; // already pinged today
+    if (prefs.getString(key) == todayKey) return;
 
-    // fire and forget; no UI
     unawaited(ref.read(mealPlannerServiceProvider).pingBackend(userId: uid));
     await prefs.setString(key, todayKey);
   }
@@ -90,10 +87,39 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   }
 
   Future<void> _scrapPlan(String uid, String planId) async {
+    SnackbarUtils.show(
+        context, 
+        "Deleting Meal Plan !",
+        duration: 750, 
+        behavior: SnackBarBehavior.floating,
+        icon: Icons.priority_high_rounded,
+        iconColor: Colors.orange.shade400,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w900,
+          color: Colors.black
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        backgroundColor: Colors.white,
+        width: 250.w,
+      );
     await ref.read(mealPlannerServiceProvider).deletePlan(userId: uid, planId: planId);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Plan deleted.')),
+      SnackbarUtils.show(
+        context, 
+        "Meal Plan Deleted!",
+        duration: 750, 
+        behavior: SnackBarBehavior.floating,
+        icon: Icons.delete_forever_rounded,
+        iconColor: Colors.red.shade400,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w900,
+          color: Colors.black
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        backgroundColor: Colors.white,
+        width: 250.w,
       );
     }
   }
@@ -101,10 +127,55 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   Future<void> _regeneratePlan(String uid, String planId) async {
     setState(() => generating = true);
     try {
+      SnackbarUtils.show(
+        context, 
+        "Generating New Meal Plan !",
+        duration: 750, 
+        behavior: SnackBarBehavior.floating,
+        icon: Icons.timer,
+        iconColor: Colors.orange.shade600,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w900,
+          color: Colors.black
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        backgroundColor: Colors.white,
+        width: 250.w,
+      );
       await ref.read(mealPlannerServiceProvider).regenerateWeek(userId: uid, planId: planId);
+      SnackbarUtils.show(
+        context, 
+        "Meal Plan Generated!",
+        duration: 750, 
+        behavior: SnackBarBehavior.floating,
+        icon: Icons.check_circle_outline_outlined,
+        iconColor: Colors.green.shade600,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w900,
+          color: Colors.black
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        backgroundColor: Colors.white,
+        width: 250.w,
+      );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed: $e')),
+      SnackbarUtils.show(
+        context, 
+        "Meal Plan Delete - Error",
+        duration: 750, 
+        behavior: SnackBarBehavior.floating,
+        icon: Icons.delete_forever_rounded,
+        iconColor: Colors.red.shade400,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w900,
+          color: Colors.black
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        backgroundColor: Colors.white,
+        width: 250.w,
       );
     } finally {
       setState(() => generating = false);
@@ -120,14 +191,12 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     final uid = ref.watch(authUserProvider).value?.uid;
     if (uid == null || !mounted) return;
 
-    // Get the current week planId from the stream you already have
     final tuple = ref.read(weekProvider(uid)).valueOrNull;
     if (tuple == null) return;
     final planId = tuple.$1.planId;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Optional: quick loading overlay
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -151,7 +220,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       );
 
       if (!mounted) return;
-      Navigator.of(context).pop(); // close loading
+      Navigator.of(context).pop();
 
       if (detail == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -163,7 +232,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       context.push('/recipePage', extra: detail);
     } catch (e) {
       if (!mounted) return;
-      Navigator.of(context).pop(); // close loading if open
+      Navigator.of(context).pop(); 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to open recipe: $e')),
       );
@@ -204,7 +273,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                       await ref.read(mealPlannerServiceProvider).changeDay(
                         userId: uid,
                         dayIndex: dayIndex,
-                        planId: planId,  // optional; backend will default if null
+                        planId: planId,
                       );
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Updated ${_dayName(dayIndex)}')),
@@ -372,8 +441,6 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   }
 }
 
-// ---------- helpers ----------
-
 bool _isToday(String planIdMonday, int dayIndex) {
   final d = _dateFor(planIdMonday, dayIndex);
   final now = DateTime.now();
@@ -386,11 +453,10 @@ DateTime _dateFor(String planIdMonday, int dayIndex) {
   return mon.add(Duration(days: dayIndex - 1)).toLocal();
 }
 
-/// Pretty string like "Monday, 13 August 2025"
+// Pretty string like "Monday, 13 August 2025"
 String _dateLabel(DateTime d) {
   return DateFormat('EEEE, d MMMM y').format(d);
 }
 
-/// Still here if you need weekday-only text elsewhere
 String _dayName(int dayIndex) =>
     const ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][dayIndex - 1];
