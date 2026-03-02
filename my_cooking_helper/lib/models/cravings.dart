@@ -1,10 +1,9 @@
-// lib/models/cravings.dart
 class ShoppingItemModel {
   final String name;
   final double need;
   final String unit;
   final double have;
-  final String tag; // "buy" | "missing"
+  final String tag; //buy or missing
 
   ShoppingItemModel({
     required this.name,
@@ -28,14 +27,13 @@ class CravingRecipeModel {
   final String title;
   final int? readyInMinutes;
 
-  // new / expanded fields
   final List<String> cuisines;
   final List<String> diets;
   final bool? vegetarian;
   final bool? vegan;
   final bool? glutenFree;
   final bool? dairyFree;
-  final Map<String, dynamic>? nutrition; // keep it loose for now
+  final Map<String, dynamic>? nutrition; 
   final String? summary;
 
   final List<String> reasons;
@@ -46,7 +44,6 @@ class CravingRecipeModel {
   final List<ShoppingItemModel> shopping;
   final bool hasImage;
 
-  /// Filled from backend POST preview or fetched-by-title.
   String? imageDataUrl;
 
   CravingRecipeModel({
@@ -61,7 +58,6 @@ class CravingRecipeModel {
     required this.hasImage,
     this.imageDataUrl,
 
-    // new params (optional)
     this.cuisines = const [],
     this.diets = const [],
     this.vegetarian,

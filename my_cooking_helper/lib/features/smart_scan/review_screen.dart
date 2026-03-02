@@ -40,21 +40,22 @@ class ReviewScreen extends ConsumerWidget {
       backgroundColor: bgColor(context),
       body: Stack(
         children: [
-          // Decorative image (kept)
           Positioned(
-            top: 110.h,
-            left: 30.w,
+            bottom: -10.h,
+            left: 0.w,
             child: Transform.rotate(
-              angle: -0.15,
-              child: Image.asset(
-                'assets/images/smartScan/scanFood.png',
-                width: 210.w,
-                height: 210.h,
-                fit: BoxFit.contain,
+              angle: 0,
+              child: Opacity(
+                opacity: 0.7,
+                child: Image.asset(
+                  'assets/images/home/burger.png',
+                  width: 210.w,
+                  height: 210.h,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
-
           Column(
             children: [
               SizedBox(height: 120.h),
@@ -132,7 +133,7 @@ class ReviewScreen extends ConsumerWidget {
                       try {
                         lottieController.show(
                           context: context,
-                          assetPath: 'assets/animations/Animation_upload_cloud.json',
+                          assetPath: 'assets/animations/Animation_upload.json',
                           backgroundColor: bgColor(context),
                           repeat: true,
                           barrierDismissible: false,
@@ -157,7 +158,7 @@ class ReviewScreen extends ConsumerWidget {
                           backgroundColor: isDark ? Colors.blueGrey : Colors.grey.shade400,
                           width: 200.w,
                         );
-                        context.go('/home'); // keeping your original nav behavior
+                        context.go('/home');
                       } catch (e) {
                         SnackbarUtils.show(
                           context,
@@ -181,7 +182,7 @@ class ReviewScreen extends ConsumerWidget {
         ],
       ),
 
-      // Add button as FAB so it doesn't disturb the page layout
+      // Add button
       floatingActionButton: AddItemFAB(
         onPressed: () async {
           final added = await showDialog<ScannedItem>(

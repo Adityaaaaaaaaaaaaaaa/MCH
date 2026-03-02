@@ -1,13 +1,10 @@
-# app/utils/shopping/shopping_normalize.py
 from __future__ import annotations
 import os, json, re
 from pathlib import Path
 from typing import Iterable
 
 
-# -----------------------------
 # Pantry: skip-by-default items
-# -----------------------------
 PANTRY_SKIP: set[str] = {
     # — water & ice —
     "water", "ice",
@@ -73,9 +70,7 @@ PANTRY_SKIP: set[str] = {
     "canned tomatoes",
 }
 
-# --------------------------------
 # Descriptors: strip from names
-# --------------------------------
 DESCRIPTOR_STOPWORDS: set[str] = {
     # cut/prep
     "finely", "roughly", "thinly", "thickly", "chopped", "minced", "sliced",
@@ -107,9 +102,7 @@ DESCRIPTOR_STOPWORDS: set[str] = {
     "slice", "slices",
 }
 
-# ------------------------------------
 # Synonyms / Normalization map
-# ------------------------------------
 SYNONYM_MAP: dict[str, str] = {
     # peppers / capsicum
     "capsicum": "bell pepper",
@@ -203,9 +196,7 @@ SYNONYM_MAP: dict[str, str] = {
     "fuji apples": "apple",
 }
 
-# ----------------------
 # Core functions
-# ----------------------
 _whitespace_re = re.compile(r"\s+")
 
 def _strip_descriptors(tokens: Iterable[str]) -> list[str]:
@@ -291,9 +282,7 @@ def add_synonyms(pairs: dict[str, str]) -> None:
             continue
         SYNONYM_MAP[normalize_name(k)] = normalize_name(v)
 
-# --------------------------------------------------------------------
-# OFF alias loader (auto-merge large map without overriding your own)
-# --------------------------------------------------------------------
+# OFF alias loader (auto-merge large map without overriding)
 _OFF_LOADED = False
 
 def _default_off_path() -> Path:

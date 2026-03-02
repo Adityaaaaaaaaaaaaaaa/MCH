@@ -32,8 +32,8 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
   final List<Map<String, String>> _pages = [
     {
       "image": "assets/images/onboarding/onb1.png",
-      "title": "Welcome to My Cooking Helper",
-      "desc": "Plan meals, manage your pantry, and discover recipes - all in one smart kitchen app.",
+      "title": "Welcome to Cookgenix",
+      "desc": "Cookgenix: From Pantry to Plate \nPlan meals, manage your pantry, and discover recipes - all in one smart kitchen app.",
     },
     {
       "image": "assets/images/onboarding/onb2.png",
@@ -42,7 +42,7 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
     },
     {
       "image": "assets/images/onboarding/onb3.png",
-      "title": "Get Personalised Recipe Ideas",
+      "title": "Get AI Generated Recipe Ideas !",
       "desc": "Find tasty recipes tailored to your preferences and what you already have at home.",
     },
   ];
@@ -335,7 +335,7 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                                     Text(
                                       page["title"]!,
                                       style: TextStyle(
-                                        fontSize: 30.sp,
+                                        fontSize: 35.sp,
                                         fontWeight: FontWeight.w800,
                                         color: Colors.white,
                                         letterSpacing: 0.5,
@@ -349,10 +349,10 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                                     Text(
                                       page["desc"]!,
                                       style: TextStyle(
-                                        fontSize: 14.sp,
+                                        fontSize: 12.sp,
                                         color: Colors.white,
                                         height: 1.5,
-                                        fontWeight: FontWeight.w400,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                       textAlign: TextAlign.center,
                                       maxLines: 3,

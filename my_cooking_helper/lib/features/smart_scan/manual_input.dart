@@ -47,7 +47,7 @@ class ManualInputScreen extends ConsumerWidget {
             children: [
               SizedBox(height: 110.h),
 
-              // Header (local copy styled like your review header, but with manual text)
+              // Header
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
                 child: Container(
@@ -158,14 +158,13 @@ class ManualInputScreen extends ConsumerWidget {
 
               if (manualItems.isNotEmpty)
                 Padding(
-                  // Give right-side space so FAB never overlaps
                   padding: EdgeInsets.only(bottom: 10.h, top: 10.h, left: 15.w, right: 150.w),
                   child: ConfirmAllButton(
                     onPressed: () async {
                       try {
                         lottieController.show(
                           context: context,
-                          assetPath: 'assets/animations/Animation_upload_cloud.json',
+                          assetPath: 'assets/animations/Animation_upload.json',
                           backgroundColor: bgColor(context),
                           repeat: true,
                           barrierDismissible: false,
@@ -177,8 +176,7 @@ class ManualInputScreen extends ConsumerWidget {
 
                         await inventoryService.addItemsToInventory(itemsToSave);
 
-                        // Current logic clears all items; kept as-is per your pattern.
-                        // If you want to clear only manual items, we can do a filtered clear.
+                        // clears all items.
                         controller.clearItems();
 
                         lottieController.hide();
@@ -223,7 +221,7 @@ class ManualInputScreen extends ConsumerWidget {
             ],
           ),
 
-          // Add Item button as FAB (consistent with Review screen)
+          // Add Item button 
           Positioned.fill(
             child: Align(
               alignment: Alignment.bottomRight,

@@ -17,7 +17,6 @@ String toTitleCase(String input) {
       .join(' ');
 }
 
-// ---------- Blue debug helper ----------
 extension _Blue on Object {
   void blue() => debugPrint('\x1B[34m[DEBUG][InvDeduct] $this\x1B[0m');
 }
@@ -26,7 +25,7 @@ extension _Blue on Object {
 class CookedIngredientPayload {
   final String name;   // raw recipe line name
   final double amount; // as provided by recipe
-  final String unit;   // raw recipe unit (e.g., "tbsp", "kg", "cup", "g", "ml", "count")
+  final String unit;   // raw recipe unit ("tbsp", "kg", "cup", "g", "ml", "count")
 
   CookedIngredientPayload(this.name, this.amount, this.unit);
 
@@ -89,11 +88,11 @@ class InventoryService {
           : (item['quantity'] ?? 1.0) as double;
 
       if (existingIds.contains(entry.key)) {
-        // Existing item: Only update quantity (and optionally dateAdded)
+        // Existing item: Only update quantity 
         final double newQuantity = (existingQuantities[entry.key] ?? 0.0) + addQuantity;
         batch.update(docRef, {
           'quantity': newQuantity,
-          'dateAdded': FieldValue.serverTimestamp(), // Optional: update date
+          'dateAdded': FieldValue.serverTimestamp(),
         });
       } else {
         // New item: Set all fields
@@ -145,7 +144,7 @@ class InventoryService {
         '[deductViaBackend] no ingredients to process'.blue();
         return;
       }
-      final url = Uri.parse(aiRecipeInvCal); // defined in backend_config.dart
+      final url = Uri.parse(aiRecipeInvCal);
       final payload = {
         'uid': uid,
         'apply': apply,

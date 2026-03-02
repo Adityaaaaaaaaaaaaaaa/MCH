@@ -1,4 +1,3 @@
-// /widgets/review/review_widgets.dart
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
@@ -7,7 +6,6 @@ import 'package:glass/glass.dart';
 import '/utils/colors.dart';
 import '/models/item.dart';
 
-// ===================== Formatting helpers ===================================
 String prettyQtyUnit(double? q, String? unitRaw) {
   final unit = (unitRaw ?? '').toLowerCase().trim();
   final qty = (q ?? 0).toDouble();
@@ -38,7 +36,6 @@ String prettyQtyUnit(double? q, String? unitRaw) {
   return '$s ${unitRaw ?? ''}'.trim();
 }
 
-// ===================== Small UI utils =======================================
 IconData _categoryIcon(String c) {
   final s = c.toLowerCase();
   if (s.contains('fruit')) return Icons.apple_rounded;
@@ -49,7 +46,6 @@ IconData _categoryIcon(String c) {
   return Icons.category_rounded;
 }
 
-// Minimal, outlined chip for CATEGORY only (adaptive light/dark)
 Widget categoryChip(BuildContext context, String category) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final border = isDark ? Colors.white.withOpacity(0.14) : Colors.black.withOpacity(0.12);
@@ -76,7 +72,6 @@ Widget categoryChip(BuildContext context, String category) {
   );
 }
 
-// ===================== Header & hint (adaptive) ==============================
 class ReviewHeaderCard extends StatelessWidget {
   const ReviewHeaderCard({super.key});
 
@@ -157,7 +152,7 @@ class SwipeHintChip extends StatelessWidget {
   }
 }
 
-// ===================== Item tile ============================================
+// Item tile 
 class ReviewItemTile extends StatelessWidget {
   final ScannedItem item;
   final VoidCallback onDelete;
@@ -191,7 +186,7 @@ class ReviewItemTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ---- Title row: Title   amount   [edit ▸ far right] ----
+            // Title row
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -225,7 +220,6 @@ class ReviewItemTile extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: 120.w),
-                // push edit icon to trailing edge
                 IconButton(
                   icon: Icon(Icons.edit_rounded, color: Colors.blue, size: 18.sp),
                   tooltip: "Edit",
@@ -238,7 +232,7 @@ class ReviewItemTile extends StatelessWidget {
 
             SizedBox(height: 10.h),
 
-            // ---- Category chip (outlined, subtle) ----
+            // Category chip 
             categoryChip(context, item.category ?? 'Uncategorized'),
           ],
         ),
@@ -255,7 +249,7 @@ class ReviewItemTile extends StatelessWidget {
   }
 }
 
-// ===================== Buttons ==============================================
+//  Buttons                                                                                                                                                                                                                                                                        
 class ConfirmAllButton extends StatelessWidget {
   final VoidCallback onPressed;
   const ConfirmAllButton({super.key, required this.onPressed});

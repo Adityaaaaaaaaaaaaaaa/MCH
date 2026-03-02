@@ -1,4 +1,3 @@
-# app/api/meal_planner_ping.py
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from datetime import datetime, timezone, timedelta
@@ -17,7 +16,6 @@ db = get_firestore_client()
 
 class PingBody(BaseModel):
     userId: str
-    # Optional: override when testing
     nowIso: Optional[str] = None
 
 def _monday_of_week(dt_utc: datetime) -> datetime:
@@ -39,7 +37,6 @@ def mealplanner_ping(body: PingBody):
     plan_id = _monday_of_week(now_utc).strftime("%Y-%m-%d")
 
     if db is None:
-        # Not fatal; just say “ok” so mobile heartbeat doesn’t fail
         return {"ok": True, "skipped": "firestore_not_configured"}
 
     user_ref = db.collection("users").document(body.userId)
@@ -49,7 +46,7 @@ def mealplanner_ping(body: PingBody):
     if plan_ref.get().exists:
         return {"ok": True, "alreadyExists": True, "planId": plan_id}
 
-    # Otherwise generate a fresh week (your normal pipeline)
+    # Otherwise generate a fresh week
     upstream = generate_week_plan(time_frame="week")
     if not upstream.get("ok"):
         raise HTTPException(status_code=int(upstream.get("status", 502)), detail=upstream)
@@ -58,7 +55,6 @@ def mealplanner_ping(body: PingBody):
     week_lite, unique_ids = build_week_lite_from_items(items)
 
     provider = SpoonacularRecipeDetailsProvider()
-    # Fetch full recipe details in batches of 7 (same as your weekly endpoint)
     recipes_full = []
     for i in range(0, len(unique_ids), 7):
         batch = unique_ids[i:i+7]

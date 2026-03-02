@@ -1,4 +1,3 @@
-# app/providers/day_plan_generate.py
 import os
 import requests
 

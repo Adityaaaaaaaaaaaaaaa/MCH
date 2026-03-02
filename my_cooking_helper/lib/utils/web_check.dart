@@ -1,4 +1,3 @@
-// lib/utils/web_check.dart
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html;
@@ -35,10 +34,10 @@ class WebChecker {
         ? trimmed.replaceFirst('http://', 'https://')
         : trimmed;
 
-    // Always try to open HTTPS if original was HTTP (optimistic upgrade)
+    // Always try to open HTTPS if original was HTTP 
     String resolved = wasHttp ? httpsCandidate : trimmed;
 
-    // Probe whether HTTPS actually responds (for accurate warning text)
+    // Probe whether HTTPS actually responds
     bool httpsAvailable = false;
     if (wasHttp) {
       try {
@@ -47,7 +46,6 @@ class WebChecker {
             .timeout(const Duration(seconds: 4));
         httpsAvailable = head.statusCode >= 200 && head.statusCode < 400;
       } catch (_) {
-        // Some servers block HEAD; try a quick GET
         try {
           final get = await http
               .get(Uri.parse(httpsCandidate), headers: {'User-Agent': kGenericAndroidMobileUA})
@@ -55,10 +53,8 @@ class WebChecker {
           httpsAvailable = get.statusCode >= 200 && get.statusCode < 400;
         } catch (_) {}
       }
-      // Note: we keep `resolved` pointed to HTTPS even if probe fails, per requirement.
     }
 
-    // Fetch HTML (use a mobile UA to mimic phone rendering)
     bool mobileFriendly = false;
     try {
       final resp = await http
@@ -76,10 +72,8 @@ class WebChecker {
             viewport.contains('initial-scale');
       }
     } catch (_) {
-      // If we cannot fetch, leave mobileFriendly=false and let WebView try
     }
 
-    // Build warnings — always warn if original was HTTP
     final warnings = <String>[];
     if (wasHttp && httpsAvailable) {
       warnings.add('Originally HTTP (Trying HTTPS)');
@@ -97,9 +91,6 @@ class WebChecker {
       mobileFriendly: mobileFriendly,
       warnings: warnings,
     );
-
-    print(
-        '\x1B[34m[WEBCHK] in="$trimmed" out="$resolved" wasHttp=$wasHttp httpsOk=$httpsAvailable mobile=$mobileFriendly\x1B[0m');
 
     _cache[trimmed] = result;
     return result;

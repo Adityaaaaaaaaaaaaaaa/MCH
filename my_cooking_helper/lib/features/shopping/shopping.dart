@@ -1,7 +1,7 @@
-// lib/features/shopping/shopping.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '/utils/snackbar.dart';
 import '/widgets/shopping_widgets.dart';
 import '/theme/app_theme.dart';
 import '/utils/colors.dart';
@@ -40,7 +40,7 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> with TickerProvider
 
   Future<void> _onBellPressed() async {
     if (_hasReminder) {
-      // Offer cancel
+      // cancel
       final ok = await showDialog<bool>(
         context: context,
         builder: (c) => AlertDialog(
@@ -59,21 +59,30 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> with TickerProvider
       if (ok == true) {
         await ReminderService().cancelLastReminder();
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reminder cancelled')),
+        SnackbarUtils.show(
+          context, 
+          "Reminder Cancelled",
+          duration: 1000, 
+          behavior: SnackBarBehavior.floating,
+          icon: Icons.calendar_month_outlined,
+          iconColor: Colors.black,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.w900
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+          backgroundColor: Colors.grey,
+          width: 250.w,
         );
+
         _refreshReminderState();
       }
       return;
     }
 
-    // Not set → open sheet to pick future date/time + pre-alert
+    // Not set - open sheet to pick future date/time + pre-alert
     final res = await showReminderSheet(context);
     if (res == null) return;
-
-    // Blue log
-    // ignore: avoid_print
-    print('\x1B[34m[SHOP UI] scheduling reminder for ${res.when} (preAlert=${res.preAlert})\x1B[0m');
 
     try {
       await ReminderService().addCalendarAndNotify(
@@ -83,12 +92,22 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> with TickerProvider
         description: 'Check your Shopping List',
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Reminder set for ${TimeOfDay.fromDateTime(res.when).format(context)}'),
-          behavior: SnackBarBehavior.floating,
+      SnackbarUtils.show(
+        context, 
+        "Reminder set for ${TimeOfDay.fromDateTime(res.when).format(context)}",
+        duration: 1000, 
+        behavior: SnackBarBehavior.floating,
+        icon: Icons.calendar_month_outlined,
+        iconColor: Colors.black,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w900
         ),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        backgroundColor: Colors.grey,
+        width: 250.w,
       );
+
       _refreshReminderState();
     } catch (e) {
       if (!mounted) return;
@@ -137,6 +156,7 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> with TickerProvider
               unit: updated.unit,
               have: updated.have,
               tag: updated.tag,
+              accumulate: false,
             ),
             onDelete: (name) => svc.remove(name),
             trailing: ClearListButton(

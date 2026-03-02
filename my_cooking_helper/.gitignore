@@ -70,3 +70,4 @@ __pycache__/
 build/*
 
 my-cooking-helper-*.json
+google-services.json

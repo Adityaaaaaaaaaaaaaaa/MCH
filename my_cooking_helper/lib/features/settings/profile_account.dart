@@ -76,7 +76,6 @@ class ProfileAccountSection extends StatelessWidget {
               
               SizedBox(height: 20.h),
               
-              // User name with gradient text effect
               ShaderMask(
                 shaderCallback: (bounds) => LinearGradient(
                   colors: isDark 
@@ -104,7 +103,7 @@ class ProfileAccountSection extends StatelessWidget {
               
               SizedBox(height: 8.h),
               
-              // Email with subtle styling
+              // Email 
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                 decoration: BoxDecoration(
@@ -134,7 +133,7 @@ class ProfileAccountSection extends StatelessWidget {
               
               SizedBox(height: 24.h),
               
-              // Enhanced switch account button
+              // switch account button
               Container(
                 width: double.infinity,
                 height: 48.h,

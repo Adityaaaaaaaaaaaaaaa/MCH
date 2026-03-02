@@ -27,10 +27,6 @@ class CravingsService {
 
   final FirebaseFirestore _firestore;
 
-  // ───────────────────────────── Public API ─────────────────────────────
-
-  /// Fetch defaults from Firestore: allergies, cuisines, diets, spice label/level, inventory (names).
-  /// Returns a map you can keep in state.
   Future<Map<String, dynamic>> fetchDefaults(String userId) async {
     final prefs = await _getUserPrefs(userId);
     final invNames = await _getInventoryNames(userId);
@@ -46,14 +42,6 @@ class CravingsService {
       'spiceLevel': spiceLevel,
       'inventory': invNames,
     };
-
-    _blue('[DEBUG][Cravings] Firestore defaults for $userId');
-    _blue('  Allergies : ${defaults['allergies']}');
-    _blue('  Cuisines  : ${defaults['cuisines']}');
-    _blue('  Diets     : ${defaults['diets']}');
-    _blue('  Spice     : $spiceLabel -> $spiceLevel');
-    _blue('  Inventory : ${defaults['inventory']}');
-
     return defaults;
   }
 
@@ -111,7 +99,7 @@ class CravingsService {
     return payload;
   }
 
-  // ─────────────────────── NEW: Parse POST (with images) ───────────────────────
+  //Parse POST (with images) 
 
   /// Derive sessionId from a candidate id such as "240825_2208_A"
   String _deriveSessionId(String id) {
@@ -129,7 +117,7 @@ class CravingsService {
     required bool randomSpice,
     int? fixedSpiceLevel,
     required int timeMinutes,
-    Duration timeout = const Duration(seconds: 75),
+    Duration timeout = const Duration(seconds: 180),
   }) async {
     final payload = await buildFinalBundle(
       userId: userId,
@@ -152,13 +140,7 @@ class CravingsService {
         )
         .timeout(timeout);
 
-    _blue('[DEBUG][Cravings] Backend responded: ${resp.statusCode}');
     if (resp.statusCode != 200) {
-      final body = resp.body;
-      if (body.isNotEmpty) {
-        final preview = body.length > 300 ? '${body.substring(0, 300)}…' : body;
-        _blue('[DEBUG][Cravings] Response preview: $preview');
-      }
       throw Exception('Backend error: ${resp.statusCode}');
     }
 
@@ -191,36 +173,19 @@ class CravingsService {
       );
     }).toList();
 
-    if (models.isNotEmpty) {
-      final first = models.first;
-      if (first.imageDataUrl != null && first.imageDataUrl!.isNotEmpty) {
-        final head = first.imageDataUrl!.substring(
-          0,
-          first.imageDataUrl!.length > 40 ? 40 : first.imageDataUrl!.length,
-        );
-        _blue('[DEBUG][Cravings] First image head: $head'); 
-        _blue('[DEBUG][Cravings] First image length: ${first.imageDataUrl!.length}');
-      } else {
-        _blue('[DEBUG][Cravings] First image missing or empty.');
-      }
-    }
-
     if (models.isEmpty) {
       throw Exception('No items returned from backend.');
     }
 
     final sessionId = _deriveSessionId(models.first.id);
-    _blue('[DEBUG][Cravings] Parsed ${models.length} items; session=$sessionId');
 
     return CravingsSessionResult(sessionId: sessionId, items: models);
   }
 
-  // ───────────────────────────── Internals ─────────────────────────────
 
   Future<Map<String, dynamic>> _getUserPrefs(String userId) async {
     final doc = await _firestore.collection('users').doc(userId).get();
     if (!doc.exists) {
-      _blue('[DEBUG][Cravings] No user doc for $userId. Using empty prefs.');
       return {
         'allergies': <String>[],
         'cuisines': <String>[],
@@ -272,14 +237,6 @@ class CravingsService {
         'unit': (data['unit'] ?? 'count').toString(), // normalize unit
       });
     }
-    _blue('[DEBUG][Cravings] Inventory(detailed) count=${items.length}');
-    for (final it in items.take(10)) {
-      _blue('  - ${it['name']}: ${it['quantity']} ${it['unit']}');
-    }
-    if (items.length > 10) {
-      _blue('  ... +${items.length - 10} more');
-    }
-
     return items;
   }
 
@@ -306,10 +263,6 @@ class CravingsService {
     return 2;
   }
 
-  /// POST the final bundle to your backend.
-  /// - [aiRecipeUrl] e.g. "$backendApiUrl/recipes/aiRecipe"
-  /// - This method intentionally returns void (for now) and logs status + preview.
-  ///   (Kept for backwards compatibility with your logging flow.)
   Future<void> postAiRecipeBundle({
     required String userId,
     required String query,
@@ -319,7 +272,6 @@ class CravingsService {
     required int timeMinutes,
     Duration timeout = const Duration(seconds: 20),
   }) async {
-    // Build bundle (also logs inventory details and final payload summary).
     final payload = await buildFinalBundle(
       userId: userId,
       query: query,
@@ -330,7 +282,6 @@ class CravingsService {
     );
 
     try {
-      _blue('[DEBUG][Cravings] POST → $aiRecipe');
       final resp = await http
           .post(
             Uri.parse(aiRecipe),
@@ -342,17 +293,8 @@ class CravingsService {
           )
           .timeout(timeout);
 
-      _blue('[DEBUG][Cravings] Backend responded: ${resp.statusCode}');
-      // Preview at most 300 chars to avoid log spam
+      // ignore: unused_local_variable
       final body = resp.body;
-      if (body.isNotEmpty) {
-        final preview = body.length > 300 ? '${body.substring(0, 300)}…' : body;
-        _blue('[DEBUG][Cravings] Response preview: $preview');
-      } else {
-        _blue('[DEBUG][Cravings] Empty body');
-      }
-
-      // We intentionally do not return anything now.
 
     } on http.ClientException catch (e) {
       _blue('[DEBUG][Cravings][NET] ClientException: $e');
@@ -390,7 +332,6 @@ class CravingsService {
     }
 
     if (_sessionDocs.isEmpty || sessionId == null) {
-      _blue('[DEBUG][Cravings] No sessions found for $userId');
       return <CravingRecipeModel>[];
     }
 
@@ -416,7 +357,6 @@ class CravingsService {
     if (recipeDocs.isEmpty) return <CravingRecipeModel>[];
 
     final models = recipeDocs.map((d) => CravingRecipeModel.fromFirestore(d.data())).toList();
-    _blue('[DEBUG][Cravings] Loaded ${models.length} recipes for $sessionId');
 
     // hydrate images on the fly (we store only hasImage in Firestore)
     await Future.wait(models.map((m) async {
@@ -433,7 +373,6 @@ class CravingsService {
     try {
       final resp = await http.get(Uri.parse(url)).timeout(timeout);
       if (resp.statusCode == 200 && resp.body.isNotEmpty) return resp.body;
-      _blue('[DEBUG][Cravings] image GET failed code=${resp.statusCode}');
     } catch (e) {
       _blue('[DEBUG][Cravings] image GET error: $e');
     }
@@ -486,18 +425,14 @@ class CravingsService {
       final byDoc = await recipesCol.doc(normalizedId).get();
       if (byDoc.exists) {
         final model = await _hydrateFromMap(byDoc.data()!);
-        _blue('[Cravings][Detail] Loaded by docId: $normalizedId (session=$sessionId)');
         return model;
       }
 
       final q1 = await recipesCol.where('id', isEqualTo: normalizedId).limit(1).get();
       if (q1.docs.isNotEmpty) {
         final model = await _hydrateFromMap(q1.docs.first.data());
-        _blue('[Cravings][Detail] Loaded by field id: $normalizedId (session=$sessionId)');
         return model;
       }
-
-      _blue('[Cravings][Detail] No recipe doc for id=$recipeId (session=$sessionId)');
       return null;
     } catch (e) {
       _blue('[Cravings][Detail] Error fetching recipe: $e');
