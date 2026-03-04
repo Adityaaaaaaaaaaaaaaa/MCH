@@ -71,3 +71,4 @@ build/*
 
 my-cooking-helper-*.json
 google-services.json
+my_cooking_helper/lib/config/firebase_options.dart
